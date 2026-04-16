@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+
+{% block conteudo %}
+<h2>Página Inicial</h2>
+<p>Bem-vindo ao sistema de gestão de estoque.</p>
+
+<h3>Produtos com estoque baixo</h3>
+
+{% if produtos_baixo %}
+<table>
+    <tr>
+        <th>Produto</th>
+        <th>Categoria</th>
+        <th>Quantidade</th>
+        <th>Estoque mínimo</th>
+    </tr>
+    {% for produto in produtos_baixo %}
+    <tr>
+        <td>{{ produto.nome }}</td>
+        <td>{{ produto.categoria }}</td>
+        <td>{{ produto.quantidade }}</td>
+        <td>{{ produto.estoque_minimo }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p>Nenhum produto com estoque baixo.</p>
+{% endif %}
+{% endblock %}

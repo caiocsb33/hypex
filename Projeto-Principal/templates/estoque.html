@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software HYPEX - Galpões</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+        <link rel="stylesheet" href="{{ url_for('static', filename='style_estoque.css') }}">
+
+</head>
+
+<body>
+
+    <aside id="menu">
+        <div class="status-dots">
+            <span class="dot-red"></span>
+            <span class="dot-yellow"></span>
+            <span class="dot-green"></span>
+        </div>
+
+        <div class="perfil">
+            <img src="{{ url_for('static', filename='imagem/perfil.png') }}">
+            <h3>Empresa</h3>
+        </div>
+
+        <nav>
+            <ul>
+                <li class="nav-menu">
+                    <a href="/">
+                        <i class="bi-solid bi-bar-chart-fill"></i>
+                        DASHBOARD
+                    </a>
+                </li>
+
+                <li class="nav-menu selected">
+                    <a href="/estoque">
+                        <i class="bi-solid bi-box-seam-fill"></i>
+                        ESTOQUE
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/fornecedores">
+                        <i class="bi-solid bi-people-fill"></i>
+                        FORNECEDORES
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/pedidos">
+                        <i class="bi-solid bi-basket2-fill"></i>
+                        PEDIDOS
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/clientes">
+                        <i class="bi-solid bi-person-fill"></i>
+                        CLIENTES
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="menu-opcoes">
+            <a href="/config" class="opcoes-btn">
+                <i class="bi-solid bi-gear-fill"></i>
+            </a>
+            <button class="opcoes-btn selected-opcoes-btn"><i class="bi-solid bi-circle-half"></i></button>
+            <button class="opcoes-btn red-opcoes-btn"><i class="bi-solid bi-door-open"></i></button>
+        </div>
+    </aside>
+
+    <main id="galpao-conteudo">
+
+        <header class="galpao">
+            <div class="galpao-texto">
+                <h1><i class="bi-solid bi-house-fill"></i> GALPÕES</h1>
+                <p>Gerencie suas unidades de armazenamento</p>
+            </div>
+            <div id="add-galpao">
+                <!-- Button trigger modal -->
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                    <i class="bi-solid bi-plus-lg"></i> Adicionar Galpão
+                </button>
+
+                <!-- Modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="exampleModalLabel">Adicionar Galpão</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row g-3">
+                                    <div class="col">
+                                        <h6>Nome do Galpão</h6>
+                                        <input type="text" class="form-control" placeholder="Nome do Galpão"
+                                            aria-label="First name">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Status</h6>
+                                        <select class="col form-select" aria-label="Default select example">
+                                            <option selected>Operacional</option>
+                                            <option value="1">Em Manutenção</option>
+                                            <option value="2">Inativo</option>
+                                        </select>
+                                    </div>
+                                    <form class="row g-3">
+                                        <div class="col-md-6">
+                                            <h6>E-mail Responsável</h6>
+                                            <input type="email" class="form-control" id="inputEmail4">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Nome do Responsável</h6>
+                                            <input type="text" class="form-control" id="inputPassword4">
+                                        </div>
+                                        <div class="col-12">
+                                            <h6>Endereço</h6>
+                                            <input type="text" class="form-control" id="inputAddress"
+                                                placeholder="1234 Main St">
+                                        </div>
+                                        <div class="col-12">
+                                            <h6>Referencia</h6>
+                                            <input type="text" class="form-control" id="inputAddress2"
+                                                placeholder="Apartment, studio, or floor">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Cidade</h6>
+                                            <input type="text" class="form-control" aria-label="Last name">
+                                        </div>
+                                        <div class="col">
+                                            <h6>Status</h6>
+                                            <select class="col form-select" aria-label="Default select example">
+                                                <option selected>Estado</option>
+                                                <option value="1">São Paulo</option>
+                                                <option value="2">Rio de Janeiro</option>
+                                                <option value="3">Minas Gerais</option>
+                                            </select>
+                                        </div>
+
+                                    </form>
+                                    <div class="row mt-3">
+                                        <div class="col">
+                                            <h6>Cep</h6>
+                                            <input type="text" class="form-control" placeholder="00000-000"
+                                                aria-label="Last name">
+                                        </div>
+                                        <div class="col">
+                                            <h6>Área Total (m²)</h6>
+                                            <input type="text" class="form-control" aria-label="Last name">
+                                        </div>
+                                        <div class="col">
+                                            <h6>Telefone</h6>
+                                            <input type="tel" class="form-control" aria-label="First name">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <H6>Caixas por Nível</H6>
+                                        <input type="tel" class="form-control" aria-label="First name">
+                                    </div>
+                                    <div class="col">
+                                        <H6>Total de Prateleiras</H6>
+                                        <input type="text" class="form-control" aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <H6>Andar de Prateleiras</H6>
+                                    <div class="col">
+                                        <input type="text" class="form-control" aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">fechar</button>
+                                    <button type="button" class="btn btn-primary">Salvar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </header>
+
+        <section class="barra-pesquisa">
+            <div class="caixa-pesquisa">
+                <i class="bi-solid bi-search"></i>
+                <input type="text" placeholder="Buscar Galpões por nome ou cidade...">
+            </div>
+            <div class="pesquias-botao">
+                <button class="filtro-botao filter-btn"><i class="bi-solid bi-funnel-fill"></i> Filtros</button>
+                <button class="filtro-botao export-btn"><i class="bi-solid bi-cloud-arrow-down-fill"></i>
+                    Exportar</button>
+            </div>
+        </section>
+
+        <section class="cards-galpao">
+
+            <div class="galpao-card">
+                <div class="galpao-texto">
+                    <span class="galpao-icone green-bg-icon"><i class="bi-solid bi-buildings-fill"></i></span>
+                    <div class="galpao-titulo">
+                        <h2 class="nome-galpao">Logística Central SP</h2>
+                        <p class="galpao-resp">Responsável: Ricardo Souza</p>
+                    </div>
+                    <span class="status-galpao status-ativo">Operacional</span>
+                </div>
+
+                <div class="cards-info-galpao">
+                    <p class="detalhe-galpao"><i class="bi-solid bi-upc"></i> SKU Ativos: 1.250</p>
+                    <p class="detalhe-galpao"><i class="bi-solid bi-telephone-fill"></i> (11) 4002-8922</p>
+                    <p class="detalhe-galpao"><i class="bi-solid bi-geo-alt-fill"></i> Cajamar, SP</p>
+                </div>
+
+                <div class="cards-detalhe-galpao">
+                    <div class="stats-galpao">
+                        <span class="stats-ocupa">Ocupação</span>
+                        <span class="stats-espaco">85%</span>
+                        <a href="/estoque_do_galpao"><button class="btn btn-estoque"><i
+                                    class="bi-solid bi-box-fill"> Ver Estoque</i></button></a>
+                    </div>
+                    <div class="stats-galpao">
+                        <span class="stats-area">Área Total</span>
+                        <span class="stats-espaco total-spent">12.000 m²</span>
+                        <a href="/info_galpao"><button class="btn btn-estoque">
+                                <i class="bi-solid bi-eye-fill"></i></button></a>
+                    </div>
+                </div>
+            </div>
+            <div class="galpao-card">
+                <div class="galpao-texto">
+                    <span class="galpao-icone green-bg-icon"><i class="bi-solid bi-buildings-fill"></i></span>
+                    <div class="galpao-titulo">
+                        <h2 class="nome-galpao">Hub Nordeste</h2>
+                        <p class="galpao-resp">Responsável: Maria Oliveira</p>
+                    </div>
+                    <span class="status-galpao status-ativo">Operacional</span>
+                </div>
+
+                <div class="cards-info-galpao">
+                    <p class="detalhe-galpao"><i class="bi-solid bi-upc"></i> SKU Ativos: 840</p>
+                    <p class="detalhe-galpao"><i class="bi-solid bi-telephone-fill"></i> (81) 3344-5566</p>
+                    <p class="detalhe-galpao"><i class="bi-solid bi-geo-alt-fill"></i> Recife, PE</p>
+                </div>
+
+                <div class="cards-detalhe-galpao">
+                    <div class="stats-galpao">
+                        <span class="stats-ocupa">Ocupação</span>
+                        <span class="stats-espaco">42%</span>
+                        <a href="/estoque_do_galpao"><button class="btn btn-estoque"><i
+                                    class="bi-solid bi-box-fill"> Ver Estoque</i></button></a>
+                    </div>
+                    <div class="stats-galpao">
+                        <span class="stats-area">Área Total</span>
+                        <span class="stats-espaco total-spent">8.500 m²</span>
+                        <a href="/info_galpao"><button class="btn btn-estoque">
+                                <i class="bi-solid bi-eye-fill"></i></button></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="galpao-card inactive">
+                <div class="galpao-texto">
+                    <span class="galpao-icone gray-bg-icon"><i class="bi-solid bi-buildings-fill"></i></span>
+                    <div class="galpao-titulo">
+                        <h2 class="nome-galpao">Unidade Sul (Manutenção)</h2>
+                        <p class="galpao-resp">Responsável: Carlos Silva</p>
+                    </div>
+                    <span class="status-galpao status-inativo">Inativo</span>
+                </div>
+
+                <div class="cards-info-galpao">
+                    <p class="detalhe-galpao"><i class="bi-solid bi-upc"></i> SKU Ativos: 0</p>
+                    <p class="detalhe-galpao"><i class="bi-solid bi-telephone-fill"></i> (41) 3030-1234</p>
+                    <p class="detalhe-galpao"><i class="bi-solid bi-geo-alt-fill"></i> Curitiba, PR</p>
+                </div>
+
+                <div class="cards-detalhe-galpao">
+                    <div class="stats-galpao">
+                        <span class="stats-ocupa">Ocupação</span>
+                        <span class="stats-espaco">0%</span>
+                        <a href="/estoque_do_galpao"><button class="btn btn-estoque"><i
+                                    class="bi-solid bi-box-fill"> Ver Estoque</i></button></a>
+                    </div>
+                    <div class="stats-galpao">
+                        <span class="stats-area">Área Total</span>
+                        <span class="stats-espaco total-spent">5.000 m²</span>
+                        <a href="/estoque_do_galpao"><button class="btn btn-estoque">
+                                <i class="bi-solid bi-eye-fill"></i></button></a>
+
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+</body>
+
+</html>

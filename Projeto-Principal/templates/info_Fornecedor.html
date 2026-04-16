@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software HYPEX - informações impresas
+    </title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style_info_empresa.css">
+</head>
+
+<body>
+
+    <aside id="menu">
+        <div class="status-dots">
+            <span class="dot-red"></span>
+            <span class="dot-yellow"></span>
+            <span class="dot-green"></span>
+        </div>
+
+        <div class="perfil">
+            <img src="{{ url_for('static', filename='imagem/perfil.png') }}">
+            <h3>Empresa</h3>
+        </div>
+
+        <nav>
+            <ul>
+                <li class="nav-menu">
+                    <a href="/index">
+                        <i class="bi-solid bi-bar-chart-fill"></i>
+                        DASHBOARD
+                    </a>
+                </li>
+                <li class="nav-menu selected">
+                    <a href="/estoque">
+                        <i class="bi-solid bi-box-seam-fill"></i>
+                        ESTOQUE
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/fornecedores">
+                        <i class="bi-solid bi-people-fill"></i>
+                        FORNECEDORES
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/pedidos">
+                        <i class="bi-solid bi-basket2-fill"></i>
+                        PEDIDOS
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/clientes">
+                        <i class="bi-solid bi-person-fill"></i>
+                        CLIENTES
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="menu-opcoes">
+            <a href="/config" class="opcoes-btn selected-opcoes-btn">
+                <i class="bi-solid bi-gear-fill"></i>
+            </a>
+            <button class="opcoes-btn">
+                <i class="bi-solid bi-circle-half"></i>
+            </button>
+            <button class="opcoes-btn red-opcoes-btn">
+                <i class="bi-solid bi-door-open"></i>
+            </button>
+        </div>
+    </aside>
+
+    <main id="config-conteudo">
+        <header class="config-texto">
+            <div class="config-info">
+                <h1><i class="bi-solid bi-gear-fill"></i> CONFIGURAÇÕES</h1>
+                <p>Gerencie as preferências da sua conta e do sistema</p>
+            </div>
+            <button class="salvar-btn">Salvar Alterações</button>
+        </header>
+
+
+        <section class="config-grid">
+            <div class="config-card">
+                <h3><i class="bi-solid bi-house-fill"></i> Imagem do Galpão</h3>
+                <img class="img-galpao" src="imagem/perfil.png" alt="perfil">
+                <button class="alterar-btn">
+                    <i class="bi-solid bi-pencil-fill"></i>
+                    Alterar Imagem
+                </button>
+
+            </div>
+
+            <div class="config-card">
+                <h3><i class="bi-solid bi-person-fill-gear"></i> Perfil Administrador do Galpão</h3>
+                <div class="input-resp">
+                    <label>Nome do Responsável</label>
+                    <input type="text" value="Ricardo Souza">
+                </div>
+                <div class="input-resp">
+                    <label>E-mail de Contato</label>
+                    <input type="email" value="admin@hypex.com">
+                </div>
+                <div class="input-resp">
+                    <label>Telefone de Contato</label>
+                    <input type="tel" value=" (11) 4002-8922">
+                </div>
+                <button class="senha-btn">
+                    <i class="bis bi-lock-fill"></i>
+                    Alterar informações
+                </button>
+            </div>
+            </div>
+
+            <div class="config-card full-width">
+                <h3><i class="bi-solid bi-building-fill"></i> Dados da Empresa</h3>
+                <div class="inputs-empresa">
+                    <div class="input-resp">
+                        <label>Nome do Galpão</label>
+                        <input type="text" placeholder="Nome do Galpão">
+                    </div>
+                    <div class="input-resp">
+                        <label>CEP</label>
+                        <input type="text" placeholder="000001-000">
+                    </div>
+                </div>
+                <div class="inputs-empresa">
+                    <div class="input-resp">
+                        <label>Endereço</label>
+                        <input type="text">
+                    </div>
+                    <div class="input-resp">
+                        <label>Referência</label>
+                        <input type="text">
+                    </div>
+                    <div class="input-resp">
+                        <label>Área Total (m²)</label>
+                        <input type="number">
+                    </div>
+                </div>
+                <div class="inputs-empresa">
+
+                    <div class="input-resp">
+                        <label>Caixas por Nível</label>
+                        <input type="number">
+                    </div>
+                    <div class="input-resp">
+                        <label>Andar de Prateleiras</label>
+                        <input type="number">
+                    </div>
+                    <div class="input-resp">
+                        <label>Total de Prateleiras</label>
+                        <input type="number">
+                    </div>
+                    <div class="input-resp">
+                        <label>Capacidade Total do Galpão</label>
+                        <input type="number">
+                    </div>
+                </div>
+        </section>
+        <div class="config-card full-width sensor-conteudo">
+            <h3><i class="bi-solid bi-car-front-fill"></i> Cadastrar Nova Empilhadeira</h3>
+            <div class="sensor-grid">
+                <div class="input-resp">
+                    <label>Marca da Empilhadeira</label>
+                    <input type="text">
+                </div>
+                <div class="input-resp">
+                    <label>Modelo da Empilhadeira</label>
+                    <input type="text">
+                </div>
+                <div class="input-resp">
+                    <label>Ano de Fabricação</label>
+                    <input type="number">
+                </div>
+                <div class="input-resp">
+                    <label>Tipo de Combustível</label>
+                    <input type="text">
+                </div>
+                <div class="input-resp">
+                    <label>Capacidade</label>
+                    <input type="number">
+                </div>
+                <div class="input-resp">
+                    <label>Quantidade</label>
+                    <input type="number">
+                </div>
+
+                </select>
+            </div>
+            <div class="vin-sensor">
+                <button class="add-sensor-btn">
+                    <i class="bis bi-plus-lg"></i>
+                    Adicionar Empilhadeira
+                </button>
+            </div>
+        </div>
+
+        <div class="config-card full-width sensor-conteudo">
+            <h3><i class="bi-solid bi-person-vcard-fill"></i> Cadastrar Novo Funcionário para este Galpão</h3>
+            <div class="sensor-grid">
+                <div class="input-resp">
+                    <label>Nome do Funcionário</label>
+                    <input type="text" placeholder="Ex: João Silva">
+                </div>
+                <div class="input-resp">
+                    <label>Cargo</label>
+                    <select>
+                        <option></option>
+                        <option>Gerente</option>
+                        <option>Operador</option>
+                        <option>Supervisor</option>
+                    </select>
+                </div>
+                <div class="input-resp">
+                    <label>CPF</label>
+                    <input type="text" placeholder="000.000.000-00">
+                </div>
+                <div class="input-resp">
+                    <label>Data de Nascimento</label>
+                    <input type="date">
+                </div>
+                <div class="input-resp">
+                    <label>Email</label>
+                    <input type="text">
+                </div>
+                <div class="input-resp">
+                    <label>Salario</label>
+                    <input type="number">
+                </div>
+            </div>
+            <div class="vin-sensor">
+                <button class="add-sensor-btn">
+                    <i class="bis bi-plus-lg"></i>
+                    Adicionar Funcionário
+                </button>
+            </div>
+        </div>
+        <section class="config-card full-width ativar-sensor">
+            <h3><i class="bi-solid bi-person-lines-fill"></i> Funcionários</h3>
+            <div class="sensor-lista-container">
+                <table class="sensor-lista">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Nome Funcionário</th>
+                            <th>Cargo</th>
+                            <th>CPF</th>
+                            <th>Salario</th>
+                            <th>Data de Emissão</th>
+                            <th>Empilhadeira</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="status-indicador online"></span> Online</td>
+                            <td><strong>João Silva</strong></td>
+                            <td>Operador</td>
+                            <td>123.456.789-00</td>
+                            <td>R$ 2,500.00</td>
+                            <td>2023-10-01</td>
+                            <td>
+                                <div class="input-resp">
+
+                                    <select>
+                                        <option></option>
+                                        <option>YFS-100</option>
+                                    </select>
+                            </td>
+                            <td>
+                                <button class="acao-btn"><i class="bi-solid bi-pen-fill"></i></button>
+                                <button class="acao-btn delete"><i class="bi-solid bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </section>
+        <section class="config-card full-width ativar-sensor mt-4">
+            <h3><i class="bi-solid bi-person-lines-fill"></i> Empilhadeira</h3>
+            <div class="sensor-lista-container">
+                <table class="sensor-lista">
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Marca Empilhadeira</th>
+                            <th>Modelo</th>
+                            <th>Ano de Fabricação</th>
+                            <th>Quantidade Cadastrada</th>
+                            <th>Tipo de Combustível</th>
+                            <th>Capacidade</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="status-indicador online"></span> Online</td>
+                            <td><strong>Yamaha</strong></td>
+                            <td>YFS-100</td>
+                            <td>2020</td>
+                            <td>2</td>
+                            <td>Gasolina</td>
+                            <td>2000kg</td>
+                            <td>
+                                <button class="acao-btn"><i class="bi-solid bi-pen-fill"></i></button>
+                                <button class="acao-btn delete"><i class="bi-solid bi-trash"></i></button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+</body>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+    crossorigin="anonymous"></script>
+
+</html>

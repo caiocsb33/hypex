@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software HYPEX - Estoque</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="style_estoque_do_galpao.css">
+
+</head>
+
+<body>
+    <aside id="menu">
+        <div class="status-dots">
+            <span class="dot-red"></span>
+            <span class="dot-yellow"></span>
+            <span class="dot-green"></span>
+        </div>
+
+        <div class="perfil">
+            <img src="{{ url_for('static', filename='imagem/perfil.png') }}">
+            <h3>Empresa</h3>
+        </div>
+
+        <nav>
+            <ul>
+                <li class="nav-menu">
+                    <a href="/index">
+                        <i class="bi-solid bi-bar-chart-fill"></i>
+                        DASHBOARD
+                    </a>
+                </li>
+
+                <li class="nav-menu selected">
+                    <a href="/estoque">
+                        <i class="bi-solid bi-box-seam-fill"></i>
+                        ESTOQUE
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/fornecedores">
+                        <i class="bi-solid bi-people-fill"></i>
+                        FORNECEDORES
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/pedidos">
+                        <i class="bi-solid bi-basket2-fill"></i>
+                        PEDIDOS
+                    </a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/clientes">
+                        <i class="bi-solid bi-person-fill"></i>
+                        CLIENTES
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="menu-opcoes">
+            <a href="/config" class="opcoes-btn">
+                <i class="bi-solid bi-gear-fill"></i>
+            </a>
+            <button class="opcoes-btn selected-opcoes-btn"><i class="bi-solid bi-circle-half"></i></button>
+            <button class="opcoes-btn red-opcoes-btn"><i class="bi-solid bi-door-open"></i></button>
+        </div>
+    </aside>
+
+    <main id="inventario-conteudo">
+
+        <header class="inventario-texto">
+            <div class="inventario-info">
+                <h1><i class="bi-solid bi-box-seam-fill"></i> GESTÃO DE ESTOQUE</h1>
+                <p>Gerencie seus produtos e controle o inventário</p>
+            </div>
+            <div id="add-produto">
+                <!-- Button trigger modal -->
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
+                    <i class="bi-solid bi-plus-lg"></i> Adicionar Produto
+                </button>
+                <!-- Modal -->
+                <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
+                    aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-scrollable">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="exampleModalLabel">Adicionar Produto</h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col">
+                                        <h6>Nome do Produto</h6>
+                                        <input type="text" class="form-control"
+                                            aria-label="First name">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Descrição</h6>
+                                        <input type="text" class="form-control"
+                                            aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Quantidade</h6>
+                                        <input type="number" class="form-control"
+                                            aria-label="First name">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Quantidade Mínima</h6>
+                                        <input type="number" class="form-control"
+                                            aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Preço de Venda</h6>
+                                        <input type="number" class="form-control"
+                                            aria-label="First name">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Preço de Compra</h6>
+                                        <input type="number" class="form-control"
+                                            aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Categoria</h6>
+                                        <input type="text" class="form-control"
+                                            aria-label="First name">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Peso (kg)</h6>
+                                        <input type="number" class="form-control"
+                                            aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Volume (m³)</h6>
+                                        <input type="number" class="form-control"
+                                            aria-label="First name">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Tipo de Produto</h6>
+                                        <select class="form-control" aria-label="Last name">
+                                            <option selected>Leve</option>
+                                            <option value="kg">Médio</option>
+                                            <option value="g">Pesado</option>
+                                            <option value="m³">Frágil</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Fornecedor</h6>
+                                        <select class="form-control" aria-label="First name">
+                                            <option selected>Fornecedor 1</option>
+                                            <option value="fornecedor2">Fornecedor 2</option>
+                                            <option value="fornecedor3">Fornecedor 3</option>
+                                        </select>
+                                    </div>
+                                    <div class="col">
+                                        <h6>Data de Entrada</h6>
+                                        <input type="date" class="form-control"
+                                            aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Setor</h6>
+                                        <input type="text" class="form-control"
+                                            aria-label="First name">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Prateleira</h6>
+                                        <input type="text" class="form-control" 
+                                            aria-label="Last name">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Nível</h6>
+                                        <input type="text" class="form-control"
+                                            aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Itens por Caixa</h6>
+                                        <input type="number" class="form-control"
+                                            aria-label="Last name">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary"
+                                        data-bs-dismiss="modal">Fechar</button>
+                                    <button type="button" class="btn btn-primary">Salvar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+        </header>
+
+        <section class="barra-pesquisa">
+            <div class="caixa-pesquisa">
+                <i class="bi-solid bi-search"></i>
+                <input type="text" placeholder="Buscar produtos...">
+            </div>
+            <div class="pesquias-botao">
+                <button class="filtro-btn filter-btn"><i class="bi-solid bi-funnel-fill"></i> Filtros</button>
+                <button class="filtro-btn export-btn"><i class="bi-solid bi-cloud-arrow-down-fill"></i>
+                    Exportar</button>
+            </div>
+        </section>
+
+        <section class="inventario-lista">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>ID</th>
+                        <th>Categoria</th>
+                        <th>Quantidade</th>
+                        <th>Preço de Venda</th>
+                        <th>Preço de Compra</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="produto-info">
+                            <strong>Smartphone Samsung Galaxy A54</strong>
+                            <span class="fornecedor-nome">Fornecedor: Samsung Brand</span>
+                        </td>
+                        <td>1</td>
+                        <td>Eletrônicos</td>
+                        <td>45<span class="min-estoque">Min: 10</span></td>
+                        <td>R$ 1.299,99</td>
+                        <td>R$ 1.099,99</td>
+                        <td><span class="status-estoque status-disponivel">Disponível</span></td>
+                        <td class="acao-estoque">
+                            <i class="bi-solid bi-eye-fill"></i>
+                            <i class="bi-solid bi-pen-fill"></i>
+                            <i class="bi-solid bi-trash3-fill"></i>
+                        </td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+</body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+    crossorigin="anonymous"></script>
+
+</html>
