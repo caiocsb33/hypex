@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software HYPEX - Criar Pedido</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_info_galpao.css') }}">
+</head>
+
+<body>
+
+    <aside id="menu">
+        <div class="status-dots">
+            <span class="dot-red"></span>
+            <span class="dot-yellow"></span>
+            <span class="dot-green"></span>
+        </div>
+
+        <div class="perfil">
+            <img src="{{ url_for('static', filename='imagem/perfil.png') }}">
+            <h3>{{ session['empresa_nome'] if 'empresa_nome' in session else 'Empresa' }}</h3>
+        </div>
+
+        <nav>
+            <ul>
+                <li class="nav-menu">
+                    <a href="/index"><i class="bi bi-bar-chart-fill"></i> DASHBOARD</a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/galpao"><i class="bi bi-box-seam-fill"></i> ESTOQUE</a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/fornecedores"><i class="bi bi-people-fill"></i> FORNECEDORES</a>
+                </li>
+                <li class="nav-menu selected">
+                    <a href="/pedidos"><i class="bi bi-basket2-fill"></i> PEDIDOS</a>
+                </li>
+                <li class="nav-menu">
+                    <a href="/clientes"><i class="bi bi-person-fill"></i> CLIENTES</a>
+                </li>
+            </ul>
+        </nav>
+
+        <div class="menu-opcoes">
+            <a href="/config" class="opcoes-btn"><i class="bi bi-gear-fill"></i></a>
+            <button class="opcoes-btn"><i class="bi bi-circle-half"></i></button>
+            <a href="{{ url_for('logout') }}" class="opcoes-btn red-opcoes-btn" onclick="return confirmarLogout()">
+                <i class="bi bi-door-open-fill"></i>
+            </a>
+        </div>
+    </aside>
+
+    <main id="config-conteudo">
+        <header class="config-texto">
+            <div class="config-info">
+                <h1><i class="bi bi-basket2-fill"></i> ABERTURA DE PEDIDO</h1>
+                <p>Selecione o galpão de origem, adicione os produtos desejados e defina as quantidades</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for categoria, mensagem in messages %}
+            <div class="alert alert-{{ 'danger' if categoria == 'erro' else 'success' }} mt-2">
+                {{ mensagem }}
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+
+            <button class="salvar-btn" form="form-pedido" type="submit">Fechar Pedido</button>
+        </header>
+
+        <form id="form-pedido" method="POST" action="/salvar_pedido">
+            
+            <section class="config-grid">
+                <div class="config-card">
+                    <h3><i class="bi bi-geo-alt-fill"></i> Origem e Destino</h3>
+                    
+                    <div class="input-resp">
+                        <label>Selecione o Galpão de Retirada</label>
+                        <select id="select-galpao" name="galpao_id" required onchange="atualizarProdutosDoGalpao()">
+                            <option value="">-- Escolha um Galpão --</option>
+                            {% for galpao in galpões %}
+                            <option value="{{ galpao.id }}">{{ galpao.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="input-resp">
+                        <label>Cliente</label>
+                        <select name="cliente_id" required>
+                            <option value="">-- Selecione o Cliente --</option>
+                            {% for cliente in clientes %}
+                            <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="config-card">
+                    <h3><i class="bi bi-plus-circle-fill"></i> Adicionar Produtos</h3>
+                    
+                    <div class="input-resp">
+                        <label>Produto (Disponíveis no Galpão)</label>
+                        <select id="select-produto" disabled onchange="verificarPrecoItem()">
+                            <option value="">-- Selecione primeiro o galpão --</option>
+                        </select>
+                    </div>
+
+                    <div class="inputs-empresa">
+                        <div class="input-resp">
+                            <label>Preço Unitário (R$)</label>
+                            <input type="number" id="produto-preco" readonly placeholder="0,00">
+                        </div>
+                        <div class="input-resp">
+                            <label>Quantidade</label>
+                            <input type="number" id="produto-qtd" min="1" value="1">
+                        </div>
+                    </div>
+
+                    <button type="button" class="add-sensor-btn w-100 mt-2" id="btn-add-produto" disabled onclick="adicionarItemNaTabela()">
+                        <i class="bi bi-plus-lg"></i> Adicionar ao Pedido
+                    </button>
+                </div>
+
+                <div class="config-card full-width mt-2">
+                    <h3><i class="bi bi-cart-check-fill"></i> Itens do Pedido</h3>
+                    
+                    <div class="sensor-lista-container">
+                        <table class="sensor-lista" id="tabela-itens">
+                            <thead>
+                                <tr>
+                                    <th>Código/SKU</th>
+                                    <th>Produto</th>
+                                    <th>Qtd. Solicitada</th>
+                                    <th>Preço Unitário</th>
+                                    <th>Subtotal</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="corpo-tabela-itens">
+                                <tr id="linha-vazia">
+                                    <td colspan="6" class="text-center text-muted py-4">Nenhum produto adicionado ao pedido ainda.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="row mt-4 align-items-center">
+                        <div class="col-md-6 text-muted">
+                            <small>* Mudar o galpão com itens na lista limpará a tabela atual para evitar conflito logístico.</small>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="total-pedido-box">
+                                Total do Pedido: R$ <span id="total-pedido-valor">0,00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </section>
+        </form>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmarLogout() {
+            return confirm("Deseja realmente sair?");
+        }
+    </script>
+</body>
+</html>

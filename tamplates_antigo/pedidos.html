@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block conteudo %}
+<h2>Pedidos de Movimentação</h2>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Produto</th>
+        <th>Tipo</th>
+        <th>Quantidade</th>
+        <th>Status</th>
+        <th>Observação</th>
+        <th>Data do pedido</th>
+        <th>Data do processamento</th>
+        <th>Ações</th>
+    </tr>
+
+    {% for pedido in pedidos %}
+    <tr>
+        <td>{{ pedido.id }}</td>
+        <td>{{ pedido.produto }}</td>
+        <td>{{ pedido.tipo }}</td>
+        <td>{{ pedido.quantidade }}</td>
+        <td>{{ pedido.status }}</td>
+        <td>{{ pedido.observacao or '-' }}</td>
+        <td>{{ pedido.data_pedido }}</td>
+        <td>{{ pedido.data_processamento or '-' }}</td>
+        <td>
+            {% if pedido.status == 'PENDENTE' %}
+                <a href="{{ url_for('processar_pedido', id=pedido.id) }}">Processar</a>
+                <a href="{{ url_for('cancelar_pedido', id=pedido.id) }}">Cancelar</a>
+            {% else %}
+                -
+            {% endif %}
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+
+{% endblock %}
