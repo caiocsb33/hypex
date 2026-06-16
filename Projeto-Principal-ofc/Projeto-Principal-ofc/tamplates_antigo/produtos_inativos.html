@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block conteudo %}
+<h2>Produtos Inativos</h2>
+
+<table>
+    <tr>
+        <th>ID</th>
+        <th>Nome</th>
+        <th>Ações</th>
+    </tr>
+
+    {% for produto in produtos %}
+    <tr>
+        <td>{{ produto.id }}</td>
+        <td>{{ produto.nome }}</td>
+        <td>
+            <a href="{{ url_for('reativar_produto', id=produto.id) }}">Reativar</a>
+            <a href="{{ url_for('excluir_produto', id=produto.id) }}">Excluir</a>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
