@@ -14,7 +14,6 @@ from models.funcionario import Funcionario
 from models.endereco import Endereco
 from models.empilhadeira import Empilhadeira
 
-
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
 
@@ -112,6 +111,12 @@ def login():
             conexao.close()
 
     return render_template("login.html")
+
+# ---------------- CONFIG ---------------- #
+
+@app.route('/config')
+def config():
+    return render_template("config.html")
 
 # ---------------- LOGOUT ---------------- #
 
