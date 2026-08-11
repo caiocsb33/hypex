@@ -9,39 +9,50 @@
 </head>
 
 <body>
-    <!--Navegação-->
+    <!-- Navegação -->
     <header>
+
         <div id="logo">
             <img src="static/imagem/logo.png" alt="logo">
         </div>
+
+        <button id="menu-toggle" type="button">☰</button>
         <nav class="menu">
             <ul>
                 <a href="#home">
                     <li>Home</li>
                 </a>
+
                 <a href="#Sobre">
                     <li>Sobre</li>
                 </a>
+
                 <a href="#Solucoes">
                     <li>Soluções</li>
                 </a>
+
                 <a href="#Funcionalidades">
                     <li>Funcionalidades</li>
                 </a>
+
                 <a href="#Segmentos">
                     <li>Segmentos</li>
                 </a>
+
                 <a href="#Planos">
                     <li>Planos</li>
                 </a>
+
                 <a href="#contato" id="botao-header">
                     <li>Contato</li>
                 </a>
+
                 <a href="{{ url_for('login') }}" id="login-header">
                     <li>Entrar</li>
                 </a>
             </ul>
         </nav>
+
     </header>
     <!-- Conteúdo principal -->
     <main class="main-principal">
@@ -301,7 +312,8 @@
                 </div>
 
                 <div class="checkbox-group">
-                    <p>Eu concordo em receber outras comunicações da Hype X.* <input type="checkbox" id="consentimento" name="consentimento" required></p>
+                    <p>Eu concordo em receber outras comunicações da Hype X.* <input type="checkbox" id="consentimento"
+                            name="consentimento" required></p>
                     <p class="consentimento-texto">As informações pessoais que você nos fornecer <a href="#">Política de
                             Privacidade</a></p>
                 </div>
@@ -310,9 +322,9 @@
                 </div>
             </form>
         </div>
-        </main>
     </section>
-    <!-- Footer onde esta nossas informações -->
+
+    <!-- Footer onde está nossas informações -->
     <footer id="rodape">
         <div class="footer-container">
 
@@ -368,6 +380,7 @@
             <p>&copy; 2025 Hype X. Todos os direitos reservados.</p>
         </div>
     </footer>
+    <script src="{{ url_for('static', filename='landing.js') }}"></script>
 </body>
 
 </html>
