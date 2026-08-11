@@ -13,7 +13,7 @@ from models.cliente import Cliente
 from models.funcionario import Funcionario
 from models.endereco import Endereco
 from models.empilhadeira import Empilhadeira
-#12
+
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
 
