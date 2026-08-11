@@ -89,9 +89,6 @@ def login():
         email = request.form.get("email")
         senha = request.form.get("senha")
 
-        print("EMAIL DIGITADO:", email)
-        print("SENHA DIGITADA:", senha)
-
         conexao = Database.connect()
         cursor = conexao.cursor(dictionary=True)
 
@@ -100,13 +97,7 @@ def login():
             cursor.execute(sql, (email,))
             usuario = cursor.fetchone()
 
-            print("USUARIO ENCONTRADO:", usuario)
-
-            if usuario:
-                print("SENHA DO BANCO:", usuario["senha"])
-                print("SENHA CONFERE:", usuario["senha"] == senha)
-
-            if usuario and usuario["senha"] == senha:
+            if usuario and check_password_hash(usuario["senha"], senha):
                 session["usuario_logado"] = usuario["email"]
                 session["empresa_id"] = usuario["empresa_id"]
 
