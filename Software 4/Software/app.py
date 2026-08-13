@@ -13,6 +13,7 @@ from models.cliente import Cliente
 from models.funcionario import Funcionario
 from models.endereco import Endereco
 from models.empilhadeira import Empilhadeira
+import re
 import secrets
 from datetime import datetime, timedelta
 
@@ -32,6 +33,37 @@ def to_float(value, default=0.0):
         return float(value)
     except:
         return default
+
+# ------------VALIDAÇÕES----------#
+
+def telefone_valido(telefone):
+    numeros = re.sub(r'\D', '', telefone)
+    return len(numeros) in (10, 11)
+
+def formatar_telefone(telefone):
+    numeros = re.sub(r'\D', '', telefone)
+
+    if len(numeros) == 11:
+        return f"({numeros[:2]}) {numeros[2:7]}-{numeros[7:]}"
+
+    if len(numeros) == 10:
+        return f"({numeros[:2]}) {numeros[2:6]}-{numeros[6:]}"
+
+    return telefone
+
+def area_valida(area):
+    try:
+        valor = float(area)
+        return valor > 0
+    except (ValueError, TypeError):
+        return False
+
+def nome_valido(nome):
+    return nome.replace(" ", "").isalpha()
+
+def email_valido(email):
+    padrao = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+    return re.match(padrao, email) is not None
 
 # ------------- LANDINGPAGE ------------- #
 
@@ -429,6 +461,10 @@ def info_galpao(galpao_id):
 @login_obrigatorio
 def atualizar_galpao(galpao_id):
     try:
+
+        telefone = request.form.get("telefone", "").strip()
+        telefone = formatar_telefone(telefone)
+
         caixas_por_nivel      = to_int(request.form.get("caixas_por_nivel"))
         niveis_por_prateleira = to_int(request.form.get("niveis_por_prateleira"))
         total_prateleiras     = to_int(request.form.get("total_prateleiras"))
@@ -454,6 +490,7 @@ def atualizar_galpao(galpao_id):
     except Exception as e:
         flash(f"Erro: {e}", "erro")
     return redirect(url_for("info_galpao", galpao_id=galpao_id))
+
 
 
 @app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
@@ -743,6 +780,39 @@ def novo_galpao():
 @login_obrigatorio
 def salvar_galpao():
     try:
+        email = request.form.get("email_resp", "").strip()
+
+        if not email_valido(email):
+            flash("Informe um e-mail válido.", "erro")
+            return redirect(url_for("galpao"))
+
+        nome_resp = request.form.get("nome_resp", "").strip()
+
+        if not nome_valido(nome_resp):
+            flash("O nome do responsável deve conter apenas letras.", "erro")
+            return redirect(url_for("galpao"))
+
+        area_total = request.form.get("area_total", "").strip()
+
+        if not area_valida(area_total):
+            flash("A área total deve ser um número maior que zero.", "erro")
+            return redirect(url_for("galpao"))
+
+
+        telefone = request.form.get("telefone", "").strip()
+
+        if not telefone_valido(telefone):
+            flash("Informe um telefone válido com 10 ou 11 números.", "erro")
+            return redirect(url_for("info_galpao", galpao_id=galpao_id))
+
+        telefone = formatar_telefone(telefone)
+
+        if not telefone_valido(telefone):
+            flash("Informe um telefone válido com 10 ou 11 números.", "erro")
+            return redirect(url_for("galpao"))
+
+        caixas_por_nivel = to_int(request.form.get("caixas_por_nivel"))
+
         caixas_por_nivel = to_int(request.form.get("caixas_por_nivel"))
         niveis_por_prateleira = to_int(request.form.get("niveis_por_prateleira"))
         total_prateleiras = to_int(request.form.get("total_prateleiras"))
@@ -752,14 +822,14 @@ def salvar_galpao():
             nome=request.form.get("nome"),
             stats=request.form.get("stats"),
             cep=request.form.get("cep"),
-            email_resp=request.form.get("email_resp"),
-            nome_resp=request.form.get("nome_resp"),
+            email_resp=email,
+            nome_resp=nome_resp,
             endereco=request.form.get("endereco"),
             referencia=request.form.get("referencia"),
             cidade=request.form.get("cidade"),
             estado=request.form.get("estado"),
-            area_total=to_float(request.form.get("area_total")),
-            telefone=request.form.get("telefone"),
+            area_total=float(area_total),
+            telefone=telefone,
             total_prateleiras=total_prateleiras,
             niveis_por_prateleira=niveis_por_prateleira,
             caixas_por_nivel=caixas_por_nivel,
