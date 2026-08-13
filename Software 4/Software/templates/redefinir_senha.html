@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -5,26 +6,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Esqueci minha senha</title>
+    <title>Redefinir senha</title>
 
-    <!-- CSS da página -->
     <link rel="stylesheet"
-          href="{{ url_for('static', filename='style_esquecisenha.css') }}">
+        href="{{ url_for('static', filename='style_redefinirsenha.css') }}">
 
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+        <link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+>
 
-    <!-- Fonte Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
-          rel="stylesheet">
 </head>
 
 <body>
-
-    <!-- =========================
-         ALERTAS
-    ========================== -->
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -45,20 +39,12 @@
     {% endwith %}
 
 
-    <!-- =========================
-         CONTAINER PRINCIPAL
-    ========================== -->
+    <div class="container d-flex align-items-center justify-content-center login-container">
 
-    <div class="login-container">
+        <div class="login-card text-start">
 
-        <div class="login-card">
-
-
-            <!-- =========================
-                 PAINEL AZUL
-            ========================== -->
-
-            <div class="card-cad">
+            <!-- PAINEL AZUL -->
+            <div class="card-cad text-start mb-4">
 
                 <img
                     src="{{ url_for('static', filename='imagem/logo.png') }}"
@@ -66,66 +52,78 @@
                     class="logo"
                 >
 
-                <h4>
-                    Recuperar senha
+                <h4 class="mb-3 text-white">
+                    Redefina sua senha!
                 </h4>
 
-                <p>
-                    Informe seu e-mail para receber as instruções.
+                <p class="mb-4 text-white">
+                    Crie uma nova senha para acessar sua conta.
                 </p>
 
-                <div class="copyright">
+                <div class="mt-4 text-white copyright">
                     © 2025 HYPE X - Sistema de Estoque.
                 </div>
 
             </div>
 
 
-            <!-- =========================
-                 FORMULÁRIO
-            ========================== -->
+            <!-- FORMULÁRIO -->
+            <form method="POST">
 
-            <form
-                method="POST"
-                action="{{ url_for('esqueci_senha') }}"
-            >
+                <div class="forms mb-3 text-start">
 
-                <div class="forms">
-
-                    <h2>
-                        ESQUECI MINHA SENHA
-                    </h2>
+                    <h2>REDEFINIR SENHA</h2>
 
                     <p class="descricao">
-                        Digite seu e-mail abaixo para recuperar sua senha.
+                        Digite sua nova senha abaixo.
                     </p>
 
 
-                    <!-- E-MAIL -->
+                    <!-- NOVA SENHA -->
+                    <div class="campo-senha">
 
-                    <div class="campo-email">
-
-                        <label
-                            for="email"
-                            class="form-label"
-                        >
-                            Email
+                        <label class="form-label">
+                            Nova senha
                         </label>
 
                         <div class="input-group">
 
                             <span class="input-group-text">
-                                <i class="bi bi-envelope"></i>
+                                <i class="bi bi-lock-fill"></i>
                             </span>
 
                             <input
-                                type="email"
-                                id="email"
-                                name="email"
+                                type="password"
+                                name="senha"
                                 class="form-control"
-                                placeholder="Digite seu email"
+                                placeholder="Digite sua nova senha"
                                 required
-                                autocomplete="email"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- CONFIRMAR SENHA -->
+                    <div class="campo-senha confirmar">
+
+                        <label class="form-label">
+                            Confirmar nova senha
+                        </label>
+
+                        <div class="input-group">
+
+                            <span class="input-group-text">
+                                <i class="bi bi-lock-fill"></i>
+                            </span>
+
+                            <input
+                                type="password"
+                                name="confirmar_senha"
+                                class="form-control"
+                                placeholder="Digite novamente sua senha"
+                                required
                             >
 
                         </div>
@@ -134,17 +132,15 @@
 
 
                     <!-- BOTÃO -->
-
                     <button
-                        type="submit"
                         class="btn-login"
+                        type="submit"
                     >
-                        Enviar link
+                        Redefinir senha
                     </button>
 
 
                     <!-- VOLTAR PARA LOGIN -->
-
                     <div class="login-links">
 
                         <div class="link-senha">
@@ -170,12 +166,7 @@
     </div>
 
 
-    <!-- =========================
-         SCRIPT DOS ALERTAS
-    ========================== -->
-
     <script>
-
         setTimeout(() => {
 
             const alerts = document.querySelectorAll('.alert');
@@ -184,16 +175,14 @@
 
                 alert.style.opacity = '0';
 
-                setTimeout(() => {
-                    alert.remove();
-                }, 500);
+                setTimeout(() => alert.remove(), 500);
 
             });
 
         }, 3000);
-
     </script>
 
 </body>
 
 </html>
+

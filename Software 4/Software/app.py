@@ -15,6 +15,7 @@ from models.endereco import Endereco
 from models.empilhadeira import Empilhadeira
 import secrets
 from datetime import datetime, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
@@ -119,6 +120,11 @@ def login():
 @app.route("/redefinir-senha/<token>", methods=["GET", "POST"])
 def redefinir_senha(token):
 
+    print("======================================")
+    print("ACESSOU REDEFINIR SENHA")
+    print("TOKEN:", token)
+    print("======================================")
+
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
@@ -132,83 +138,109 @@ def redefinir_senha(token):
 
         recuperacao = cursor.fetchone()
 
+        print("RECUPERACAO ENCONTRADA:", recuperacao)
+
         if not recuperacao:
-            flash("Token inválido.", "erro")
-            return redirect(url_for("login"))
+            flash("Token de recuperação inválido.", "erro")
+            return redirect(url_for("esqueci_senha"))
 
-        if recuperacao["usado"]:
+        if recuperacao["usado"] == 1:
             flash("Este link de recuperação já foi utilizado.", "erro")
-            return redirect(url_for("login"))
+            return redirect(url_for("esqueci_senha"))
 
-        if datetime.now() > recuperacao["expira_em"]:
+        if recuperacao["expira_em"] < datetime.now():
             flash("Este link de recuperação expirou.", "erro")
-            return redirect(url_for("login"))
+            return redirect(url_for("esqueci_senha"))
 
-        if request.method == "POST":
+        # ------------------------------------------------
+        # GET
+        # ------------------------------------------------
 
-            nova_senha = request.form.get("senha")
-            confirmar_senha = request.form.get("confirmar_senha")
+        if request.method == "GET":
 
-            if not nova_senha or not confirmar_senha:
-                flash("Preencha os dois campos.", "erro")
-                return redirect(
-                    url_for("redefinir_senha", token=token)
-                )
-
-            if nova_senha != confirmar_senha:
-                flash("As senhas não coincidem.", "erro")
-                return redirect(
-                    url_for("redefinir_senha", token=token)
-                )
-
-            # IMPORTANTE:
-            # Se seu login usa senha criptografada com generate_password_hash,
-            # mantenha esta linha.
-            from werkzeug.security import generate_password_hash
-
-            senha_hash = generate_password_hash(nova_senha)
-
-            cursor.execute("""
-                UPDATE usuario
-                SET senha = %s
-                WHERE id = %s
-            """, (
-                senha_hash,
-                recuperacao["usuario_id"]
-            ))
-
-            cursor.execute("""
-                UPDATE recuperacao_senha
-                SET usado = 1
-                WHERE id = %s
-            """, (recuperacao["id"],))
-
-            conexao.commit()
-
-            flash(
-                "Senha alterada com sucesso! Faça login com sua nova senha.",
-                "sucesso"
+            return render_template(
+                "redefinir_senha.html",
+                token=token
             )
 
-            return redirect(url_for("login"))
+        # ------------------------------------------------
+        # POST
+        # ------------------------------------------------
 
-        return render_template(
-            "redefinir_senha.html",
-            token=token
+        senha = request.form.get("senha", "").strip()
+        confirmar_senha = request.form.get("confirmar_senha", "").strip()
+
+        if not senha:
+            flash("Digite uma nova senha.", "erro")
+
+            return render_template(
+                "redefinir_senha.html",
+                token=token
+            )
+
+        if not confirmar_senha:
+            flash("Confirme sua nova senha.", "erro")
+
+            return render_template(
+                "redefinir_senha.html",
+                token=token
+            )
+
+        if senha != confirmar_senha:
+            flash("As senhas não são iguais.", "erro")
+
+            return render_template(
+                "redefinir_senha.html",
+                token=token
+            )
+
+        # Criptografa a nova senha
+        senha_hash = generate_password_hash(senha)
+
+        # Atualiza a senha
+        cursor.execute("""
+            UPDATE usuario
+            SET senha = %s
+            WHERE id = %s
+        """, (
+            senha_hash,
+            recuperacao["usuario_id"]
+        ))
+
+        # Marca o token como utilizado
+        cursor.execute("""
+            UPDATE recuperacao_senha
+            SET usado = 1
+            WHERE id = %s
+        """, (
+            recuperacao["id"],
+        ))
+
+        conexao.commit()
+
+        flash(
+            "Senha redefinida com sucesso! Faça login com sua nova senha.",
+            "sucesso"
         )
+
+        return redirect(url_for("login"))
 
     except Exception as e:
 
         conexao.rollback()
 
-        print("ERRO AO REDEFINIR SENHA:", e)
+        print("======================================")
+        print("ERRO AO REDEFINIR SENHA")
+        print(type(e).__name__)
+        print(e)
+        print("======================================")
 
         flash(
-            "Ocorreu um erro ao redefinir a senha.",
+            f"Erro ao redefinir senha: {e}",
             "erro"
         )
 
-        return redirect(url_for("login"))
+        return redirect(url_for("esqueci_senha"))
 
     finally:
 
