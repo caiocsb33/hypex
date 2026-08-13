@@ -1,184 +1,7 @@
-body {
-    background-color: #f1f1f1;
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-}
-
-/* Container principal do menu */
-#menu {
-    width: 250px;
-    background-color: #15477F;
-    color: white;
-    height: 100vh;
-    position: fixed;
-    top: 0;
-    left: 0;
-    padding: 20px 0;
-    display: flex;
-    flex-direction: column;
-    box-sizing: border-box;
-}
-
-.status-dots {
-    display: flex;
-    gap: 8px;
-    padding: 0 20px 25px 20px;
-}
-
-.status-dots span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-
-    background-color: white;
-    border: 1px solid white;
-}
-
-.status-dots .dot-red {
-    background-color: white;
-}
-
-.status-dots .dot-yellow {
-    opacity: 0.6;
-}
-
-.status-dots .dot-green {
-    background-color: #2B6BB9;
-    border-color: #2B6BB9;
-}
-
-
-.perfil img {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
-    margin-right: 10px;
-}
-
-.perfil {
-    display: flex;
-    align-items: center;
-    color: #EAEFF6;
-    padding: 0 20px 20px 20px;
-    margin-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.perfil i {
-    font-size: 28px;
-    margin-right: 10px;
-}
-
-.perfil h3 {
-    font-size: 18px;
-    margin: 0;
-    font-weight: 500;
-}
-
-nav {
-    flex-grow: 1;
-}
-
-nav ul {
-    list-style-type: none;
-    padding: 0;
-    margin: 0;
-}
-
-.nav-menu {
-    margin: 0;
-}
-
-.nav-menu a {
-    display: flex;
-    align-items: center;
-    color: #EAE4D7;
-    text-decoration: none;
-    font-size: 15px;
-    padding: 12px 20px;
-    transition: background-color 0.2s;
-    text-transform: uppercase;
-    font-weight: 600;
-}
-
-.nav-menu a i {
-    margin-right: 10px;
-    font-size: 18px;
-    color: #98B4CA;
-}
-
-
-.nav-menu.selected {
-    background-color: #2B6BB9;
-    border-left: 5px solid white;
-}
-
-.nav-menu.selected a {
-    color: white;
-    padding-left: 15px;
-}
-
-.nav-menu.selected a i {
-    color: white;
-}
-
-.nav-menu:not(.selected):hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.nav-menu:not(.selected):hover a {
-    color: white;
-}
-
-.nav-menu:not(.selected):hover a i {
-    color: white;
-}
-
-.menu-opcoes {
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.opcoes-btn {
-    flex: 1;
-    height: 40px;
-    background-color: #7E9EC4;
-    border: none;
-    border-radius: 8px;
-    color: #15477F;
-    font-size: 18px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-decoration: none;
-    box-sizing: border-box;
-}
-
-.opcoes-btn:hover {
-    opacity: 0.8;
-}
-
-.selected-opcoes-btn {
-    background-color: #2B6BB9;
-    color: white;
-}
-
-.red-opcoes-btn {
-    background-color: #d63031;
-    color: white;
-}
-
-/*=======clientes.css=======*/
+/* ===== CLIENTES ===== */
 
 #cliente-conteudo {
-    margin-left: 250px;
-    padding: 30px;
-    flex-grow: 1;
+    width: 100%;
 }
 
 .clientes {
@@ -454,3 +277,152 @@ nav ul {
     transform: translateY(-5px);
 }
 
+/* =========================================
+   MODO ESCURO - CLIENTES
+========================================= */
+
+body.modo-escuro #cliente-conteudo {
+    background-color: #121212;
+}
+
+
+/* Título */
+
+body.modo-escuro .clientes h1 {
+    color: white;
+}
+
+body.modo-escuro .clientes p {
+    color: #aaaaaa;
+}
+
+
+/* Cards */
+
+body.modo-escuro .clientes-card {
+    background-color: #1e1e1e;
+    border-color: #333333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+
+/* Nome do cliente */
+
+body.modo-escuro .cliente-nome {
+    color: white;
+}
+
+
+/* Nome do contato */
+
+body.modo-escuro .contato-pessoa {
+    color: #999999;
+}
+
+
+/* Informações */
+
+body.modo-escuro .contact-detail {
+    color: #bbbbbb;
+}
+
+
+/* Ícones das informações */
+
+body.modo-escuro .contact-detail i {
+    color: #888888;
+}
+
+
+/* Divisão dos cards */
+
+body.modo-escuro .clientes-card .card-detalhes-clientes {
+    border-top-color: #333333;
+}
+
+
+/* Valores */
+
+body.modo-escuro .stat-value {
+    color: white;
+}
+
+
+/* Labels */
+
+body.modo-escuro .stat-label {
+    color: #999999;
+}
+
+
+/* Barra de pesquisa */
+
+body.modo-escuro .barra-pesquisa {
+    background-color: #1e1e1e;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+
+/* Caixa de pesquisa */
+
+body.modo-escuro .caixa-pesquisa {
+    border-color: #444444;
+    background-color: #1e1e1e;
+}
+
+
+/* Input */
+
+body.modo-escuro .caixa-pesquisa input {
+    background-color: transparent;
+    color: white;
+}
+
+
+/* Placeholder */
+
+body.modo-escuro .caixa-pesquisa input::placeholder {
+    color: #888888;
+}
+
+
+/* Ícone da pesquisa */
+
+body.modo-escuro .caixa-pesquisa i {
+    color: #888888;
+}
+
+
+/* Botões Filtros / Exportar */
+
+body.modo-escuro .action-btn {
+    color: #dddddd;
+    border-color: #444444;
+}
+
+
+body.modo-escuro .action-btn:hover {
+    background-color: #2a2a2a;
+}
+
+
+/* Card de cliente inativo */
+
+body.modo-escuro .clientes-card.inactive {
+    background-color: #191919;
+}
+
+
+/* Ícone cinza */
+
+body.modo-escuro .gray-bg-icon {
+    background-color: #2a2a2a;
+    color: #888888;
+}
+
+
+/* Área sem clientes */
+
+body.modo-escuro .text-muted {
+    color: #999999 !important;
+}
