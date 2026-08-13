@@ -1,0 +1,437 @@
+.inventario-texto {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+.inventario-texto h1 {
+    font-size: 24px;
+    color: #333;
+    font-weight: bold;
+    margin: 0 0 5px 0;
+}
+
+.inventario-texto h1 i {
+    margin-right: 10px;
+}
+
+.inventario-texto p {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+}
+
+.add-produto-btn {
+    background-color: #4A90E2;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-produto-btn:hover {
+    background-color: #387bd8;
+}
+
+.add-produto-btn i {
+    margin-right: 5px;
+}
+
+
+.barra-pesquisa {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.caixa-pesquisa {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 8px 15px;
+    width: 40%;
+}
+
+.caixa-pesquisa i {
+    color: #999;
+    margin-right: 10px;
+}
+
+.caixa-pesquisa input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+}
+
+.pesquias-botao {
+    display: flex;
+    gap: 10px;
+}
+
+.filtro-btn {
+    background-color: transparent;
+    border: 1px solid #ccc;
+    color: #333;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.filtro-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.filtro-btn i {
+    margin-right: 5px;
+}
+
+
+.inventario-lista {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+thead th {
+    text-align: left;
+    padding: 15px 20px;
+    color: #666;
+    font-weight: 600;
+    border-bottom: 1px solid #eee;
+}
+
+tbody td {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f9f9f9;
+    color: #333;
+    vertical-align: top;
+}
+
+tbody tr:hover {
+    background-color: #f0f0f0;
+}
+
+.produto-info {
+    font-weight: bold;
+    color: #333;
+    min-width: 250px;
+}
+
+.fornecedor-nome {
+    display: block;
+    font-weight: normal;
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+}
+
+td:nth-child(4) {
+    font-weight: bold;
+}
+
+.min-estoque {
+    display: block;
+    font-weight: normal;
+    font-size: 10px;
+    color: #999;
+}
+
+.status-estoque {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.status-disponivel {
+    background-color: #E6F7E9;
+    color: #38C172;
+}
+
+.status-low {
+    background-color: #FFFBEA;
+    color: #FFC90E;
+}
+
+.status-zero {
+    background-color: #FEEEEE;
+    color: #E3342F;
+}
+
+.acao-estoque i {
+    color: #999;
+    margin-right: 10px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.acao-estoque i:hover {
+    color: #333;
+}
+
+.acao-btn {
+    border: none;
+    width: 30px !important;
+    height: 38px !important;
+    
+    /* Força o container a centralizar o que estiver dentro */
+    display: inline-flex !important;
+    align-items: center !important;       /* Centro vertical */
+    justify-content: center !important;   /* Centro horizontal */
+    vertical-align: middle;
+    
+    text-decoration: none;
+    margin-left: 5px;
+    border-radius: 6px; 
+    background: #f1f1f1;
+    cursor: pointer;
+    transition: all 0.2s ease; 
+}
+
+.acao-btn i {
+    font-size: 1.1rem;
+    line-height: 1 !important;
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    width: auto !important;
+}
+
+.acao-btn:hover {
+    background: #15477F;
+    color: white;
+}
+
+.acao-btn.desativar:hover {
+    background: #dd9104;
+    color: white;
+}
+
+.acao-btn.delete:hover {
+    background: #d63031;
+    color: white;
+}
+
+/* =========================================
+   ESTOQUE DO GALPÃO - MODO ESCURO
+========================================= */
+
+/* Título e descrição */
+
+body.modo-escuro .inventario-texto h1 {
+    color: #ffffff;
+}
+
+body.modo-escuro .inventario-texto p {
+    color: #aaaaaa;
+}
+
+
+/* =========================================
+   BARRA DE PESQUISA
+========================================= */
+
+body.modo-escuro .barra-pesquisa {
+    background-color: #1e1e1e;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+body.modo-escuro .caixa-pesquisa {
+    border-color: #444444;
+    background-color: #1e1e1e;
+}
+
+body.modo-escuro .caixa-pesquisa i {
+    color: #888888;
+}
+
+body.modo-escuro .caixa-pesquisa input {
+    background-color: transparent;
+    color: #ffffff;
+}
+
+body.modo-escuro .caixa-pesquisa input::placeholder {
+    color: #888888;
+}
+
+
+/* =========================================
+   BOTÃO DE FILTRO
+========================================= */
+
+body.modo-escuro .filtro-btn {
+    background-color: transparent;
+    border-color: #444444;
+    color: #dddddd;
+}
+
+body.modo-escuro .filtro-btn:hover {
+    background-color: #2a2a2a;
+}
+
+
+/* =========================================
+   BOTÃO NOVO PRODUTO
+========================================= */
+
+body.modo-escuro .add-produto-btn {
+    background-color: #2B6BB9;
+    color: #ffffff;
+}
+
+body.modo-escuro .add-produto-btn:hover {
+    background-color: #387bd8;
+}
+
+
+/* =========================================
+   LISTA / TABELA
+========================================= */
+
+body.modo-escuro .inventario-lista {
+    background-color: #1e1e1e;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+
+/* Cabeçalho */
+
+body.modo-escuro thead th {
+    color: #aaaaaa;
+    border-bottom-color: #333333;
+}
+
+
+/* Células */
+
+body.modo-escuro tbody td {
+    color: #dddddd;
+    border-bottom-color: #333333;
+}
+
+
+/* Hover da linha */
+
+body.modo-escuro tbody tr:hover {
+    background-color: #2a2a2a;
+}
+
+
+/* =========================================
+   INFORMAÇÕES DOS PRODUTOS
+========================================= */
+
+body.modo-escuro .produto-info {
+    color: #ffffff;
+}
+
+body.modo-escuro .fornecedor-nome {
+    color: #999999;
+}
+
+body.modo-escuro .min-estoque {
+    color: #999999;
+}
+
+
+/* =========================================
+   STATUS DO ESTOQUE
+========================================= */
+
+/* Disponível */
+
+body.modo-escuro .status-disponivel {
+    background-color: #173d25;
+    color: #5bd98a;
+}
+
+
+/* Estoque baixo */
+
+body.modo-escuro .status-low {
+    background-color: #443a16;
+    color: #ffd54a;
+}
+
+
+/* Estoque zerado */
+
+body.modo-escuro .status-zero {
+    background-color: #431d1d;
+    color: #ff6b6b;
+}
+
+
+/* =========================================
+   ÍCONES DE AÇÃO
+========================================= */
+
+body.modo-escuro .acao-estoque i {
+    color: #999999;
+}
+
+body.modo-escuro .acao-estoque i:hover {
+    color: #ffffff;
+}
+
+
+/* =========================================
+   BOTÕES DE AÇÃO
+========================================= */
+
+body.modo-escuro .acao-btn {
+    background-color: #2a2a2a;
+    color: #dddddd;
+}
+
+body.modo-escuro .acao-btn:hover {
+    background-color: #15477F;
+    color: #ffffff;
+}
+
+body.modo-escuro .acao-btn.desativar:hover {
+    background-color: #dd9104;
+    color: #ffffff;
+}
+
+body.modo-escuro .acao-btn.delete:hover {
+    background-color: #d63031;
+    color: #ffffff;
+}
+
+
+/* =========================================
+   LINKS / TEXTOS DA TABELA
+========================================= */
+
+body.modo-escuro .inventario-lista a {
+    color: inherit;
+}
+
+body.modo-escuro .inventario-lista a:hover {
+    color: #5fa8ff;
+}
