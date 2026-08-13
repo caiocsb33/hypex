@@ -135,6 +135,11 @@ nav ul {
     color: white;
 }
 
+.nav-menu.selected {
+    background-color: #2B6BB9;
+    border-left: 5px solid white;
+}
+
 /* 4. Rodapé do Menu Lateral */
 .menu-opcoes {
     padding: 20px;
