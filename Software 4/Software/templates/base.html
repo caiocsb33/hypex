@@ -9,15 +9,12 @@
 
     <title>{% block title %}Software HYPEX{% endblock %}</title>
 
-    <link rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-        rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
 
     <!-- CSS global -->
-    <link rel="stylesheet"
-        href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
     <!-- CSS específico de cada página -->
     {% block css %}
@@ -30,6 +27,11 @@
     <!-- ========================= -->
     <!-- SIDEBAR -->
     <!-- ========================= -->
+
+    <!-- BOTÃO DO MENU MOBILE -->
+    <button id="btnMenuMobile" class="btn-menu-mobile" type="button">
+        <i class="bi bi-list"></i>
+    </button>
 
     <aside id="menu">
 
@@ -144,9 +146,7 @@
             </button>
 
 
-            <a href="{{ url_for('logout') }}"
-                class="opcoes-btn red-opcoes-btn"
-                onclick="return confirmarLogout()">
+            <a href="{{ url_for('logout') }}" class="opcoes-btn red-opcoes-btn" onclick="return confirmarLogout()">
 
                 <i class="bi bi-door-open-fill"></i>
 
@@ -176,7 +176,7 @@
     <!-- JavaScript do tema -->
 
     <script src="{{ url_for('static', filename='js/tema.js') }}"></script>
-
+    <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
 
     {% block javascript %}
     {% endblock %}
