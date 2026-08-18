@@ -2007,6 +2007,12 @@ def cancelar_pedido(id):
         flash(f"Erro ao cancelar pedido: {e}", "erro")
     return redirect(url_for("pedidos"))
 
+# ---------------- ERRO 404 ---------------- #
+
+@app.errorhandler(404)
+def pagina_nao_encontrada(error):
+    return render_template("404.html"), 404
+
 # ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
