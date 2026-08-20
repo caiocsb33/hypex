@@ -52,10 +52,8 @@
 
 .clientes-cards {
     display: grid;
-    /* Isso força 3 colunas em telas grandes e diminui conforme o espaço acaba */
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
-    gap: 20px;
-    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
 }
 
 /* Ajuste para garantir que o card interno não quebre o layout */
