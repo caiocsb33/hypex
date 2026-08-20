@@ -5,6 +5,8 @@
     margin-bottom: 30px;
 }
 
+
+
 .fornecedor-texto h1 {
     font-size: 24px;
     color: #333;
@@ -293,3 +295,8 @@ body.modo-escuro .card-produtos {
 body.modo-escuro .produtos-fornecedor {
     color: #5aa7ff;
 }
+
+body.modo-escuro .text-muted {
+    color: #999999 !important;
+}
+

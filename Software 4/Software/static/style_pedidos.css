@@ -423,6 +423,10 @@ body.modo-escuro .btn-close {
     filter: invert(1);
 }
 
+body.modo-escuro .btn-voltar {
+    color: #AAAAAA;
+}
+
 
 /* =========================================
    NENHUM PEDIDO

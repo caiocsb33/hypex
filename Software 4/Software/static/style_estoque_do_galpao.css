@@ -423,6 +423,9 @@ body.modo-escuro .acao-btn.delete:hover {
     color: #ffffff;
 }
 
+body.modo-escuro .btn-voltar {
+    color: #AAAAAA;
+}
 
 /* =========================================
    LINKS / TEXTOS DA TABELA
