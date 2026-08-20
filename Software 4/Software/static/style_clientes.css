@@ -175,10 +175,10 @@ nav ul {
 
 /*=======clientes.css=======*/
 
+/* ===== CLIENTES ===== */
+
 #cliente-conteudo {
-    margin-left: 250px;
-    padding: 30px;
-    flex-grow: 1;
+    width: 100%;
 }
 
 .clientes {
@@ -229,10 +229,8 @@ nav ul {
 
 .clientes-cards {
     display: grid;
-    /* Isso força 3 colunas em telas grandes e diminui conforme o espaço acaba */
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); 
-    gap: 20px;
-    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 30px;
 }
 
 /* Ajuste para garantir que o card interno não quebre o layout */
@@ -454,3 +452,152 @@ nav ul {
     transform: translateY(-5px);
 }
 
+/* =========================================
+   MODO ESCURO - CLIENTES
+========================================= */
+
+body.modo-escuro #cliente-conteudo {
+    background-color: #121212;
+}
+
+
+/* Título */
+
+body.modo-escuro .clientes h1 {
+    color: white;
+}
+
+body.modo-escuro .clientes p {
+    color: #aaaaaa;
+}
+
+
+/* Cards */
+
+body.modo-escuro .clientes-card {
+    background-color: #1e1e1e;
+    border-color: #333333;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+
+/* Nome do cliente */
+
+body.modo-escuro .cliente-nome {
+    color: white;
+}
+
+
+/* Nome do contato */
+
+body.modo-escuro .contato-pessoa {
+    color: #999999;
+}
+
+
+/* Informações */
+
+body.modo-escuro .contact-detail {
+    color: #bbbbbb;
+}
+
+
+/* Ícones das informações */
+
+body.modo-escuro .contact-detail i {
+    color: #888888;
+}
+
+
+/* Divisão dos cards */
+
+body.modo-escuro .clientes-card .card-detalhes-clientes {
+    border-top-color: #333333;
+}
+
+
+/* Valores */
+
+body.modo-escuro .stat-value {
+    color: white;
+}
+
+
+/* Labels */
+
+body.modo-escuro .stat-label {
+    color: #999999;
+}
+
+
+/* Barra de pesquisa */
+
+body.modo-escuro .barra-pesquisa {
+    background-color: #1e1e1e;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+
+/* Caixa de pesquisa */
+
+body.modo-escuro .caixa-pesquisa {
+    border-color: #444444;
+    background-color: #1e1e1e;
+}
+
+
+/* Input */
+
+body.modo-escuro .caixa-pesquisa input {
+    background-color: transparent;
+    color: white;
+}
+
+
+/* Placeholder */
+
+body.modo-escuro .caixa-pesquisa input::placeholder {
+    color: #888888;
+}
+
+
+/* Ícone da pesquisa */
+
+body.modo-escuro .caixa-pesquisa i {
+    color: #888888;
+}
+
+
+/* Botões Filtros / Exportar */
+
+body.modo-escuro .action-btn {
+    color: #dddddd;
+    border-color: #444444;
+}
+
+
+body.modo-escuro .action-btn:hover {
+    background-color: #2a2a2a;
+}
+
+
+/* Card de cliente inativo */
+
+body.modo-escuro .clientes-card.inactive {
+    background-color: #191919;
+}
+
+
+/* Ícone cinza */
+
+body.modo-escuro .gray-bg-icon {
+    background-color: #2a2a2a;
+    color: #888888;
+}
+
+
+/* Área sem clientes */
+
+body.modo-escuro .text-muted {
+    color: #999999 !important;
+}

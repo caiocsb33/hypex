@@ -6,11 +6,11 @@ body {
     height: 100vh;
     font-family: 'Inter', sans-serif;
 }
- 
+
 .login-container {
     height: 100vh;
 }
- 
+
 .login-card {
     background: rgba(255, 255, 255);
     backdrop-filter: blur(12px);
@@ -23,7 +23,7 @@ body {
     max-width: 800px;
     border: 1px solid #ffffff1a;
 }
- 
+
 .card-cad {
     background: #15477F;
     margin-left: 56%;
@@ -34,11 +34,11 @@ body {
     width: 50%;
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
- 
+
 .forms {
     margin-top: -470px;
 }
- 
+
 .forms h2 {
     color: #333;
     font-weight: bold;
@@ -46,43 +46,43 @@ body {
     font-size: 35px;
     margin-bottom: 20px;
 }
- 
+
 .card-cad h4 {
     font-weight: bold;
     font-size: 34px;
     margin-top: -60px;
 }
- 
+
 .card-cad p {
     font-size: 17px;
     font-weight: bold;
     margin-bottom: 30px;
 }
- 
+
 .form-label {
     font-weight: bold;
 }
- 
+
 .logo {
     width: 300px;
     margin-top: -20px;
     margin-left: -15px;
     margin-bottom: 20px;
 }
- 
+
 .form-control {
     background: #0f172a;
     border: 1px solid #334155;
     color: #fff;
 }
- 
+
 .form-control:focus {
     background: #0f172a;
     border-color: #15477F;
     box-shadow: none;
     color: #fff;
 }
- 
+
 .btn-login {
     height: 48px;
     background: #15477F;
@@ -93,26 +93,27 @@ body {
     font-size: 16px;
     color: #fff;
 }
- 
+
 .btn-login:hover {
     background-color: #1e4470;
     transform: translateY(-2px);
 }
- 
+
 .esqueci-senha:hover {
     color: #15477F;
     text-decoration: none;
 }
+
 .esqueci-senha {
     margin-top: 20px;
 }
- 
+
 .grid-login {
     display: flex;
     justify-content: start;
     margin-left: 55px;
 }
- 
+
 .grid-login a {
     padding: 10px;
     margin: 0 8px;
@@ -121,13 +122,13 @@ body {
     font-size: 24px;
     color: #333;
 }
- 
+
 .grid-login a:hover {
     background-color: #15477F;
     border-color: #15477F;
     color: #fff;
 }
- 
+
 .alert-container {
     position: fixed;
     top: 20px;
@@ -138,7 +139,7 @@ body {
     display: flex;
     justify-content: center;
 }
- 
+
 .alert {
     min-width: 300px;
     max-width: 500px;
@@ -147,22 +148,24 @@ body {
     border-radius: 8px;
     animation: fadeSlide 0.4s ease;
 }
- 
+
 @keyframes fadeSlide {
     from {
         opacity: 0;
         transform: translateY(-20px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
     }
 }
+
 .login-options {
     margin-top: -25px;
     margin-left: 10px;
 }
- 
+
 .manter-logado {
     display: flex;
     align-items: center;
@@ -171,19 +174,20 @@ body {
     font-size: 15px;
     color: #333;
     margin-top: 10px;
- 
 }
- 
+
 .grid-login {
     display: flex;
     justify-content: start;
     margin-left: 55px;
     margin-top: -5px;
 }
+
 .grid-login {
     margin-left: 60px;
     margin-top: 10px;
 }
+
 /* =========================================
    CHECKBOX - MANTER LOGADO
 ========================================= */
@@ -264,7 +268,7 @@ body {
 .manter-logado input[type="checkbox"]:focus-visible {
     outline: 3px solid rgba(21, 71, 127, 0.2);
     outline-offset: 2px;
-}   
+}
 
 /* =========================================
    RESPONSIVIDADE DO LOGIN
@@ -344,102 +348,212 @@ body {
     .input-group.w-50,
     .btn-login.w-50 {
         width: 55% !important;
-    }
+        =======
+        /* =========================================================
+   RESPONSIVIDADE
+   A partir daqui as alterações só acontecem em telas menores
+========================================================= */
 
-    .grid-login {
-        margin-left: 35px;
-    }
-}
+
+        /* =========================================================
+   NOTEBOOK / TELAS MENORES
+========================================================= */
+
+        @media (max-width: 900px) {
+
+            .login-card {
+                max-width: 700px;
+                padding: 30px;
+            }
+
+            .card-cad {
+                padding: 30px;
+            }
+
+            .logo {
+                width: 230px;
+            }
+
+            .forms h2 {
+                margin-left: 80px;
+                font-size: 30px;
+            }
+
+            .grid-login {
+                margin-left: 35px;
+            }
+        }
 
 
-/* =========================================
+        /* =========================================
    CELULAR / MOBILE
 ========================================= */
+        /* =========================================================
+   TABLET
+========================================================= */
 
-@media (max-width: 768px) {
+        @media (max-width: 768px) {
 
-    body {
-        min-height: 100vh;
-        height: auto;
-        padding: 20px;
-        box-sizing: border-box;
+            body {
+                min-height: 100vh;
+                height: auto;
+                padding: 20px;
+                box-sizing: border-box;
 
-        background-position: center;
-        background-size: cover;
-    }
+                background-position: center;
+                background-size: cover;
+            }
 
-    .login-container {
-        width: 100%;
-        height: auto;
-        min-height: 100vh;
+            .login-container {
+                width: 100%;
+                height: auto;
+                min-height: 100vh;
 
-        padding: 20px 0;
-    }
+                padding: 20px 0;
 
-    .login-card {
-        width: 100%;
-        max-width: 500px;
+                padding: 20px 0;
+            }
 
-        height: auto;
-        min-height: auto;
+            .login-container {
+                height: auto;
+                min-height: 100vh;
+                padding: 20px;
+            }
 
-        padding: 25px;
+            .login-card {
+                width: 100%;
+                max-width: 500px;
 
-        margin-top: 0;
+                height: auto;
+                min-height: auto;
 
-        border-radius: 28px;
-    }
+                padding: 25px;
 
-    /* Card azul */
-    .card-cad {
-        position: relative;
+                margin-top: 0;
 
-        width: 100%;
-        height: auto;
+                border-radius: 28px;
+            }
 
-        margin: 0 0 30px 0;
+            /* Card azul */
+            max-width: 600px;
+            height: auto;
+            min-height: 500px;
+            padding: 30px;
+            margin-top: 0;
+        }
 
-        padding: 30px;
 
-        border-radius: 28px;
+        /* =========================================
+       QUADRADO AZUL
+    ========================================= */
 
-        box-sizing: border-box;
-    }
+        .card-cad {
+            position: relative;
 
-    /* Logo */
-    .logo {
-        width: 220px;
-        max-width: 80%;
+            width: 100%;
+            height: auto;
 
-        display: block;
+            margin: 0 0 30px 0;
 
-        margin: -10px auto 20px;
-    }
+            padding: 30px;
 
-    .card-cad h4 {
-        font-size: 30px;
-        margin-top: 0;
-    }
+            border-radius: 28px;
 
-    .card-cad p {
-        font-size: 16px;
-    }
+            box-sizing: border-box;
+        }
 
-    /* Remove o posicionamento negativo */
-    .forms {
-        margin-top: 0;
-    }
+        /* Logo */
+        .logo {
+            width: 220px;
+            max-width: 80%;
 
-    .forms h2 {
-        margin-left: 0;
+            display: block;
+
+            margin: -10px auto 20px;
+        }
+
+        .card-cad h4 {
+            font-size: 30px;
+            margin-top: 0;
+        }
+
+        .card-cad p {
+            font-size: 16px;
+        }
+
+        /* Remove o posicionamento negativo */
+        .forms {
+            margin: -30px auto 30px auto;
+
+            padding: 30px;
+
+            border-radius: 30px;
+
+            text-align: center;
+
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .logo {
+            width: 220px;
+
+            margin: 0 auto 15px auto;
+
+            display: block;
+        }
+
+        .card-cad h4 {
+            font-size: 28px;
+
+            margin-top: 0;
+
+            text-align: center;
+        }
+
+        .card-cad p {
+            font-size: 15px;
+
+            margin-bottom: 15px;
+
+            text-align: center;
+        }
+
+        .card-cad>div {
+            margin-top: 10px !important;
+
+            text-align: center;
+        }
+
+
+        /* =========================================
+       FORMULÁRIO
+    ========================================= */
+
+        .forms {
+            width: 100%;
+
+            margin-top: 0;
+        }
+
+        .forms h2 {
+            margin-left: 0;
+            text-align: center;
+
+            font-size: 30px;
+
+            margin-bottom: 25px;
+        }
+
+        /* Inputs */
+
         text-align: center;
 
         font-size: 30px;
-
-        margin-bottom: 25px;
     }
 
-    /* Inputs */
     .input-group.w-50 {
         width: 100% !important;
     }
@@ -492,6 +606,25 @@ body {
    CELULAR PEQUENO
 ========================================= */
 
+
+/* =========================================
+       REDES SOCIAIS
+    ========================================= */
+
+.grid-login {
+    width: 100%;
+
+    margin-left: 0;
+
+    justify-content: center;
+}
+}
+
+
+/* =========================================================
+   CELULAR
+========================================================= */
+
 @media (max-width: 480px) {
 
     body {
@@ -500,6 +633,11 @@ body {
 
     .login-container {
         padding: 10px 0;
+        padding: 10px 0;
+    }
+
+    .login-container {
+        padding: 10px;
     }
 
     .login-card {
@@ -529,6 +667,70 @@ body {
 
     .forms h2 {
         font-size: 27px;
+        border-radius: 25px;
+
+        min-height: auto;
+    }
+
+
+    /* =========================================
+       QUADRADO AZUL NO CELULAR
+    ========================================= */
+
+    .card-cad {
+        width: 100%;
+
+        margin: -20px auto 25px auto;
+
+        padding: 25px 20px;
+
+        border-radius: 25px;
+
+        text-align: center;
+
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .logo {
+        width: 180px;
+
+        margin: 0 auto 10px auto;
+    }
+
+    .card-cad h4 {
+        font-size: 24px;
+
+        margin-top: 0;
+
+        text-align: center;
+    }
+
+    .card-cad p {
+        font-size: 14px;
+
+        margin-bottom: 10px;
+
+        text-align: center;
+    }
+
+    .card-cad>div {
+        margin-top: 10px !important;
+
+        text-align: center;
+    }
+
+
+    /* =========================================
+       FORMULÁRIO
+    ========================================= */
+
+    .forms h2 {
+        font-size: 26px;
+
+        margin-bottom: 20px;
     }
 
     .form-label {
@@ -536,6 +738,8 @@ body {
     }
 
     .form-control {
+        height: 44px;
+
         font-size: 14px;
     }
 
@@ -553,6 +757,81 @@ body {
         min-width: auto;
         width: calc(100% - 30px);
         max-width: none;
+    }
+
+
+    height: 45px;
+}
+
+.esqueci-senha {
+    font-size: 14px;
+}
+
+.manter-logado {
+    font-size: 14px;
+}
+
+
+/* =========================================
+       REDES SOCIAIS
+    ========================================= */
+
+.grid-login {
+    margin-top: 15px;
+
+    gap: 5px;
+}
+
+.grid-login a {
+    width: 40px;
+    height: 40px;
+
+    font-size: 20px;
+
+    margin: 0;
+
+    padding: 0;
+}
+
+
+
+/* =========================================================
+   CELULARES MUITO PEQUENOS
+========================================================= */
+
+@media (max-width: 360px) {
+
+    .login-card {
+        padding: 15px;
+    }
+
+    .card-cad {
+        margin: -15px auto 20px auto;
+
+        padding: 20px 15px;
+    }
+
+    .logo {
+        width: 150px;
+    }
+
+    .card-cad h4 {
+        font-size: 21px;
+    }
+
+    .card-cad p {
+        font-size: 13px;
+    }
+
+    .forms h2 {
+        font-size: 23px;
+    }
+
+    .grid-login a {
+        width: 36px;
+        height: 36px;
+
+        font-size: 17px;
     }
 
 }

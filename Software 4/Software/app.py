@@ -15,8 +15,41 @@ from models.endereco import Endereco
 from models.empilhadeira import Empilhadeira
 
 
+import re
+import secrets
+from datetime import datetime, timedelta
+import os
+
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
+
+@app.context_processor
+def dados_globais():
+    empresa_nome = ""
+
+    if "empresa_id" in session:
+        conexao = Database.connect()
+        cursor = conexao.cursor(dictionary=True)
+
+        try:
+            cursor.execute("""
+                SELECT nome
+                FROM empresa
+                WHERE id = %s
+            """, (session["empresa_id"],))
+
+            empresa = cursor.fetchone()
+
+            if empresa:
+                empresa_nome = empresa["nome"]
+
+        finally:
+            cursor.close()
+            conexao.close()
+
+    return {
+        "empresa_nome": empresa_nome
+    }
 
 # ---------------- FUNÇÕES AUXILIARES ---------------- #
 
@@ -31,6 +64,37 @@ def to_float(value, default=0.0):
         return float(value)
     except:
         return default
+
+# ------------VALIDAÇÕES----------#
+
+def telefone_valido(telefone):
+    numeros = re.sub(r'\D', '', telefone)
+    return len(numeros) in (10, 11)
+
+def formatar_telefone(telefone):
+    numeros = re.sub(r'\D', '', telefone)
+
+    if len(numeros) == 11:
+        return f"({numeros[:2]}) {numeros[2:7]}-{numeros[7:]}"
+
+    if len(numeros) == 10:
+        return f"({numeros[:2]}) {numeros[2:6]}-{numeros[6:]}"
+
+    return telefone
+
+def area_valida(area):
+    try:
+        valor = float(area)
+        return valor > 0
+    except (ValueError, TypeError):
+        return False
+
+def nome_valido(nome):
+    return nome.replace(" ", "").isalpha()
+
+def email_valido(email):
+    padrao = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
+    return re.match(padrao, email) is not None
 
 # ------------- LANDINGPAGE ------------- #
 
@@ -47,9 +111,12 @@ def home():
 def login_obrigatorio(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        if "usuario_logado" not in session:
+        if "usuario_id" not in session:
+            flash("Faça login para continuar.", "erro")
             return redirect(url_for("login"))
+
         return f(*args, **kwargs)
+
     return wrap
 
 # ---------------- INDEX ---------------- #
@@ -60,23 +127,35 @@ def dashboard():
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
-    cursor.execute("SELECT COUNT(*) AS total FROM fornecedor")
-    total_fornecedores = cursor.fetchone()["total"]
+    try:
+        cursor.execute("SELECT COUNT(*) AS total FROM fornecedor")
+        total_fornecedores = cursor.fetchone()["total"]
 
-    cursor.execute("SELECT COUNT(*) AS total FROM cliente")
-    total_clientes = cursor.fetchone()["total"]
+        cursor.execute("SELECT COUNT(*) AS total FROM cliente")
+        total_clientes = cursor.fetchone()["total"]
 
-    cursor.execute("SELECT COUNT(*) AS total FROM galpao")
-    total_galpoes = cursor.fetchone()["total"]
+        cursor.execute("SELECT COUNT(*) AS total FROM galpao")
+        total_galpoes = cursor.fetchone()["total"]
 
-    cursor.execute("SELECT COUNT(*) AS total FROM produto")
-    total_produtos = cursor.fetchone()["total"]
+        cursor.execute("SELECT COUNT(*) AS total FROM produto")
+        total_produtos = cursor.fetchone()["total"]
 
-    cursor.close()
-    conexao.close()
+        cursor.execute("""
+            SELECT nome
+            FROM empresa
+            WHERE id = %s
+        """, (session["empresa_id"],))
+
+        empresa = cursor.fetchone()
+        empresa_nome = empresa["nome"] if empresa else ""
+
+    finally:
+        cursor.close()
+        conexao.close()
 
     return render_template(
         "dashboard.html",
+        empresa_nome=empresa_nome,
         total_fornecedores=total_fornecedores,
         total_clientes=total_clientes,
         total_galpoes=total_galpoes,
@@ -87,31 +166,319 @@ def dashboard():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form.get("email")
-        senha = request.form.get("senha")
+
+        email = request.form.get("email", "").strip().lower()
+        senha = request.form.get("senha", "")
+
+        print("===================================")
+        print("TENTATIVA DE LOGIN")
+        print("EMAIL:", email)
+        print("SENHA INFORMADA:", bool(senha))
+        print("===================================")
+
+        if not email or not senha:
+            flash("Informe o e-mail e a senha.", "erro")
+            return render_template("login.html")
 
         conexao = Database.connect()
         cursor = conexao.cursor(dictionary=True)
 
         try:
-            sql = "SELECT * FROM usuario WHERE email = %s"
-            cursor.execute(sql, (email,))
+            cursor.execute("""
+                SELECT id, nome, email, senha, empresa_id, tipo, ativo
+                FROM usuario
+                WHERE email = %s
+            """, (email,))
+
             usuario = cursor.fetchone()
 
-            if usuario and check_password_hash(usuario["senha"], senha):
-                session["usuario_logado"] = usuario["email"]
-                session["empresa_id"] = usuario["empresa_id"]
+            print("USUARIO ENCONTRADO:", usuario)
 
-                flash("Login realizado!", "sucesso")
-                return redirect(url_for("dashboard"))
-            else:
+            if not usuario:
+                print("ERRO: usuário não encontrado.")
                 flash("Email ou senha inválidos!", "erro")
+                return render_template("login.html")
+
+            print("ID:", usuario["id"])
+            print("EMAIL BANCO:", usuario["email"])
+            print("ATIVO:", usuario["ativo"])
+            print("TIPO:", usuario["tipo"])
+            print("EMPRESA:", usuario["empresa_id"])
+            print("HASH:", usuario["senha"][:30] if usuario["senha"] else None)
+
+            senha_correta = check_password_hash(
+                usuario["senha"],
+                senha
+            )
+
+            print("SENHA CORRETA:", senha_correta)
+
+            if not senha_correta:
+                flash("Email ou senha inválidos!", "erro")
+                return render_template("login.html")
+
+            if not usuario["ativo"]:
+                flash("Usuário inativo.", "erro")
+                return render_template("login.html")
+
+            session.clear()
+
+            session["usuario_logado"] = usuario["email"]
+            session["usuario_id"] = usuario["id"]
+            session["empresa_id"] = usuario["empresa_id"]
+            session["tipo"] = usuario["tipo"]
+
+            print("LOGIN REALIZADO COM SUCESSO")
+            print("SESSION:", dict(session))
+            print("===================================")
+
+            flash("Login realizado!", "sucesso")
+
+            return redirect(url_for("dashboard"))
+
+        except Exception as e:
+
+            print("===================================")
+            print("ERRO NO LOGIN")
+            print(type(e).__name__)
+            print(e)
+            print("===================================")
+
+            flash(f"Erro ao realizar login: {e}", "erro")
+
+            return render_template("login.html")
 
         finally:
             cursor.close()
             conexao.close()
 
     return render_template("login.html")
+
+# ---------------- REDEFINIR SENHA ---------------- #
+
+@app.route("/redefinir-senha/<token>", methods=["GET", "POST"])
+def redefinir_senha(token):
+
+    print("======================================")
+    print("ACESSOU REDEFINIR SENHA")
+    print("TOKEN:", token)
+    print("======================================")
+
+    conexao = Database.connect()
+    cursor = conexao.cursor(dictionary=True)
+
+    try:
+
+        cursor.execute("""
+            SELECT id, usuario_id, expira_em, usado
+            FROM recuperacao_senha
+            WHERE token = %s
+        """, (token,))
+
+        recuperacao = cursor.fetchone()
+
+        print("RECUPERACAO ENCONTRADA:", recuperacao)
+
+        if not recuperacao:
+            flash("Token de recuperação inválido.", "erro")
+            return redirect(url_for("esqueci_senha"))
+
+        if recuperacao["usado"] == 1:
+            flash("Este link de recuperação já foi utilizado.", "erro")
+            return redirect(url_for("esqueci_senha"))
+
+        if recuperacao["expira_em"] < datetime.now():
+            flash("Este link de recuperação expirou.", "erro")
+            return redirect(url_for("esqueci_senha"))
+
+        # ------------------------------------------------
+        # GET
+        # ------------------------------------------------
+
+        if request.method == "GET":
+
+            return render_template(
+                "redefinir_senha.html",
+                token=token
+            )
+
+        # ------------------------------------------------
+        # POST
+        # ------------------------------------------------
+
+        senha = request.form.get("senha", "").strip()
+        confirmar_senha = request.form.get("confirmar_senha", "").strip()
+
+        if not senha:
+            flash("Digite uma nova senha.", "erro")
+
+            return render_template(
+                "redefinir_senha.html",
+                token=token
+            )
+
+        if not confirmar_senha:
+            flash("Confirme sua nova senha.", "erro")
+
+            return render_template(
+                "redefinir_senha.html",
+                token=token
+            )
+
+        if senha != confirmar_senha:
+            flash("As senhas não são iguais.", "erro")
+
+            return render_template(
+                "redefinir_senha.html",
+                token=token
+            )
+
+        # Criptografa a nova senha
+        senha_hash = generate_password_hash(senha)
+
+        # Atualiza a senha
+        cursor.execute("""
+            UPDATE usuario
+            SET senha = %s
+            WHERE id = %s
+        """, (
+            senha_hash,
+            recuperacao["usuario_id"]
+        ))
+
+        # Marca o token como utilizado
+        cursor.execute("""
+            UPDATE recuperacao_senha
+            SET usado = 1
+            WHERE id = %s
+        """, (
+            recuperacao["id"],
+        ))
+
+        conexao.commit()
+
+        flash(
+            "Senha redefinida com sucesso! Faça login com sua nova senha.",
+            "sucesso"
+        )
+
+        return redirect(url_for("login"))
+
+    except Exception as e:
+
+        conexao.rollback()
+
+        print("======================================")
+        print("ERRO AO REDEFINIR SENHA")
+        print(type(e).__name__)
+        print(e)
+        print("======================================")
+
+        flash(
+            f"Erro ao redefinir senha: {e}",
+            "erro"
+        )
+
+        return redirect(url_for("esqueci_senha"))
+
+    finally:
+
+        cursor.close()
+        conexao.close()
+
+# ---------------- RECUPERAÇÃO DE SENHA ---------------- #
+
+@app.route("/esqueci-senha", methods=["GET", "POST"])
+def esqueci_senha():
+
+    if request.method == "POST":
+
+        email = request.form.get("email", "").strip().lower()
+
+        if not email:
+            flash("Informe seu e-mail.", "erro")
+            return redirect(url_for("esqueci_senha"))
+
+        conexao = Database.connect()
+        cursor = conexao.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute("""
+                SELECT id, email
+                FROM usuario
+                WHERE email = %s
+                  AND ativo = 1
+            """, (email,))
+
+            usuario = cursor.fetchone()
+
+            if usuario:
+
+                # Gera token seguro
+                token = secrets.token_urlsafe(32)
+
+                # Token válido por 30 minutos
+                expira_em = datetime.now() + timedelta(minutes=30)
+
+                # Salva no banco
+                cursor.execute("""
+                    INSERT INTO recuperacao_senha
+                    (usuario_id, token, expira_em, usado)
+                    VALUES (%s, %s, %s, 0)
+                """, (
+                    usuario["id"],
+                    token,
+                    expira_em
+                ))
+
+                conexao.commit()
+
+                # Link para redefinir a senha
+                link = url_for(
+                    "redefinir_senha",
+                    token=token,
+                    _external=True
+                )
+
+                print("======================================")
+                print("RECUPERAÇÃO DE SENHA")
+                print("Usuário:", usuario["email"])
+                print("Link:", link)
+                print("Expira em:", expira_em)
+                print("======================================")
+
+            flash(
+                "Se o e-mail estiver cadastrado, você receberá as instruções para recuperar a senha.",
+                "sucesso"
+            )
+
+        except Exception as e:
+
+            conexao.rollback()
+
+            print("ERRO AO GERAR TOKEN:", e)
+
+            flash(
+                "Ocorreu um erro ao solicitar a recuperação da senha.",
+                "erro"
+            )
+
+        finally:
+
+            cursor.close()
+            conexao.close()
+
+        return redirect(url_for("esqueci_senha"))
+
+    return render_template("esqueci_senha.html")
+
+# ---------------- CONFIG ---------------- #
+
+@app.route('/config')
+@login_obrigatorio
+def config():
+    return render_template("config.html")
 
 # ---------------- LOGOUT ---------------- #
 
@@ -125,56 +492,107 @@ def logout():
 
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro_emp():
- 
+
     if request.method == "POST":
- 
-        nome = request.form.get("nome")
-        cpf = request.form.get("cnpj")
-        email = request.form.get("email")
-        telefone = request.form.get("telefone")
-        senha = generate_password_hash(request.form.get("senha"))
- 
+
+        nome = request.form.get("nome", "").strip()
+        cnpj = request.form.get("cnpj", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        telefone = request.form.get("telefone", "").strip()
+        senha = request.form.get("senha", "")
+
+        if not nome:
+            flash("Informe o nome da empresa.", "erro")
+            return render_template("cadastro.html")
+
+        if not cnpj:
+            flash("Informe o CNPJ.", "erro")
+            return render_template("cadastro.html")
+
+        if not email_valido(email):
+            flash("Informe um e-mail válido.", "erro")
+            return render_template("cadastro.html")
+
+        if not senha:
+            flash("Informe uma senha.", "erro")
+            return render_template("cadastro.html")
+
+        senha_hash = generate_password_hash(senha)
+
         conexao = Database.connect()
-        cursor = conexao.cursor()
- 
+        cursor = conexao.cursor(dictionary=True)
+
         try:
- 
-            # salva empresa
+
+            # Verifica se o CNPJ já existe
+            cursor.execute("""
+                SELECT id
+                FROM empresa
+                WHERE cnpj = %s
+                LIMIT 1
+            """, (cnpj,))
+
+            if cursor.fetchone():
+                flash("Este CNPJ já está cadastrado.", "erro")
+                return render_template("cadastro.html")
+
+            # Verifica se o e-mail já existe
+            cursor.execute("""
+                SELECT id
+                FROM usuario
+                WHERE email = %s
+                LIMIT 1
+            """, (email,))
+
+            if cursor.fetchone():
+                flash("Este e-mail já está cadastrado.", "erro")
+                return render_template("cadastro.html")
+
+            # Cria a empresa
             cursor.execute("""
                 INSERT INTO empresa (nome, cnpj)
                 VALUES (%s, %s)
-            """, (nome, cpf))
- 
+            """, (nome, cnpj))
+
             empresa_id = cursor.lastrowid
- 
-            # salva usuário
+
+            # Cria o usuário administrador
             cursor.execute("""
                 INSERT INTO usuario
-                (nome, telefone, email, senha, empresa_id, tipo)
-                VALUES (%s, %s, %s, %s, %s, 'admin')
+                (nome, telefone, email, senha, empresa_id, tipo, ativo)
+                VALUES (%s, %s, %s, %s, %s, 'admin', 1)
             """, (
                 nome,
                 telefone,
                 email,
-                senha,
+                senha_hash,
                 empresa_id
             ))
- 
+
             conexao.commit()
- 
+
             flash("Cadastro realizado com sucesso!", "sucesso")
+
             return redirect(url_for("login"))
- 
+
         except Exception as e:
+
             conexao.rollback()
-            print("ERRO:", e)
-            flash(f"Erro ao cadastrar: {e}", "erro")
- 
+
+            print("ERRO AO CADASTRAR EMPRESA:", e)
+
+            flash(
+                f"Erro ao cadastrar empresa: {e}",
+                "erro"
+            )
+
         finally:
             cursor.close()
             conexao.close()
- 
+
     return render_template("cadastro.html")
+
+
 # ---------------- ESTOQUE ---------------- #
 
 @app.route("/estoque")
@@ -234,6 +652,10 @@ def info_galpao(galpao_id):
 @login_obrigatorio
 def atualizar_galpao(galpao_id):
     try:
+
+        telefone = request.form.get("telefone", "").strip()
+        telefone = formatar_telefone(telefone)
+
         caixas_por_nivel      = to_int(request.form.get("caixas_por_nivel"))
         niveis_por_prateleira = to_int(request.form.get("niveis_por_prateleira"))
         total_prateleiras     = to_int(request.form.get("total_prateleiras"))
@@ -259,6 +681,7 @@ def atualizar_galpao(galpao_id):
     except Exception as e:
         flash(f"Erro: {e}", "erro")
     return redirect(url_for("info_galpao", galpao_id=galpao_id))
+
 
 
 @app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
@@ -351,56 +774,257 @@ def produtos():
 
 @app.route("/produto/salvar", methods=["POST"])
 @login_obrigatorio
-def salvar_produto():
-    galpao_id = to_int(request.form.get("galpao_id"))
+
+def salvar_produto(id):
 
     try:
-        produto = Produto(
-            sku=request.form.get("sku"),
-            nome=request.form.get("nome"),
-            descricao=request.form.get("descricao"),
-            categoria=request.form.get("categoria"),
-            preco_custo=to_float(request.form.get("preco_custo")),
-            preco_venda=to_float(request.form.get("preco_venda")),
-            peso=to_float(request.form.get("peso")),
-            volume=to_float(request.form.get("volume")),
-            tipo=request.form.get("tipo"),
-            codigo_barras=request.form.get("codigo_barras"),
-        )
 
-        erros = produto.validate()
-        if erros:
-            for erro in erros:
-                flash(erro, "erro")
-            return redirect(url_for("estoque_galpao", galpao_id=galpao_id))
+        # =========================================================
+        # DADOS DO PRODUTO
+        # =========================================================
 
-        produto_id = produto.insert()
+        dados = {
+            "sku": request.form.get("sku"),
+            "nome": request.form.get("nome"),
+            "descricao": request.form.get("descricao"),
+            "categoria": request.form.get("categoria"),
+            "preco_custo": to_float(request.form.get("preco_custo")),
+            "preco_venda": to_float(request.form.get("preco_venda")),
+            "peso": to_float(request.form.get("peso")),
+            "volume": to_float(request.form.get("volume")),
+            "tipo": request.form.get("tipo"),
+            "codigo_barras": request.form.get("codigo_barras"),
+            "item_por_caixa": to_int(
+                request.form.get("item_por_caixa")
+            ),
 
-        quantidade = to_int(request.form.get("quantidade"))
-        quantidade_minimo = to_int(request.form.get("quantidade_minimo"))
+            # No seu HTML o name é quantidade_minimo
+            "estoque_minimo": to_int(
+                request.form.get("quantidade_minimo")
+            )
+        }
 
-        if galpao_id:
-            conn = Database.connect()
-            cursor = conn.cursor()
-            try:
-                cursor.execute("""
-                    INSERT INTO estoque (produto_id, galpao_id, quantidade, estoque_minimo)
-                    VALUES (%s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE
-                        quantidade = VALUES(quantidade),
-                        estoque_minimo = VALUES(estoque_minimo)
-                """, (produto_id, galpao_id, quantidade, quantidade_minimo))
-                conn.commit()
-            finally:
-                cursor.close()
-                conn.close()
 
-        flash("Produto cadastrado com sucesso!", "sucesso")
+        # =========================================================
+        # IMAGEM ENVIADA PELO FORMULÁRIO
+        # =========================================================
+
+        imagem = request.files.get("imagem")
+
+
+        # =========================================================
+        # BUSCAR IMAGEM ATUAL NO BANCO
+        # =========================================================
+
+        conn = Database.connect()
+        cursor = conn.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT imagem
+                FROM produto
+                WHERE id = %s
+                """,
+                (id,)
+            )
+
+            produto_atual = cursor.fetchone()
+
+            imagem_atual = None
+
+            if produto_atual:
+                imagem_atual = produto_atual.get("imagem")
+
+
+            # =====================================================
+            # MANTÉM A IMAGEM ATUAL
+            # =====================================================
+
+            nome_imagem = imagem_atual
+
+
+            # =====================================================
+            # SE O USUÁRIO ESCOLHEU UMA NOVA IMAGEM
+            # =====================================================
+
+            if imagem and imagem.filename:
+
+                # Extensões permitidas
+                extensoes_permitidas = {
+                    "png",
+                    "jpg",
+                    "jpeg",
+                    "webp"
+                }
+
+                nome_original = imagem.filename
+
+                if "." not in nome_original:
+                    raise ValueError(
+                        "O arquivo selecionado não possui uma extensão válida."
+                    )
+
+                extensao = nome_original.rsplit(".", 1)[-1].lower()
+
+
+                # Verifica extensão
+
+                if extensao not in extensoes_permitidas:
+
+                    raise ValueError(
+                        "Formato de imagem inválido. "
+                        "Use PNG, JPG, JPEG ou WEBP."
+                    )
+
+
+                # =================================================
+                # VERIFICAR TAMANHO
+                # =================================================
+
+                imagem.seek(0, 2)
+
+                tamanho = imagem.tell()
+
+                imagem.seek(0)
+
+
+                # Máximo de 5 MB
+
+                if tamanho > 5 * 1024 * 1024:
+
+                    raise ValueError(
+                        "A imagem deve ter no máximo 5 MB."
+                    )
+
+
+                # =================================================
+                # PASTA DAS IMAGENS
+                # =================================================
+
+                pasta_imagem = os.path.join(
+                    app.root_path,
+                    "static",
+                    "imagem"
+                )
+
+
+                # Cria a pasta se não existir
+
+                os.makedirs(
+                    pasta_imagem,
+                    exist_ok=True
+                )
+
+
+                # =================================================
+                # NOME DO NOVO ARQUIVO
+                # =================================================
+
+                nome_imagem = f"produto_{id}.{extensao}"
+
+
+                # =================================================
+                # EXCLUIR IMAGEM ANTIGA
+                # =================================================
+
+                if imagem_atual:
+
+                    caminho_antigo = os.path.join(
+                        pasta_imagem,
+                        imagem_atual
+                    )
+
+                    if os.path.isfile(caminho_antigo):
+
+                        os.remove(caminho_antigo)
+
+
+                # =================================================
+                # SALVAR NOVA IMAGEM
+                # =================================================
+
+                caminho_nova = os.path.join(
+                    pasta_imagem,
+                    nome_imagem
+                )
+
+                imagem.save(caminho_nova)
+
+
+            # =====================================================
+            # COLOCA O NOME DA IMAGEM NOS DADOS
+            # =====================================================
+
+            dados["imagem"] = nome_imagem
+
+
+            # =====================================================
+            # ATUALIZA PRODUTO
+            # =====================================================
+
+            Produto.update(id, dados)
+
+
+            # =====================================================
+            # ATUALIZA ESTOQUE
+            # =====================================================
+
+            cursor.execute(
+                """
+                UPDATE estoque
+                SET estoque_minimo = %s
+                WHERE produto_id = %s
+                """,
+                (
+                    dados["estoque_minimo"],
+                    id
+                )
+            )
+
+
+            # =====================================================
+            # CONFIRMA ALTERAÇÕES
+            # =====================================================
+
+            conn.commit()
+
+
+            flash(
+                "Produto atualizado com sucesso!",
+                "sucesso"
+            )
+
+
+        except Exception:
+
+            conn.rollback()
+
+            raise
+
+
+        finally:
+
+            cursor.close()
+            conn.close()
+
 
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
 
-    return redirect(url_for("estoque_galpao", galpao_id=galpao_id))
+        flash(
+            f"Erro ao atualizar produto: {e}",
+            "erro"
+        )
+
+
+    return redirect(
+        url_for(
+            "info_produtos",
+            id=id
+        )
+    )
+
 
 @app.route("/produto/editar/<int:id>")
 @login_obrigatorio
@@ -548,6 +1172,39 @@ def novo_galpao():
 @login_obrigatorio
 def salvar_galpao():
     try:
+        email = request.form.get("email_resp", "").strip()
+
+        if not email_valido(email):
+            flash("Informe um e-mail válido.", "erro")
+            return redirect(url_for("galpao"))
+
+        nome_resp = request.form.get("nome_resp", "").strip()
+
+        if not nome_valido(nome_resp):
+            flash("O nome do responsável deve conter apenas letras.", "erro")
+            return redirect(url_for("galpao"))
+
+        area_total = request.form.get("area_total", "").strip()
+
+        if not area_valida(area_total):
+            flash("A área total deve ser um número maior que zero.", "erro")
+            return redirect(url_for("galpao"))
+
+
+        telefone = request.form.get("telefone", "").strip()
+
+        if not telefone_valido(telefone):
+            flash("Informe um telefone válido com 10 ou 11 números.", "erro")
+            return redirect(url_for("info_galpao", galpao_id=galpao_id))
+
+        telefone = formatar_telefone(telefone)
+
+        if not telefone_valido(telefone):
+            flash("Informe um telefone válido com 10 ou 11 números.", "erro")
+            return redirect(url_for("galpao"))
+
+        caixas_por_nivel = to_int(request.form.get("caixas_por_nivel"))
+
         caixas_por_nivel = to_int(request.form.get("caixas_por_nivel"))
         niveis_por_prateleira = to_int(request.form.get("niveis_por_prateleira"))
         total_prateleiras = to_int(request.form.get("total_prateleiras"))
@@ -557,14 +1214,14 @@ def salvar_galpao():
             nome=request.form.get("nome"),
             stats=request.form.get("stats"),
             cep=request.form.get("cep"),
-            email_resp=request.form.get("email_resp"),
-            nome_resp=request.form.get("nome_resp"),
+            email_resp=email,
+            nome_resp=nome_resp,
             endereco=request.form.get("endereco"),
             referencia=request.form.get("referencia"),
             cidade=request.form.get("cidade"),
             estado=request.form.get("estado"),
-            area_total=to_float(request.form.get("area_total")),
-            telefone=request.form.get("telefone"),
+            area_total=float(area_total),
+            telefone=telefone,
             total_prateleiras=total_prateleiras,
             niveis_por_prateleira=niveis_por_prateleira,
             caixas_por_nivel=caixas_por_nivel,
@@ -1488,10 +2145,10 @@ def listar_pedidos_saida():
         conn.close()
     return render_template(
     "cliente.html",
-    cliente=c,
+    cliente=cliente,
     pedidos=pedidos,
-    galpoes=galpoes,
-    produtos=lista_produtos
+    galpoes=galpao,
+    produtos=lista_produtos,
 )
 
 
@@ -1779,6 +2436,12 @@ def cancelar_pedido(id):
     except Exception as e:
         flash(f"Erro ao cancelar pedido: {e}", "erro")
     return redirect(url_for("pedidos"))
+
+# ---------------- ERRO 404 ---------------- #
+
+@app.errorhandler(404)
+def pagina_nao_encontrada(error):
+    return render_template("404.html"), 404
 
 # ---------------- RUN ---------------- #
 
