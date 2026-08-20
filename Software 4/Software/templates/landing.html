@@ -4,62 +4,73 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='landing.css') }}">
     <title>HypeX - Gestão de Estoque</title>
 </head>
 
 <body>
-    <!-- Navegação -->
+    <!--Navegação-->
     <header>
 
         <div id="logo">
-            <img src="static/imagem/logo.png" alt="logo">
+            <img src="static/imagem/logo.png" alt="Logo">
         </div>
 
-        <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">
+        <button class="menu-toggle" aria-label="Abrir menu">
             <span></span>
             <span></span>
             <span></span>
         </button>
 
-        <nav class="menu" id="menu">
+        <nav class="menu">
             <ul>
-                <a href="#home">
-                    <li>Home</li>
-                </a>
-                <a href="#Sobre">
-                    <li>Sobre</li>
-                </a>
-                <a href="#Solucoes">
-                    <li>Soluções</li>
-                </a>
-                <a href="#Funcionalidades">
-                    <li>Funcionalidades</li>
-                </a>
-                <a href="#Planos">
-                    <li>Planos</li>
-                </a>
-                <a href="#contato" id="botao-header">
-                    <li>Contato</li>
-                </a>
-                <a href="{{ url_for('login') }}" id="login-header">
-                    <li>Entrar</li>
-                </a>
+
+                <li>
+                    <a href="#home">Home</a>
+                </li>
+
+                <li>
+                    <a href="#Sobre">Sobre</a>
+                </li>
+
+                <li>
+                    <a href="#Solucoes">Soluções</a>
+                </li>
+
+                <li>
+                    <a href="#Funcionalidades">Funcionalidades</a>
+                </li>
+
+                <li>
+                    <a href="#Segmentos">Segmentos</a>
+                </li>
+
+                <li>
+                    <a href="#Planos">Planos</a>
+                </li>
+
+                <li>
+                    <a href="#contato" id="botao-header">Contato</a>
+                </li>
+
+                <li>
+                    <a href="{{ url_for('login') }}" id="login-header">Entrar</a>
+                </li>
+
             </ul>
         </nav>
-
-        <div class="menu-overlay" id="menuOverlay"></div>
 
     </header>
     <!-- Conteúdo principal -->
     <main class="main-principal">
         <div class="container">
             <aside class="main-text">
-                <span class="software">SOFTWARE DE GESTÃO DE ESTOQUE</span>
+                <div class="planos-badge">
+                    <i class="icone-claro bi-box-seam-fill"></i>
+                    <span>Gestão de Estoque</span>
+                </div>
                 <h1>Mais <span>eficiência</span> no gerenciamento do seu estoque físico e virtual</h1>
                 <p>
                     Encontre o equilíbrio perfeito entre excesso e falta de produtos.
@@ -72,488 +83,644 @@
             </aside>
         </div>
     </main>
+    <section class="logos-section">
+        <div class="logos-container">
+
+            <h2 class="logos-title">
+                Empresas que confiam em nossas soluções
+            </h2>
+
+        </div>
+
+        <div class="logos-slider">
+
+            <div class="logos-track">
+
+                <!-- Grupo 1 -->
+                <div class="logo-item">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTde-qCHdLYA4rOn48eCLejNL2VCIJ9NGmvl3AULxGNEw&s=10" alt="Penha">
+                </div>
+
+                <div class="logo-item">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkqSbazXrwdG13Tc6Nrp-wEPWn-u6yKmtXq2xaIgWTxQ&s=10" alt="Mcdonalds">
+                </div>
+
+                <div class="logo-item">
+                    <img src="https://i.pinimg.com/474x/6e/f0/85/6ef085a7a671b62c09d1857e186ead91.jpg" alt="Samsung">
+                </div>
+
+                <div class="logo-item">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNfo4kGPCBitpVDQoqXxana6osMogbbB4_rFHWXjxfXg&s=10" alt="Toyota">
+                </div>
+
+                <div class="logo-item">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQrwFzwsq9ZpQqNN3JKoy1fWN7mZ9J-zd-HZoVjqY1_Cg&s=10" alt="Intel">
+                </div>
+
+
+                <!-- Grupo 2 - duplicado para criar o loop infinito -->
+                <div class="logo-item">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTde-qCHdLYA4rOn48eCLejNL2VCIJ9NGmvl3AULxGNEw&s=10" alt="Penha">
+                </div>
+
+                <div class="logo-item">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQkqSbazXrwdG13Tc6Nrp-wEPWn-u6yKmtXq2xaIgWTxQ&s=10" alt="Mcdonalds">
+                </div>
+
+                <div class="logo-item">
+                    <img src="https://i.pinimg.com/474x/6e/f0/85/6ef085a7a671b62c09d1857e186ead91.jpg" alt="Samsung">
+                </div>
+
+                <div class="logo-item">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSNfo4kGPCBitpVDQoqXxana6osMogbbB4_rFHWXjxfXg&s=10" alt="Toyota">
+                </div>
+
+                <div class="logo-item">
+                    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQrwFzwsq9ZpQqNN3JKoy1fWN7mZ9J-zd-HZoVjqY1_Cg&s=10" alt="Intel">
+                </div>
+            </div>
+
+            <!-- Gradientes laterais -->
+            <div class="logos-fade logos-fade-left"></div>
+            <div class="logos-fade logos-fade-right"></div>
+
+        </div>
+    </section>
+
     <!--Funcionalidades do Sistema-->
-    <section id="Funcionalidades">
-        <span>GESTÃO DE ESTOQUE</span>
-        <h2>Transforme dados em decisões<br>
-            e assuma o controle total do seu estoque.</h2>
-        <p>Nossa plataforma oferece a visibilidade de ponta a ponta que você precisa. Desde a<br>
-            previsão de demanda precisa e o gerenciamento de múltiplos níveis e locais</p>
-        <div class="grid-servicos">
-            <div class="card-item">
-                <h1 class="icones-fun"><i class="bi-bar-chart-fill"></i></h1>
-                <h3>Previsão de Demanda Inteligente</h3>
-                <p>Utilize dados históricos e tendências de mercado para prever o que, quanto e quando comprar,
-                    reduzindo incertezas.</p>
+    <!-- Seção: Transforme Dados em Decisões (Estilo Enterprise) -->
+    <section id="DecisoesEstoque">
+        <div class="decisoes-container">
+
+            <!-- Cabeçalho Centralizado -->
+            <div class="decisoes-header">
+                <h2>Transforme dados em decisões</h2>
+                <p>Assuma o controle total do seu estoque com recursos projetados para entregar velocidade, segurança e
+                    escalabilidade.</p>
             </div>
-            <div class="card-item">
-                <h1 class="icones-fun"><i class="bi-calendar-check"></i></h1>
-                <h3>Reabastecimento Automático (Just-in-Time)</h3>
-                <p>Automatize o reabastecimento com sugestões e ordens de compra para manter o estoque no nível ideal.
-                </p>
-            </div>
-            <div class="card-item">
-                <h1 class="icones-fun"><i class="bi-boxes"></i></h1>
-                <h3>Gestão de Múltiplos Galpões (Multi-Echelon)</h3>
-                <p>Controle o estoque de todas as suas unidades, filiais e centros de distribuição de forma centralizada
-                    e eficiente.</p>
-            </div>
-            <div class="card-item">
-                <h1 class="icones-fun"><i class="bi-arrow-left-right"></i></h1>
-                <h3>Balanceamento de Rede Estratégico</h3>
-                <p>Transfira produtos entre galpões para evitar excessos e rupturas, otimizando o estoque.</p>
-            </div>
-            <div class="card-item">
-                <h1 class="icones-fun"><i class="bi-diagram-3-fill"></i></h1>
-                <h3>Alocação Inteligente e Priorizada</h3>
-                <p>Defina regras automáticas para distribuir o estoque e priorizar pedidos estratégicos.</p>
-            </div>
-            <div class="card-item">
-                <h1 class="icones-fun"><i class="bi-graph-up-arrow"></i></h1>
-                <h3>Análise de Performance em Tempo Real</h3>
-                <p>Acompanhe o desempenho financeiro e o volume total do seu estoque em tempo real.</p>
+
+            <!-- Grade de Cards (3 colunas x 2 linhas) -->
+            <div class="decisoes-grid">
+
+                <!-- Card 1 -->
+                <div class="decisao-card">
+                    <div class="icon-wrapper">
+                        <i class="icone-branco bi-clock-fill"></i>
+                    </div>
+                    <h3>Desempenho Rápido</h3>
+                    <p>Construída com algoritmos otimizados, nossa plataforma garante tempos de resposta ultrarrápidos
+                        para as consultas mais complexas do seu inventário.</p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="decisao-card">
+                    <div class="icon-wrapper">
+                        <i class="icone-branco bi-database-fill-lock"></i>
+                    </div>
+                    <h3>Segurança Zero-Trust</h3>
+                    <p>Criptografia de ponta a ponta abrangente para proteger os dados sensíveis da sua empresa e
+                        garantir total conformidade de acessos.</p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="decisao-card">
+                    <div class="icon-wrapper">
+                        <i class="icone-branco bi-bar-chart-line-fill"></i>
+                    </div>
+                    <h3>Escalabilidade Ilimitada</h3>
+                    <p>Escale recursos sem esforço para atender à flutuação de demanda do seu negócio, sem exigir
+                        alterações manuais complexas de configuração.</p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="decisao-card">
+                    <div class="icon-wrapper">
+                        <i class="icone-branco bi-cpu-fill"></i>
+                    </div>
+                    <h3>Automação Inteligente</h3>
+                    <p>Aproveite fluxos de trabalho gerados para automatizar tarefas repetitivas e liberar sua equipe do
+                        estoque para ações estratégicas de alto valor.</p>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="decisao-card">
+                    <div class="icon-wrapper">
+                        <i class="icone-branco bi-gear-fill"></i>
+                    </div>
+                    <h3>Configuração Flexível</h3>
+                    <p>Personalize facilmente os parâmetros do seu armazém por meio de um painel de gerenciamento
+                        unificado, poderoso e bastante intuitivo.</p>
+                </div>
+
+                <!-- Card 6 -->
+                <div class="decisao-card">
+                    <div class="icon-wrapper">
+                        <i class="icone-branco bi-shield-fill"></i>
+                    </div>
+                    <h3>Disponibilidade 99.9%</h3>
+                    <p>Nossa arquitetura em nuvem garante máxima confiabilidade, apoiada por rigorosos acordos de nível
+                        de serviço para que você nunca pare.</p>
+                </div>
+
             </div>
         </div>
     </section>
     <!-- Soluções/ o que entregamos-->
-    <section id="Solucoes" class="solucoes-section">
-        <div class="solucoes-container">
-
-            <div class="solucoes-header">
-                <div class="badge">
-                    <span>Soluções Estratégicas</span>
-                </div>
-                <h2>Plataforma feita para impulsionar o seu negócio</h2>
-                <p class="solucoes-subtitulo">
-                    Gerenciar e escalar uma empresa exige eficiência. Entregamos a tecnologia ideal para simplificar a
-                    sua rotina.
-                </p>
+    <section id="Solucoes">
+        <div class="solucoes-wrapper">
+            <!-- Cabeçalho da Seção -->
+            <div class="solucoes-header-clean">
+                <h2>Soluções Estratégicas para o Futuro do seu Estoque.</h2>
+                <p>Não apenas gerencie, planeje. Nossas soluções de ponta fornecem o controle, a inteligência e a
+                    automação que sua operação exige, permitindo que você tome decisões com base em dados para um
+                    crescimento sustentável.</p>
             </div>
 
-            <div class="solucoes-grid">
+            <!-- Grid de Funcionalidades (3 Colunas) -->
+            <div class="solucoes-grid-clean">
 
+                <!-- Item 1 -->
                 <div class="solucao-item">
-                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                    <i class="icon-check-thin bi-check-lg"></i>
                     <div class="solucao-texto">
-                        <h3>Fácil de usar</h3>
-                        <p>Desenvolvido de forma intuitiva para que sua equipe comece a usar sem complicações.</p>
+                        <h4>Ordens de Compra Automatizadas</h4>
+                        <p>Evite rupturas e excessos com pedidos gerados automaticamente no momento exato.</p>
                     </div>
                 </div>
 
+                <!-- Item 2 -->
                 <div class="solucao-item">
-                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                    <i class="icon-check-thin bi-check-lg"></i>
                     <div class="solucao-texto">
-                        <h3>Rápido e confiável</h3>
-                        <p>Alta performance de processamento para garantir estabilidade no seu dia a dia.</p>
+                        <h4>Rastreabilidade (Serialização)</h4>
+                        <p>Acompanhe cada item individualmente por toda a sua cadeia logística com precisão.</p>
                     </div>
                 </div>
 
+                <!-- Item 3 -->
                 <div class="solucao-item">
-                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                    <i class="icon-check-thin bi-check-lg"></i>
                     <div class="solucao-texto">
-                        <h3>Lindo e moderno</h3>
-                        <p>Interface elegante alinhada às melhores práticas visuais do mercado global.</p>
+                        <h4>Endereçamento Inteligente</h4>
+                        <p>Otimize o espaço físico e acelere consideravelmente a separação de pedidos.</p>
                     </div>
                 </div>
 
+                <!-- Item 4 -->
                 <div class="solucao-item">
-                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                    <i class="icon-check-thin bi-check-lg"></i>
                     <div class="solucao-texto">
-                        <h3>Automação de processos</h3>
-                        <p>Elimine tarefas repetitivas e foque no crescimento estratégico da sua empresa.</p>
+                        <h4>Inventário Rotativo</h4>
+                        <p>Mantenha a acurácia do seu estoque sem a necessidade de pausar sua operação.</p>
                     </div>
                 </div>
 
+                <!-- Item 5 -->
                 <div class="solucao-item">
-                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                    <i class="icon-check-thin bi-check-lg"></i>
                     <div class="solucao-texto">
-                        <h3>Segurança de dados</h3>
-                        <p>Criptografia avançada para manter as informações do seu negócio sempre protegidas.</p>
+                        <h4>Dashboards e KPIs</h4>
+                        <p>Visualize métricas cruciais em tempo real para a tomada de decisões rápidas.</p>
                     </div>
                 </div>
 
+                <!-- Item 6 (Adicionado para manter simetria 3x2) -->
                 <div class="solucao-item">
-                    <svg class="check-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20"
-                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <polyline points="20 6 9 17 4 12"></polyline>
-                    </svg>
+                    <i class="icon-check-thin bi-check-lg"></i>
                     <div class="solucao-texto">
-                        <h3>Suporte dedicado</h3>
-                        <p>Atendimento especializado pronto para auxiliar em qualquer demanda rapidamente.</p>
+                        <h4>Integração Simplificada</h4>
+                        <p>Conecte-se facilmente ao seu ecossistema atual de ERPs e canais de E-commerce.</p>
                     </div>
                 </div>
 
             </div>
         </div>
     </section>
-    <!-- Segmentos de Mercado/ em quais areas pode ser usado o software -->
-    <!-- Planos-->
-    <section id="Planos" class="aurora-section">
-        <div class="aurora-bg-container">
-            <div class="aurora-bg">
-                <div class="aurora-shape-1"></div>
-                <div class="aurora-shape-2"></div>
-            </div>
+    <!-- Seção Planos (HTML Puro) -->
+    <section id="Planos">
+        <!-- Fundo Aurora Animado (Azul Marinho + Dourado) -->
+        <div class="aurora-bg-wrapper">
+            <div class="aurora-shape shape-gold"></div>
+            <div class="aurora-shape shape-navy"></div>
         </div>
 
-        <input type="checkbox" id="billing-toggle" hidden>
-
-        <div class="planos-header">
-            <div class="badge">
+        <div class="planos-container">
+            <!-- Badge Superior -->
+            <div class="planos-badge">
+                <i class="icone-claro bi-cart-check-fill"></i>
                 <span>Preços Flexíveis e Transparentes</span>
             </div>
-            <h2>Escolha o Melhor Plano</h2>
 
+            <!-- Título Principal -->
+            <h2 class="planos-title">Encontre o Plano Perfeito</h2>
+
+            <!-- Checkbox Invisível para Alternar Mês / Ano via CSS -->
+            <input type="checkbox" id="billing-toggle" class="toggle-checkbox">
+
+            <!-- Seletor de Faturamento (Mensal / Anual) -->
             <div class="toggle-container">
-                <span class="label-monthly">Mensal</span>
-                <label for="billing-toggle" class="toggle-switch">
-                    <div class="toggle-ball"></div>
+                <span class="toggle-label label-monthly">Mensal</span>
+                <label for="billing-toggle" class="toggle-switch" aria-label="Alternar plano mensal ou anual">
+                    <span class="toggle-slider"></span>
                 </label>
-                <span class="label-yearly">Anual</span>
-                <span class="save-badge">(Salva 20%)</span>
-            </div>
-        </div>
-
-        <div class="grid-planos aurora-grid">
-            <div class="card-plano aurora-card">
-                <div class="card-glow"></div>
-                <div class="card-content">
-                    <h3>Starter</h3>
-                    <p>Ideal para indivíduos e quem está começando.</p>
-                    <div class="price-container">
-                        <span class="currency">R$</span>
-                        <span class="price-monthly">199</span>
-                        <span class="price-yearly">1500</span>
-                        <span class="period-monthly">/Mensal</span>
-                        <span class="period-yearly">/Anual</span>
-                    </div>
-                    <ul class="lista-aurora">
-                        <li><span class="check-icon">✓</span> Cadastro de até 200 produtos</li>
-                        <li><span class="check-icon">✓</span> Análises Básicas</li>
-                        <li><span class="check-icon">✓</span> 24/7 Suporte</li>
-                        <li><span class="check-icon">✓</span> 10 GB de Armazenamento</li>
-                    </ul>
-                    <button class="btn-aurora">Entrar em Contato</button>
-                </div>
+                <span class="toggle-label label-yearly">Anual</span>
+                <span class="discount-badge">(Economize 20%)</span>
             </div>
 
-            <div class="card-plano aurora-card featured-card">
-                <div class="card-glow featured-glow"></div>
-                <div class="badge-popular">Mais Popular</div>
-                <div class="card-content">
-                    <h3>Pro</h3>
-                    <p>Ideal para equipes e empresas em crescimento.</p>
-                    <div class="price-container">
-                        <span class="currency">R$</span>
-                        <span class="price-monthly">499</span>
-                        <span class="price-yearly">4000</span>
-                        <span class="period-monthly">/Mensal</span>
-                        <span class="period-yearly">/Anual</span>
-                    </div>
-                    <ul class="lista-aurora">
-                        <li><span class="check-icon">✓</span> Cadastro Ilimitado de Produtos</li>
-                        <li><span class="check-icon">✓</span> Análises Avançadas</li>
-                        <li><span class="check-icon">✓</span> Suporte Prioritário</li>
-                        <li><span class="check-icon">✓</span> 100GB de Armazenamento</li>
-                        <li><span class="check-icon">✓</span> Controle Multi-Estoque</li>
-                    </ul>
-                    <button class="btn-aurora btn-featured">Entrar em Contato</button>
-                </div>
-            </div>
+            <!-- Grade de Cards de Preço -->
+            <div class="pricing-grid">
 
-            <div class="card-plano aurora-card">
-                <div class="card-glow"></div>
-                <div class="card-content">
-                    <h3>Business</h3>
-                    <p>Para grandes empresas com necessidades personalizadas..</p>
-                    <div class="price-container">
-                        <span class="currency">R$</span>
-                        <span class="price-monthly">999</span>
-                        <span class="price-yearly">7000</span>
-                        <span class="period-monthly">/Mensal</span>
-                        <span class="period-yearly">/Anual</span>
+                <!-- Card 1: Iniciante -->
+                <div class="pricing-card">
+                    <div class="card-aurora-glow"></div>
+                    <div class="card-content">
+                        <h3 class="card-name">Iniciante</h3>
+                        <p class="card-desc">Perfeito para indivíduos e pequenos projetos.</p>
+
+                        <div class="card-price-box">
+                            <span class="price monthly-price"><span class="currency">R$</span>19</span>
+                            <span class="price yearly-price"><span class="currency">R$</span>190</span>
+                            <span class="period monthly-period">/mês</span>
+                            <span class="period yearly-period">/ano</span>
+                        </div>
+
+                        <ul class="features-list">
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>5 Projetos</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Análises Básicas</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Suporte 24/7</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>10GB de Armazenamento</span>
+                            </li>
+                        </ul>
+
+                        <button class="plan-btn">Escolher Plano</button>
                     </div>
-                    <ul class="lista-aurora">
-                        <li><span class="check-icon">✓</span> Tudo do Pro</li>
-                        <li><span class="check-icon">✓</span> Gerente de Conta Exclusivo </li>
-                        <li><span class="check-icon">✓</span> Atomações de Pedidos</li>
-                        <li><span class="check-icon">✓</span> API Aberta para Integrações</li>
-                        <li><span class="check-icon">✓</span> Armazenamento Ilimitado</li>
-                        <li><span class="check-icon">✓</span> Previsão de Demanda</li>
-                    </ul>
-                    <button class="btn-aurora">Entrar em Contato</button>
                 </div>
+
+                <!-- Card 2: Pro (Destaque Principal) -->
+                <div class="pricing-card featured">
+                    <div class="card-aurora-glow"></div>
+                    <div class="popular-badge">MAIS POPULAR</div>
+
+                    <div class="card-content">
+                        <h3 class="card-name">Pro</h3>
+                        <p class="card-desc">Para equipes e empresas em crescimento.</p>
+
+                        <div class="card-price-box">
+                            <span class="price monthly-price"><span class="currency">R$</span>49</span>
+                            <span class="price yearly-price"><span class="currency">R$</span>490</span>
+                            <span class="period monthly-period">/mês</span>
+                            <span class="period yearly-period">/ano</span>
+                        </div>
+
+                        <ul class="features-list">
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Projetos Ilimitados</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Análises Avançadas</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Suporte Prioritário</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>100GB de Armazenamento</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Colaboração em Equipe</span>
+                            </li>
+                        </ul>
+
+                        <button class="plan-btn btn-featured">Escolher Plano</button>
+                    </div>
+                </div>
+
+                <!-- Card 3: Corporativo -->
+                <div class="pricing-card">
+                    <div class="card-aurora-glow"></div>
+                    <div class="card-content">
+                        <h3 class="card-name">Corporativo</h3>
+                        <p class="card-desc">Para grandes organizações com necessidades personalizadas.</p>
+
+                        <div class="card-price-box">
+                            <span class="price monthly-price"><span class="currency">R$</span>99</span>
+                            <span class="price yearly-price"><span class="currency">R$</span>990</span>
+                            <span class="period monthly-period">/mês</span>
+                            <span class="period yearly-period">/ano</span>
+                        </div>
+
+                        <ul class="features-list">
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Tudo do plano Pro</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Gerente de Conta Dedicado</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>Integrações Customizadas</span>
+                            </li>
+                            <li>
+                                <svg class="check-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2.5">
+                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                </svg>
+                                <span>SLA & Auditoria de Segurança</span>
+                            </li>
+                        </ul>
+
+                        <button class="plan-btn">Escolher Plano</button>
+                    </div>
+                </div>
+
             </div>
         </div>
     </section>
 
+
+    </section>
     <!--Sobre a Empresa-->
-    <section id="Sobre">
-        <aside class="text-info">
-            <h3>SOBRE-NÓS</h3>
-            <h2>HYPE <span>X</span></h2>
-            <p>
-                Somos uma empresa de tecnologia e automação que<br>
-                oferece uma solução completa no formato SaaS,<br>
-                com ambições globais.
-            </p>
+    <section id="SobreNos">
+        <div class="sobre-container">
 
-            <p>
-                Nosso software de controle automatizado é único: ele opera<br>
-                em integração física com nossos próprios sensores e hardware<br>
-                inteligentes, garantindouma precisão de inventário inigualável.</p>
+            <!-- Coluna Esquerda: Imagem com Card Flutuante -->
+            <div class="sobre-image-col">
+                <div class="image-wrapper">
+                    <!-- Substitua o caminho da imagem se necessário -->
+                    <img src="../static/imagem/dashboard.png" alt="Equipe trabalhando" class="main-img">
 
-            <p>
-                Com a Hype X, sua empresa assume o controle total, reduzindo custos<br>
-                operacionais e garantindo que cada decisão logística seja baseada<br>
-                em dados precisos e automatizados."
-            </p>
-        </aside>
-        <div id="info-img">
-            <img src="static/imagem/sobre.png" alt="sobre">
-        </div>
-    </section>
-    <section id="Avaliacoes" class="depoimentos-section">
-        <div class="depoimentos-container">
-
-            <div class="depoimentos-header">
-                <div class="badge-dourada">
-                    <span>O QUE DIZEM SOBRE NÓS</span>
+                    <!-- Card Flutuante da Comunidade -->
+                    <div class="floating-community-card">
+                        <div class="avatars-group">
+                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces"
+                                alt="Membro 1">
+                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=faces"
+                                alt="Membro 2">
+                            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=faces"
+                                alt="Membro 3">
+                            <span class="avatar-badge">50+</span>
+                        </div>
+                        <div class="community-text">
+                            <strong>Junte-se à nossa equipe de desenvolvedores</strong>
+                            <span>Comunidade</span>
+                        </div>
+                    </div>
                 </div>
-                <h2>Resultados que falam por si</h2>
-                <p>Veja como estamos ajudando empresas a escalarem suas operações e otimizarem o controle de seus
-                    estoques com a Hype X.</p>
             </div>
 
-            <div class="depoimentos-grid">
-
-                <div class="depoimento-card">
-                    <div class="estrelas">★★★★★</div>
-                    <p class="depoimento-texto">"O sistema mudou completamente a forma como operamos nossos galpões. A
-                        previsão de demanda reduziu drasticamente nossas rupturas e excessos. Nosso faturamento aumentou
-                        muito após a implementação."</p>
-                    <div class="cliente-perfil">
-                        <img src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=100&h=100"
-                            alt="Mariana Silva" class="cliente-foto">
-                        <div class="cliente-info">
-                            <h4>Mariana Silva</h4>
-                            <span>CEO, TechGrowth Logística</span>
-                        </div>
-                    </div>
+            <!-- Coluna Direita: Textos e Botão -->
+            <div class="sobre-content-col">
+                <div class="section-badge-wrapper">
+                    <span class="section-mini-title">O QUE FAZEMOS?</span>
+                    <div class="title-underline"></div>
                 </div>
 
-                <div class="depoimento-card">
-                    <div class="estrelas">★★★★★</div>
-                    <p class="depoimento-texto">"Sempre tivemos problemas com sistemas lentos e complexos para controle
-                        multi-estoque. A Hype X trouxe velocidade impressionante e um design belíssimo. Nossa equipe
-                        amou a facilidade."</p>
-                    <div class="cliente-perfil">
-                        <img src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=100&h=100"
-                            alt="Carlos Eduardo" class="cliente-foto">
-                        <div class="cliente-info">
-                            <h4>Carlos Eduardo</h4>
-                            <span>Diretor de Operações, LogisNacional</span>
-                        </div>
-                    </div>
-                </div>
+                <p class="sobre-desc-main">
+                    Nossa plataforma ajuda você a crescer mais rápido, transformando a visão do seu negócio em
+                    ferramentas totalmente funcionais e prontas para otimizar o seu estoque.
+                </p>
 
-                <div class="depoimento-card">
-                    <div class="estrelas">★★★★★</div>
-                    <p class="depoimento-texto">"O que mais me impressionou foi a integração com sensores e hardware
-                        inteligentes. O produto final superou as expectativas, garantindo uma precisão de inventário
-                        inigualável."</p>
-                    <div class="cliente-perfil">
-                        <img src="https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=100&h=100"
-                            alt="Fernanda Costa" class="cliente-foto">
-                        <div class="cliente-info">
-                            <h4>Fernanda Costa</h4>
-                            <span>Fundadora, Studio Distribuição</span>
-                        </div>
-                    </div>
-                </div>
+                <p class="sobre-desc-sub">
+                    Seja lançando um novo armazém, sistema de ERP ou painel logístico, nossa tecnologia é projetada para
+                    impulsionar sua velocidade de operação e melhorar a precisão dos dados.
+                </p>
 
+                <p class="sobre-desc-sub">
+                    De sistemas de inventário inteligentes a automações avançadas, capacitamos sua equipe a trabalhar
+                    com eficiência e escalar sem esforço.
+                </p>
+
+                <a href="#Contato" class="read-more-btn">
+                    Sobre
+                    <svg class="arrow-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                </a>
             </div>
+
         </div>
     </section>
     <!-- Formulário de Contato -->
-    <section id="Contato" class="contato-section">
-        <div class="contato-container">
+    <!-- Seção Contato (Estilo Modern UI) -->
+    <!-- Seção Contato (Estilo Duas Colunas com Cards) -->
+    <section id="Contato">
+        <div class="contato-split-container">
 
-            <div class="contato-info-side">
-                <div class="contato-header">
-                    <span class="contato-overline">FALE CONOSCO</span>
-                    <h2>Entre em contato</h2>
-                    <p>Se você tiver alguma dúvida sobre nossos serviços ou precisar de ajuda, preencha o formulário.
-                        Fazemos o nosso melhor para responder em até 1 dia útil.</p>
-                </div>
+            <!-- Coluna Esquerda: Título, Descrição e Cards de Info -->
+            <div class="contato-info-col">
+                <h2>Entre em Contato</h2>
+                <p class="contato-desc">
+                    Se você tiver alguma dúvida sobre nossos serviços ou precisar de ajuda, preencha o formulário aqui.
+                    Fazemos o possível para responder em até 1 dia útil.
+                </p>
 
-                <div class="contato-detalhes-grid">
-                    <div class="contato-card-item">
-                        <div class="contato-icon-wrapper">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z">
-                                </path>
-                                <polyline points="22,6 12,13 2,6"></polyline>
-                            </svg>
+                <div class="info-cards-grid">
+                    <!-- Card Email -->
+                    <div class="info-card">
+                        <div class="icon-box">
+                            <i class="icone-azul bi-envelope"></i>
                         </div>
-                        <div class="contato-texto">
-                            <span>Email</span>
-                            <p>contato@hypex.com</p>
+                        <div>
+                            <span class="info-label">E-mail</span>
+                            <span class="info-value">Contato@hypex.com</span>
                         </div>
                     </div>
 
-                    <div class="contato-card-item">
-                        <div class="contato-icon-wrapper">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path
-                                    d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z">
-                                </path>
-                            </svg>
+                    <!-- Card Phone -->
+                    <div class="info-card">
+                        <div class="icon-box">
+                            <i class="icone-azul bi-telephone"></i>
                         </div>
-                        <div class="contato-texto">
-                            <span>Telefone</span>
-                            <p>+55 (11) 99999-9999</p>
+                        <div>
+                            <span class="info-label">Celular</span>
+                            <span class="info-value">+19 99124-5323</span>
                         </div>
                     </div>
 
-                    <div class="contato-card-item full-width">
-                        <div class="contato-icon-wrapper">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"
-                                fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                <circle cx="12" cy="10" r="3"></circle>
-                            </svg>
+                    <!-- Card Address (Ocupa as duas colunas no grid) -->
+                    <div class="info-card full-width">
+                        <div class="icon-box">
+                            <i class="icone-azul bi-geo-alt"></i>
                         </div>
-                        <div class="contato-texto">
-                            <span>Endereço</span>
-                            <p>São Paulo, SP - Brasil</p>
+                        <div>
+                            <span class="info-label">Endereço</span>
+                            <span class="info-value">Avenida Paulista - N°1203</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="contato-form-side">
-                <form class="contato-form" action="#" method="POST">
-
-                    <div class="form-group">
-                        <label for="name">Name</label>
-                        <input type="text" id="name" name="name" placeholder="Seu nome completo" required>
+            <!-- Coluna Direita: Formulário -->
+            <div class="contato-form-col">
+                <form class="stylish-form">
+                    <div class="form-field">
+                        <label>Nome</label>
+                        <input type="text" placeholder="" required>
                     </div>
 
-                    <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+                    <div class="form-field">
+                        <label>E-mail</label>
+                        <input type="email" placeholder="" required>
                     </div>
 
-                    <div class="form-group">
-                        <label for="phone">Telefone</label>
-                        <input type="tel" id="phone" name="phone" placeholder="(11) 98765-4321">
+                    <div class="form-field">
+                        <label>Telefone</label>
+                        <input type="tel" placeholder="">
                     </div>
 
-                    <div class="form-group">
-                        <label for="message">Messagem</label>
-                        <textarea id="message" name="message" rows="4" placeholder="Como podemos ajudar sua empresa?"
-                            required></textarea>
+                    <div class="form-field">
+                        <label>Mensagem</label>
+                        <textarea rows="4" required></textarea>
                     </div>
 
-                    <button type="submit" class="form-submit-btn">Enviar</button>
-
+                    <button type="submit" class="black-submit-btn">Submit</button>
                 </form>
             </div>
 
         </div>
     </section>
-    <!-- Footer onde está nossas informações -->
-    <footer class="footer-section">
+    </main>
+    </section>
+    <!-- Footer onde esta nossas informações -->
+    <footer id="rodape">
         <div class="footer-container">
+            <div class="footer-brand">
+                <img class="footer-logo" src="../static/imagem/logo.png" alt="Hype X">
 
-            <div class="footer-col-brand">
-                <div class="footer-logo">
-                    <div class="footer-logo-icon"></div>
-                    <img src="static/imagem/logo.png" alt="Hype X">
-                </div>
-                <p>Potencializando empresas com soluções confiáveis, escaláveis e inovadoras.</p>
+                <p class="footer-description">
+                    A Logística 4.0 no controle total do seu estoque.
+                </p>
 
-                <div class="footer-socials">
+                <div class="footer-socials" aria-label="Redes sociais">
                     <a href="#" aria-label="Instagram">
                         <i class="bi-instagram"></i>
                     </a>
-                    <a href="#" aria-label="Twitter">
-                        <i class="bi-twitter"></i>
+                    <a href="#" aria-label="Facebook">
+                        <i class="bi-facebook"></i>
+                    </a>
+                    <a href="#" aria-label="X / Twitter">
+                        <i class="bi-twitter-x"></i>
                     </a>
                     <a href="#" aria-label="LinkedIn">
                         <i class="bi-linkedin"></i>
                     </a>
-                    <a href="#" aria-label="YouTube">
-                        <i class="bi-youtube"></i>
-                    </a>
                 </div>
             </div>
 
-            <div class="footer-col-links">
-                <h4>Soluções</h4>
-                <ul>
-                    <li><a href="#">Plano Stater</a></li>
-                    <li><a href="#">Plano PRO</a></li>
-                    <li><a href="#">Plano Business</a></li>
-                </ul>
-            </div>
+            <div class="footer-links-group">
+                <div class="footer-coluna">
+                    <h4>Soluções</h4>
+                    <ul>
+                        <li><a href="#Planos">Planos</a></li>
+                        <li><a href="#Solucoes">Soluções</a></li>
+                        <li><a href="#DecisoesEstoque">Funcionalidades</a></li>
+                        <li><a href="#Segmentos">Segmentos</a></li>
+                    </ul>
+                </div>
 
-            <div class="footer-col-links">
-                <h4>Recursos</h4>
-                <ul>
-                    <li><a href="#">Documentação</a></li>
-                    <li><a href="#">Estudos de Casos</a></li>
-                    <li><a href="#">Blog</a></li>
-                    <li><a href="#">Comunidade</a></li>
-                </ul>
-            </div>
+                <div class="footer-coluna">
+                    <h4>Empresa</h4>
+                    <ul>
+                        <li><a href="#Sobre">Sobre Nós</a></li>
+                        <li><a href="#formulario">Contato</a></li>
+                        <li><a href="#">Carreiras</a></li>
+                        <li><a href="#">Blog</a></li>
+                    </ul>
+                </div>
 
-            <div class="footer-col-links">
-                <h4>Empresa</h4>
-                <ul>
-                    <li><a href="#">Sobre Nós</a></li>
-                    <li><a href="#">Nossos Planos</a></li>
-                    <li><a href="#">Entre em Contato</a></li>
-                </ul>
+                <div class="footer-coluna">
+                    <h4>Recursos</h4>
+                    <ul>
+                        <li><a href="#formulario">Suporte</a></li>
+                        <li><a href="#">Central de Ajuda</a></li>
+                        <li><a href="#">Política de Privacidade</a></li>
+                        <li><a href="#">Termos e Condições</a></li>
+                    </ul>
+                </div>
             </div>
-
         </div>
 
         <div class="footer-bottom">
-            <div class="footer-bottom-container">
-                <p>&copy; 2025 Hype X. Todos Os Direitos Reservados.</p>
+            <p>&copy; 2025 Hype X. Todos os direitos reservados.</p>
+            <div class="footer-bottom-links">
+                <a href="#">Termos e Condições</a>
+                <a href="#">Política de Privacidade</a>
             </div>
         </div>
     </footer>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='landing.js') }}"></script>
 </body>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    const menuToggle = document.querySelector('.menu-toggle');
+    const menu = document.querySelector('.menu');
+    const menuLinks = document.querySelectorAll('.menu a');
+
+    menuToggle.addEventListener('click', () => {
+        menuToggle.classList.toggle('active');
+        menu.classList.toggle('active');
+    });
+
+    menuLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            menuToggle.classList.remove('active');
+            menu.classList.remove('active');
+        });
+    });
+</script>
 
 </html>

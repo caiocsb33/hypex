@@ -346,9 +346,8 @@ CREATE TABLE item_pedido_fornecedor (
 CREATE TABLE pedido_cliente (
     id               INT AUTO_INCREMENT PRIMARY KEY,
     cliente_id       INT,
-    galpao_id        INT NULL,                               -- NOVO
-    numero_documento VARCHAR(100),                           -- NOVO
-    produto_id       INT,                                    -- legado, ignorar no novo fluxo
+    galpao_id        INT NULL,                                                
+    produto_id       INT,                                    
     produto_pedido   VARCHAR(200), 
     observacao VARCHAR(200) NULL,
     numero_documento VARCHAR(200) NULL,
