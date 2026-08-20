@@ -7,13 +7,21 @@
     flex: 1;
     min-width: 0;
     box-sizing: border-box;
+    flex-grow: 1;
+    max-width: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+
 }
 
 .galpao {
+    width: 100%;
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 30px;
+    box-sizing: border-box;
 }
 
 .galpao h1 {
@@ -58,9 +66,10 @@
 
 .cards-galpao {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 30px;
-    
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .galpao-card {
@@ -456,4 +465,15 @@ body.modo-escuro .btn-estoque:hover {
 
 body.modo-escuro .total-spent {
     color: #38C172;
+}
+
+body.modo-escuro .total-spent {
+    color: #38C172;
+}
+
+
+/* AJUSTE EXCLUSIVO DA PÁGINA DE GALPÕES */
+
+.conteudo:has(#galpao-conteudo) {
+    padding: 0;
 }

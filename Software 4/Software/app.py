@@ -21,6 +21,34 @@ from datetime import datetime, timedelta
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
 
+@app.context_processor
+def dados_globais():
+    empresa_nome = ""
+
+    if "empresa_id" in session:
+        conexao = Database.connect()
+        cursor = conexao.cursor(dictionary=True)
+
+        try:
+            cursor.execute("""
+                SELECT nome
+                FROM empresa
+                WHERE id = %s
+            """, (session["empresa_id"],))
+
+            empresa = cursor.fetchone()
+
+            if empresa:
+                empresa_nome = empresa["nome"]
+
+        finally:
+            cursor.close()
+            conexao.close()
+
+    return {
+        "empresa_nome": empresa_nome
+    }
+
 # ---------------- FUNÇÕES AUXILIARES ---------------- #
 
 def to_int(value, default=0):
@@ -446,6 +474,7 @@ def esqueci_senha():
 # ---------------- CONFIG ---------------- #
 
 @app.route('/config')
+@login_obrigatorio
 def config():
     return render_template("config.html")
 
