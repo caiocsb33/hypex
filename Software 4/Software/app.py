@@ -16,7 +16,7 @@ from models.empilhadeira import Empilhadeira
 import re
 import secrets
 from datetime import datetime, timedelta
-from werkzeug.security import generate_password_hash, check_password_hash
+
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
@@ -81,9 +81,12 @@ def home():
 def login_obrigatorio(f):
     @wraps(f)
     def wrap(*args, **kwargs):
-        if "usuario_logado" not in session:
+        if "usuario_id" not in session:
+            flash("Faça login para continuar.", "erro")
             return redirect(url_for("login"))
+
         return f(*args, **kwargs)
+
     return wrap
 
 # ---------------- INDEX ---------------- #
@@ -94,23 +97,35 @@ def dashboard():
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
-    cursor.execute("SELECT COUNT(*) AS total FROM fornecedor")
-    total_fornecedores = cursor.fetchone()["total"]
+    try:
+        cursor.execute("SELECT COUNT(*) AS total FROM fornecedor")
+        total_fornecedores = cursor.fetchone()["total"]
 
-    cursor.execute("SELECT COUNT(*) AS total FROM cliente")
-    total_clientes = cursor.fetchone()["total"]
+        cursor.execute("SELECT COUNT(*) AS total FROM cliente")
+        total_clientes = cursor.fetchone()["total"]
 
-    cursor.execute("SELECT COUNT(*) AS total FROM galpao")
-    total_galpoes = cursor.fetchone()["total"]
+        cursor.execute("SELECT COUNT(*) AS total FROM galpao")
+        total_galpoes = cursor.fetchone()["total"]
 
-    cursor.execute("SELECT COUNT(*) AS total FROM produto")
-    total_produtos = cursor.fetchone()["total"]
+        cursor.execute("SELECT COUNT(*) AS total FROM produto")
+        total_produtos = cursor.fetchone()["total"]
 
-    cursor.close()
-    conexao.close()
+        cursor.execute("""
+            SELECT nome
+            FROM empresa
+            WHERE id = %s
+        """, (session["empresa_id"],))
+
+        empresa = cursor.fetchone()
+        empresa_nome = empresa["nome"] if empresa else ""
+
+    finally:
+        cursor.close()
+        conexao.close()
 
     return render_template(
         "dashboard.html",
+        empresa_nome=empresa_nome,
         total_fornecedores=total_fornecedores,
         total_clientes=total_clientes,
         total_galpoes=total_galpoes,
@@ -121,25 +136,87 @@ def dashboard():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form.get("email")
-        senha = request.form.get("senha")
+
+        email = request.form.get("email", "").strip().lower()
+        senha = request.form.get("senha", "")
+
+        print("===================================")
+        print("TENTATIVA DE LOGIN")
+        print("EMAIL:", email)
+        print("SENHA INFORMADA:", bool(senha))
+        print("===================================")
+
+        if not email or not senha:
+            flash("Informe o e-mail e a senha.", "erro")
+            return render_template("login.html")
 
         conexao = Database.connect()
         cursor = conexao.cursor(dictionary=True)
 
         try:
-            sql = "SELECT * FROM usuario WHERE email = %s"
-            cursor.execute(sql, (email,))
+            cursor.execute("""
+                SELECT id, nome, email, senha, empresa_id, tipo, ativo
+                FROM usuario
+                WHERE email = %s
+            """, (email,))
+
             usuario = cursor.fetchone()
 
-            if usuario and check_password_hash(usuario["senha"], senha):
-                session["usuario_logado"] = usuario["email"]
-                session["empresa_id"] = usuario["empresa_id"]
+            print("USUARIO ENCONTRADO:", usuario)
 
-                flash("Login realizado!", "sucesso")
-                return redirect(url_for("dashboard"))
-            else:
+            if not usuario:
+                print("ERRO: usuário não encontrado.")
                 flash("Email ou senha inválidos!", "erro")
+                return render_template("login.html")
+
+            print("ID:", usuario["id"])
+            print("EMAIL BANCO:", usuario["email"])
+            print("ATIVO:", usuario["ativo"])
+            print("TIPO:", usuario["tipo"])
+            print("EMPRESA:", usuario["empresa_id"])
+            print("HASH:", usuario["senha"][:30] if usuario["senha"] else None)
+
+            senha_correta = check_password_hash(
+                usuario["senha"],
+                senha
+            )
+
+            print("SENHA CORRETA:", senha_correta)
+
+            if not senha_correta:
+                flash("Email ou senha inválidos!", "erro")
+                return render_template("login.html")
+
+            if not usuario["ativo"]:
+                flash("Usuário inativo.", "erro")
+                return render_template("login.html")
+
+            session.clear()
+
+            session["usuario_logado"] = usuario["email"]
+            session["usuario_id"] = usuario["id"]
+            session["empresa_id"] = usuario["empresa_id"]
+            session["tipo"] = usuario["tipo"]
+
+            print("LOGIN REALIZADO COM SUCESSO")
+            print("SESSION:", dict(session))
+            print("===================================")
+
+            flash("Login realizado!", "sucesso")
+
+            return redirect(url_for("dashboard"))
+
+        except Exception as e:
+
+            print("===================================")
+            print("ERRO NO LOGIN")
+            print(type(e).__name__)
+            print(e)
+            print("===================================")
+
+            flash(f"Erro ao realizar login: {e}", "erro")
+
+            return render_template("login.html")
 
         finally:
             cursor.close()
@@ -384,56 +461,107 @@ def logout():
 
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro_emp():
- 
+
     if request.method == "POST":
- 
-        nome = request.form.get("nome")
-        cpf = request.form.get("cnpj")
-        email = request.form.get("email")
-        telefone = request.form.get("telefone")
-        senha = generate_password_hash(request.form.get("senha"))
- 
+
+        nome = request.form.get("nome", "").strip()
+        cnpj = request.form.get("cnpj", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        telefone = request.form.get("telefone", "").strip()
+        senha = request.form.get("senha", "")
+
+        if not nome:
+            flash("Informe o nome da empresa.", "erro")
+            return render_template("cadastro.html")
+
+        if not cnpj:
+            flash("Informe o CNPJ.", "erro")
+            return render_template("cadastro.html")
+
+        if not email_valido(email):
+            flash("Informe um e-mail válido.", "erro")
+            return render_template("cadastro.html")
+
+        if not senha:
+            flash("Informe uma senha.", "erro")
+            return render_template("cadastro.html")
+
+        senha_hash = generate_password_hash(senha)
+
         conexao = Database.connect()
-        cursor = conexao.cursor()
- 
+        cursor = conexao.cursor(dictionary=True)
+
         try:
- 
-            # salva empresa
+
+            # Verifica se o CNPJ já existe
+            cursor.execute("""
+                SELECT id
+                FROM empresa
+                WHERE cnpj = %s
+                LIMIT 1
+            """, (cnpj,))
+
+            if cursor.fetchone():
+                flash("Este CNPJ já está cadastrado.", "erro")
+                return render_template("cadastro.html")
+
+            # Verifica se o e-mail já existe
+            cursor.execute("""
+                SELECT id
+                FROM usuario
+                WHERE email = %s
+                LIMIT 1
+            """, (email,))
+
+            if cursor.fetchone():
+                flash("Este e-mail já está cadastrado.", "erro")
+                return render_template("cadastro.html")
+
+            # Cria a empresa
             cursor.execute("""
                 INSERT INTO empresa (nome, cnpj)
                 VALUES (%s, %s)
-            """, (nome, cpf))
- 
+            """, (nome, cnpj))
+
             empresa_id = cursor.lastrowid
- 
-            # salva usuário
+
+            # Cria o usuário administrador
             cursor.execute("""
                 INSERT INTO usuario
-                (nome, telefone, email, senha, empresa_id, tipo)
-                VALUES (%s, %s, %s, %s, %s, 'admin')
+                (nome, telefone, email, senha, empresa_id, tipo, ativo)
+                VALUES (%s, %s, %s, %s, %s, 'admin', 1)
             """, (
                 nome,
                 telefone,
                 email,
-                senha,
+                senha_hash,
                 empresa_id
             ))
- 
+
             conexao.commit()
- 
+
             flash("Cadastro realizado com sucesso!", "sucesso")
+
             return redirect(url_for("login"))
- 
+
         except Exception as e:
+
             conexao.rollback()
-            print("ERRO:", e)
-            flash(f"Erro ao cadastrar: {e}", "erro")
- 
+
+            print("ERRO AO CADASTRAR EMPRESA:", e)
+
+            flash(
+                f"Erro ao cadastrar empresa: {e}",
+                "erro"
+            )
+
         finally:
             cursor.close()
             conexao.close()
- 
+
     return render_template("cadastro.html")
+
+
 # ---------------- ESTOQUE ---------------- #
 
 @app.route("/estoque")
