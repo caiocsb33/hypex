@@ -16,7 +16,7 @@ from models.empilhadeira import Empilhadeira
 import re
 import secrets
 from datetime import datetime, timedelta
-
+import os
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta"
@@ -743,56 +743,257 @@ def produtos():
 
 @app.route("/produto/salvar", methods=["POST"])
 @login_obrigatorio
-def salvar_produto():
-    galpao_id = to_int(request.form.get("galpao_id"))
+
+def salvar_produto(id):
 
     try:
-        produto = Produto(
-            sku=request.form.get("sku"),
-            nome=request.form.get("nome"),
-            descricao=request.form.get("descricao"),
-            categoria=request.form.get("categoria"),
-            preco_custo=to_float(request.form.get("preco_custo")),
-            preco_venda=to_float(request.form.get("preco_venda")),
-            peso=to_float(request.form.get("peso")),
-            volume=to_float(request.form.get("volume")),
-            tipo=request.form.get("tipo"),
-            codigo_barras=request.form.get("codigo_barras"),
-        )
 
-        erros = produto.validate()
-        if erros:
-            for erro in erros:
-                flash(erro, "erro")
-            return redirect(url_for("estoque_galpao", galpao_id=galpao_id))
+        # =========================================================
+        # DADOS DO PRODUTO
+        # =========================================================
 
-        produto_id = produto.insert()
+        dados = {
+            "sku": request.form.get("sku"),
+            "nome": request.form.get("nome"),
+            "descricao": request.form.get("descricao"),
+            "categoria": request.form.get("categoria"),
+            "preco_custo": to_float(request.form.get("preco_custo")),
+            "preco_venda": to_float(request.form.get("preco_venda")),
+            "peso": to_float(request.form.get("peso")),
+            "volume": to_float(request.form.get("volume")),
+            "tipo": request.form.get("tipo"),
+            "codigo_barras": request.form.get("codigo_barras"),
+            "item_por_caixa": to_int(
+                request.form.get("item_por_caixa")
+            ),
 
-        quantidade = to_int(request.form.get("quantidade"))
-        quantidade_minimo = to_int(request.form.get("quantidade_minimo"))
+            # No seu HTML o name é quantidade_minimo
+            "estoque_minimo": to_int(
+                request.form.get("quantidade_minimo")
+            )
+        }
 
-        if galpao_id:
-            conn = Database.connect()
-            cursor = conn.cursor()
-            try:
-                cursor.execute("""
-                    INSERT INTO estoque (produto_id, galpao_id, quantidade, estoque_minimo)
-                    VALUES (%s, %s, %s, %s)
-                    ON DUPLICATE KEY UPDATE
-                        quantidade = VALUES(quantidade),
-                        estoque_minimo = VALUES(estoque_minimo)
-                """, (produto_id, galpao_id, quantidade, quantidade_minimo))
-                conn.commit()
-            finally:
-                cursor.close()
-                conn.close()
 
-        flash("Produto cadastrado com sucesso!", "sucesso")
+        # =========================================================
+        # IMAGEM ENVIADA PELO FORMULÁRIO
+        # =========================================================
+
+        imagem = request.files.get("imagem")
+
+
+        # =========================================================
+        # BUSCAR IMAGEM ATUAL NO BANCO
+        # =========================================================
+
+        conn = Database.connect()
+        cursor = conn.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT imagem
+                FROM produto
+                WHERE id = %s
+                """,
+                (id,)
+            )
+
+            produto_atual = cursor.fetchone()
+
+            imagem_atual = None
+
+            if produto_atual:
+                imagem_atual = produto_atual.get("imagem")
+
+
+            # =====================================================
+            # MANTÉM A IMAGEM ATUAL
+            # =====================================================
+
+            nome_imagem = imagem_atual
+
+
+            # =====================================================
+            # SE O USUÁRIO ESCOLHEU UMA NOVA IMAGEM
+            # =====================================================
+
+            if imagem and imagem.filename:
+
+                # Extensões permitidas
+                extensoes_permitidas = {
+                    "png",
+                    "jpg",
+                    "jpeg",
+                    "webp"
+                }
+
+                nome_original = imagem.filename
+
+                if "." not in nome_original:
+                    raise ValueError(
+                        "O arquivo selecionado não possui uma extensão válida."
+                    )
+
+                extensao = nome_original.rsplit(".", 1)[-1].lower()
+
+
+                # Verifica extensão
+
+                if extensao not in extensoes_permitidas:
+
+                    raise ValueError(
+                        "Formato de imagem inválido. "
+                        "Use PNG, JPG, JPEG ou WEBP."
+                    )
+
+
+                # =================================================
+                # VERIFICAR TAMANHO
+                # =================================================
+
+                imagem.seek(0, 2)
+
+                tamanho = imagem.tell()
+
+                imagem.seek(0)
+
+
+                # Máximo de 5 MB
+
+                if tamanho > 5 * 1024 * 1024:
+
+                    raise ValueError(
+                        "A imagem deve ter no máximo 5 MB."
+                    )
+
+
+                # =================================================
+                # PASTA DAS IMAGENS
+                # =================================================
+
+                pasta_imagem = os.path.join(
+                    app.root_path,
+                    "static",
+                    "imagem"
+                )
+
+
+                # Cria a pasta se não existir
+
+                os.makedirs(
+                    pasta_imagem,
+                    exist_ok=True
+                )
+
+
+                # =================================================
+                # NOME DO NOVO ARQUIVO
+                # =================================================
+
+                nome_imagem = f"produto_{id}.{extensao}"
+
+
+                # =================================================
+                # EXCLUIR IMAGEM ANTIGA
+                # =================================================
+
+                if imagem_atual:
+
+                    caminho_antigo = os.path.join(
+                        pasta_imagem,
+                        imagem_atual
+                    )
+
+                    if os.path.isfile(caminho_antigo):
+
+                        os.remove(caminho_antigo)
+
+
+                # =================================================
+                # SALVAR NOVA IMAGEM
+                # =================================================
+
+                caminho_nova = os.path.join(
+                    pasta_imagem,
+                    nome_imagem
+                )
+
+                imagem.save(caminho_nova)
+
+
+            # =====================================================
+            # COLOCA O NOME DA IMAGEM NOS DADOS
+            # =====================================================
+
+            dados["imagem"] = nome_imagem
+
+
+            # =====================================================
+            # ATUALIZA PRODUTO
+            # =====================================================
+
+            Produto.update(id, dados)
+
+
+            # =====================================================
+            # ATUALIZA ESTOQUE
+            # =====================================================
+
+            cursor.execute(
+                """
+                UPDATE estoque
+                SET estoque_minimo = %s
+                WHERE produto_id = %s
+                """,
+                (
+                    dados["estoque_minimo"],
+                    id
+                )
+            )
+
+
+            # =====================================================
+            # CONFIRMA ALTERAÇÕES
+            # =====================================================
+
+            conn.commit()
+
+
+            flash(
+                "Produto atualizado com sucesso!",
+                "sucesso"
+            )
+
+
+        except Exception:
+
+            conn.rollback()
+
+            raise
+
+
+        finally:
+
+            cursor.close()
+            conn.close()
+
 
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
 
-    return redirect(url_for("estoque_galpao", galpao_id=galpao_id))
+        flash(
+            f"Erro ao atualizar produto: {e}",
+            "erro"
+        )
+
+
+    return redirect(
+        url_for(
+            "info_produtos",
+            id=id
+        )
+    )
+
 
 @app.route("/produto/editar/<int:id>")
 @login_obrigatorio
@@ -1913,10 +2114,10 @@ def listar_pedidos_saida():
         conn.close()
     return render_template(
     "cliente.html",
-    cliente=c,
+    cliente=cliente,
     pedidos=pedidos,
-    galpoes=galpoes,
-    produtos=lista_produtos
+    galpoes=galpao,
+    produtos=lista_produtos,
 )
 
 
