@@ -1,39 +1,98 @@
+/* =========================================
+   RESET / BODY
+========================================= */
+
 body {
     background: linear-gradient(90deg, #15477F, #4e4e4e);
-    background-image: url(imagens/back-passagem-10.png);
+    background-image: url("imagens/back-passagem-10.png");
+
     display: flex;
     justify-content: center;
-    height: 100vh;
-    font-family: 'Inter', sans-serif;
+    align-items: center;
+
+    min-height: 100vh;
+    height: auto;
+
+    margin: 0;
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    font-family: "Inter", sans-serif;
+
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }
+
+
+/* =========================================
+   CONTAINER PRINCIPAL
+========================================= */
 
 .login-container {
-    height: 100vh;
+    width: 100%;
+    min-height: 100vh;
+    height: auto;
 }
 
+
+/* =========================================
+   CARD PRINCIPAL
+========================================= */
+
 .login-card {
-    background: rgba(255, 255, 255);
+    background: rgba(255, 255, 255, 1);
+
     backdrop-filter: blur(12px);
+
     border-radius: 36px;
+
     box-shadow: 0 0 30px rgba(50, 50, 50, 0.4);
+
     margin-top: -30px;
+
     padding: 40px;
+
     width: 100%;
     height: 500px;
+
     max-width: 800px;
+
     border: 1px solid #ffffff1a;
+
+    box-sizing: border-box;
 }
+
+
+/* =========================================
+   CARD AZUL / CADASTRO
+========================================= */
 
 .card-cad {
     background: #15477F;
+
     margin-left: 56%;
+
     border-radius: 60px 36px 36px 60px;
+
     margin-top: -41px;
+
     padding: 40px;
+
     height: 500px;
+
     width: 50%;
+
     border: 1px solid rgba(255, 255, 255, 0.1);
+
+    box-sizing: border-box;
 }
+
+
+/* =========================================
+   FORMULÁRIO
+========================================= */
 
 .forms {
     margin-top: -470px;
@@ -41,152 +100,140 @@ body {
 
 .forms h2 {
     color: #333;
+
     font-weight: bold;
+
     margin-left: 130px;
+
     font-size: 35px;
+
     margin-bottom: 20px;
 }
 
+
+/* =========================================
+   CARD AZUL - TEXTOS
+========================================= */
+
 .card-cad h4 {
     font-weight: bold;
+
     font-size: 34px;
+
     margin-top: -60px;
 }
 
 .card-cad p {
     font-size: 17px;
+
     font-weight: bold;
+
     margin-bottom: 30px;
 }
+
+
+/* =========================================
+   LOGO
+========================================= */
+
+.logo {
+    width: 300px;
+
+    margin-top: -20px;
+    margin-left: -15px;
+
+    margin-bottom: 20px;
+
+    max-width: 100%;
+    height: auto;
+}
+
+
+/* =========================================
+   LABELS
+========================================= */
 
 .form-label {
     font-weight: bold;
 }
 
-.logo {
-    width: 300px;
-    margin-top: -20px;
-    margin-left: -15px;
-    margin-bottom: 20px;
-}
+
+/* =========================================
+   INPUTS
+========================================= */
 
 .form-control {
     background: #0f172a;
+
     border: 1px solid #334155;
+
     color: #fff;
+}
+
+.form-control::placeholder {
+    color: #94a3b8;
 }
 
 .form-control:focus {
     background: #0f172a;
+
     border-color: #15477F;
+
     box-shadow: none;
+
     color: #fff;
 }
 
+
+/* =========================================
+   BOTÃO LOGIN
+========================================= */
+
 .btn-login {
     height: 48px;
+
     background: #15477F;
+
     font-weight: bold;
+
     border-radius: 8px;
+
     border: none;
+
     cursor: pointer;
+
     font-size: 16px;
+
     color: #fff;
+
+    transition: all 0.3s ease;
 }
 
 .btn-login:hover {
     background-color: #1e4470;
+
     transform: translateY(-2px);
+}
+
+
+/* =========================================
+   ESQUECI A SENHA
+========================================= */
+
+.esqueci-senha {
+    margin-top: 20px;
+
+    color: #333;
+
+    transition: color 0.3s ease;
 }
 
 .esqueci-senha:hover {
     color: #15477F;
+
     text-decoration: none;
 }
 
-.esqueci-senha {
-    margin-top: 20px;
-}
-
-.grid-login {
-    display: flex;
-    justify-content: start;
-    margin-left: 55px;
-}
-
-.grid-login a {
-    padding: 10px;
-    margin: 0 8px;
-    border: 2px solid #ccc;
-    border-radius: 8px;
-    font-size: 24px;
-    color: #333;
-}
-
-.grid-login a:hover {
-    background-color: #15477F;
-    border-color: #15477F;
-    color: #fff;
-}
-
-.alert-container {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 9999;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-.alert {
-    min-width: 300px;
-    max-width: 500px;
-    text-align: center;
-    padding: 12px 20px;
-    border-radius: 8px;
-    animation: fadeSlide 0.4s ease;
-}
-
-@keyframes fadeSlide {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.login-options {
-    margin-top: -25px;
-    margin-left: 10px;
-}
-
-.manter-logado {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 10px;
-    font-size: 15px;
-    color: #333;
-    margin-top: 10px;
-}
-
-.grid-login {
-    display: flex;
-    justify-content: start;
-    margin-left: 55px;
-    margin-top: -5px;
-}
-
-.grid-login {
-    margin-left: 60px;
-    margin-top: 10px;
-}
 
 /* =========================================
    CHECKBOX - MANTER LOGADO
@@ -194,20 +241,27 @@ body {
 
 .manter-logado {
     display: flex;
+
     align-items: center;
+
     gap: 10px;
 
     margin-top: 15px;
+
     margin-bottom: 10px;
 
     font-size: 14px;
+
     color: #333;
 
     cursor: pointer;
+
     user-select: none;
 }
 
-/* Esconde o checkbox padrão */
+
+/* Checkbox */
+
 .manter-logado input[type="checkbox"] {
     appearance: none;
     -webkit-appearance: none;
@@ -218,6 +272,7 @@ body {
     margin: 0;
 
     border: 2px solid #cbd5e1;
+
     border-radius: 6px;
 
     background: #ffffff;
@@ -226,22 +281,32 @@ body {
 
     position: relative;
 
+    flex-shrink: 0;
+
     transition: all 0.2s ease;
 }
 
+
 /* Hover */
+
 .manter-logado input[type="checkbox"]:hover {
     border-color: #15477F;
+
     transform: scale(1.05);
 }
 
-/* Marcado */
+
+/* Checkbox marcado */
+
 .manter-logado input[type="checkbox"]:checked {
     background: #15477F;
+
     border-color: #15477F;
 }
 
+
 /* Check */
+
 .manter-logado input[type="checkbox"]:checked::after {
     content: "";
 
@@ -254,48 +319,177 @@ body {
     top: 2px;
 
     border: solid #ffffff;
+
     border-width: 0 2px 2px 0;
 
     transform: rotate(45deg);
 }
 
-/* Animação ao clicar */
+
+/* Clique */
+
 .manter-logado input[type="checkbox"]:active {
     transform: scale(0.92);
 }
 
-/* Foco pelo teclado */
+
+/* Foco */
+
 .manter-logado input[type="checkbox"]:focus-visible {
     outline: 3px solid rgba(21, 71, 127, 0.2);
+
     outline-offset: 2px;
 }
 
+
 /* =========================================
-   RESPONSIVIDADE DO LOGIN
-   Mantém o estilo original
+   REDES SOCIAIS
 ========================================= */
 
-/* Desktop menor / notebook */
+.grid-login {
+    display: flex;
+
+    justify-content: start;
+
+    margin-left: 60px;
+
+    margin-top: 10px;
+
+    gap: 0;
+}
+
+.grid-login a {
+    padding: 10px;
+
+    margin: 0 8px;
+
+    border: 2px solid #ccc;
+
+    border-radius: 8px;
+
+    font-size: 24px;
+
+    color: #333;
+
+    text-decoration: none;
+
+    transition: all 0.3s ease;
+}
+
+.grid-login a:hover {
+    background-color: #15477F;
+
+    border-color: #15477F;
+
+    color: #fff;
+}
+
+
+/* =========================================
+   ALERTAS
+========================================= */
+
+.alert-container {
+    position: fixed;
+
+    top: 20px;
+
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    z-index: 9999;
+
+    width: 100%;
+
+    display: flex;
+
+    justify-content: center;
+
+    padding: 0 15px;
+
+    box-sizing: border-box;
+}
+
+.alert {
+    min-width: 300px;
+
+    max-width: 500px;
+
+    width: auto;
+
+    text-align: center;
+
+    padding: 12px 20px;
+
+    border-radius: 8px;
+
+    animation: fadeSlide 0.4s ease;
+
+    box-sizing: border-box;
+}
+
+
+/* =========================================
+   ANIMAÇÃO ALERTA
+========================================= */
+
+@keyframes fadeSlide {
+
+    from {
+        opacity: 0;
+
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+
+        transform: translateY(0);
+    }
+
+}
+
+
+/* =========================================
+   LOGIN OPTIONS
+========================================= */
+
+.login-options {
+    margin-top: -25px;
+
+    margin-left: 10px;
+}
+
+
+/* =========================================
+   TABLET / NOTEBOOK
+========================================= */
+
 @media (max-width: 1200px) {
 
     .login-card {
         max-width: 760px;
+
         padding: 35px;
     }
 
     .card-cad {
         margin-left: 55%;
+
         width: 50%;
     }
 
     .forms h2 {
         margin-left: 90px;
+
         font-size: 32px;
     }
 
     .grid-login {
         margin-left: 45px;
     }
+
 }
 
 
@@ -307,28 +501,39 @@ body {
 
     body {
         min-height: 100vh;
+
         padding: 20px;
+
         box-sizing: border-box;
     }
 
     .login-container {
         height: auto;
+
         min-height: 100vh;
     }
 
     .login-card {
         width: 100%;
+
         max-width: 700px;
+
         height: auto;
+
         min-height: 500px;
+
         padding: 35px;
+
         margin-top: 0;
     }
 
     .card-cad {
         margin-left: 50%;
+
         width: 50%;
+
         height: 500px;
+
         padding: 30px;
     }
 
@@ -338,6 +543,7 @@ body {
 
     .forms h2 {
         margin-left: 70px;
+
         font-size: 30px;
     }
 
@@ -348,248 +554,178 @@ body {
     .input-group.w-50,
     .btn-login.w-50 {
         width: 55% !important;
-        =======
-        /* =========================================================
-   RESPONSIVIDADE
-   A partir daqui as alterações só acontecem em telas menores
-========================================================= */
+    }
+
+    .grid-login {
+        margin-left: 35px;
+    }
+
+}
 
 
-        /* =========================================================
-   NOTEBOOK / TELAS MENORES
-========================================================= */
-
-        @media (max-width: 900px) {
-
-            .login-card {
-                max-width: 700px;
-                padding: 30px;
-            }
-
-            .card-cad {
-                padding: 30px;
-            }
-
-            .logo {
-                width: 230px;
-            }
-
-            .forms h2 {
-                margin-left: 80px;
-                font-size: 30px;
-            }
-
-            .grid-login {
-                margin-left: 35px;
-            }
-        }
-
-
-        /* =========================================
-   CELULAR / MOBILE
+/* =========================================
+   MOBILE
 ========================================= */
-        /* =========================================================
-   TABLET
-========================================================= */
 
-        @media (max-width: 768px) {
+@media (max-width: 768px) {
 
-            body {
-                min-height: 100vh;
-                height: auto;
-                padding: 20px;
-                box-sizing: border-box;
+    body {
+        min-height: 100vh;
 
-                background-position: center;
-                background-size: cover;
-            }
+        height: auto;
 
-            .login-container {
-                width: 100%;
-                height: auto;
-                min-height: 100vh;
+        padding: 20px;
 
-                padding: 20px 0;
+        box-sizing: border-box;
 
-                padding: 20px 0;
-            }
+        background-position: center;
 
-            .login-container {
-                height: auto;
-                min-height: 100vh;
-                padding: 20px;
-            }
+        background-size: cover;
+    }
 
-            .login-card {
-                width: 100%;
-                max-width: 500px;
+    .login-container {
+        width: 100%;
 
-                height: auto;
-                min-height: auto;
+        height: auto;
 
-                padding: 25px;
+        min-height: 100vh;
 
-                margin-top: 0;
+        padding: 20px 0;
+    }
 
-                border-radius: 28px;
-            }
+    .login-card {
+        width: 100%;
 
-            /* Card azul */
-            max-width: 600px;
-            height: auto;
-            min-height: 500px;
-            padding: 30px;
-            margin-top: 0;
-        }
+        max-width: 500px;
+
+        height: auto;
+
+        min-height: auto;
+
+        padding: 25px;
+
+        margin-top: 0;
+
+        border-radius: 28px;
+    }
 
 
-        /* =========================================
-       QUADRADO AZUL
-    ========================================= */
+    /* Card azul */
 
-        .card-cad {
-            position: relative;
+    .card-cad {
+        position: relative;
 
-            width: 100%;
-            height: auto;
+        width: 100%;
 
-            margin: 0 0 30px 0;
+        height: auto;
 
-            padding: 30px;
+        margin: 0 0 30px 0;
 
-            border-radius: 28px;
+        padding: 30px;
 
-            box-sizing: border-box;
-        }
+        border-radius: 28px;
 
-        /* Logo */
-        .logo {
-            width: 220px;
-            max-width: 80%;
-
-            display: block;
-
-            margin: -10px auto 20px;
-        }
-
-        .card-cad h4 {
-            font-size: 30px;
-            margin-top: 0;
-        }
-
-        .card-cad p {
-            font-size: 16px;
-        }
-
-        /* Remove o posicionamento negativo */
-        .forms {
-            margin: -30px auto 30px auto;
-
-            padding: 30px;
-
-            border-radius: 30px;
-
-            text-align: center;
-
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .logo {
-            width: 220px;
-
-            margin: 0 auto 15px auto;
-
-            display: block;
-        }
-
-        .card-cad h4 {
-            font-size: 28px;
-
-            margin-top: 0;
-
-            text-align: center;
-        }
-
-        .card-cad p {
-            font-size: 15px;
-
-            margin-bottom: 15px;
-
-            text-align: center;
-        }
-
-        .card-cad>div {
-            margin-top: 10px !important;
-
-            text-align: center;
-        }
+        box-sizing: border-box;
+    }
 
 
-        /* =========================================
-       FORMULÁRIO
-    ========================================= */
+    /* Logo */
 
-        .forms {
-            width: 100%;
+    .logo {
+        width: 220px;
 
-            margin-top: 0;
-        }
+        max-width: 80%;
 
-        .forms h2 {
-            margin-left: 0;
-            text-align: center;
+        display: block;
 
-            font-size: 30px;
+        margin: -10px auto 20px;
+    }
 
-            margin-bottom: 25px;
-        }
 
-        /* Inputs */
+    /* Textos do card azul */
+
+    .card-cad h4 {
+        font-size: 30px;
+
+        margin-top: 0;
+    }
+
+    .card-cad p {
+        font-size: 16px;
+    }
+
+
+    /* Formulário */
+
+    .forms {
+        margin-top: 0;
+    }
+
+    .forms h2 {
+        margin-left: 0;
 
         text-align: center;
 
         font-size: 30px;
+
+        margin-bottom: 25px;
     }
+
+
+    /* Inputs */
 
     .input-group.w-50 {
         width: 100% !important;
     }
 
+
     /* Botão */
+
     .btn-login.w-50 {
         width: 100% !important;
     }
 
-    /* Espaçamento do formulário */
+
+    /* Espaçamento */
+
     .forms .mb-5 {
         margin-bottom: 30px !important;
     }
 
+
     /* Esqueci senha */
+
     .login-options {
         margin-top: 0;
+
         margin-left: 0;
     }
 
     .esqueci-senha {
         display: inline-block;
+
         margin-top: 15px;
     }
 
-    /* Manter logado */
+
+    /* Checkbox */
+
     .manter-logado {
         margin-top: 15px;
+
         margin-bottom: 10px;
+
+        font-size: 14px;
     }
 
+
     /* Redes sociais */
+
     .grid-login {
         justify-content: center;
 
         margin-left: 0;
+
         margin-top: 20px;
 
         gap: 10px;
@@ -606,25 +742,6 @@ body {
    CELULAR PEQUENO
 ========================================= */
 
-
-/* =========================================
-       REDES SOCIAIS
-    ========================================= */
-
-.grid-login {
-    width: 100%;
-
-    margin-left: 0;
-
-    justify-content: center;
-}
-}
-
-
-/* =========================================================
-   CELULAR
-========================================================= */
-
 @media (max-width: 480px) {
 
     body {
@@ -633,11 +750,6 @@ body {
 
     .login-container {
         padding: 10px 0;
-        padding: 10px 0;
-    }
-
-    .login-container {
-        padding: 10px;
     }
 
     .login-card {
@@ -652,10 +764,17 @@ body {
         border-radius: 24px;
     }
 
+
+    /* Logo */
+
     .logo {
         width: 190px;
+
         margin-bottom: 15px;
     }
+
+
+    /* Card azul */
 
     .card-cad h4 {
         font-size: 26px;
@@ -665,173 +784,107 @@ body {
         font-size: 15px;
     }
 
+
+    /* Título */
+
     .forms h2 {
         font-size: 27px;
-        border-radius: 25px;
-
-        min-height: auto;
     }
 
 
-    /* =========================================
-       QUADRADO AZUL NO CELULAR
-    ========================================= */
-
-    .card-cad {
-        width: 100%;
-
-        margin: -20px auto 25px auto;
-
-        padding: 25px 20px;
-
-        border-radius: 25px;
-
-        text-align: center;
-
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .logo {
-        width: 180px;
-
-        margin: 0 auto 10px auto;
-    }
-
-    .card-cad h4 {
-        font-size: 24px;
-
-        margin-top: 0;
-
-        text-align: center;
-    }
-
-    .card-cad p {
-        font-size: 14px;
-
-        margin-bottom: 10px;
-
-        text-align: center;
-    }
-
-    .card-cad>div {
-        margin-top: 10px !important;
-
-        text-align: center;
-    }
-
-
-    /* =========================================
-       FORMULÁRIO
-    ========================================= */
-
-    .forms h2 {
-        font-size: 26px;
-
-        margin-bottom: 20px;
-    }
+    /* Labels */
 
     .form-label {
         font-size: 14px;
     }
 
-    .form-control {
-        height: 44px;
 
+    /* Inputs */
+
+    .form-control {
         font-size: 14px;
     }
 
+
+    /* Botão */
+
     .btn-login {
         height: 46px;
+
         font-size: 15px;
     }
 
+
+    /* Redes sociais */
+
     .grid-login a {
         padding: 8px;
+
         font-size: 20px;
     }
 
+
+    /* Alertas */
+
     .alert {
         min-width: auto;
+
         width: calc(100% - 30px);
+
         max-width: none;
     }
 
-
-    height: 45px;
-}
-
-.esqueci-senha {
-    font-size: 14px;
-}
-
-.manter-logado {
-    font-size: 14px;
 }
 
 
 /* =========================================
-       REDES SOCIAIS
-    ========================================= */
-
-.grid-login {
-    margin-top: 15px;
-
-    gap: 5px;
-}
-
-.grid-login a {
-    width: 40px;
-    height: 40px;
-
-    font-size: 20px;
-
-    margin: 0;
-
-    padding: 0;
-}
-
-
-
-/* =========================================================
-   CELULARES MUITO PEQUENOS
-========================================================= */
+   CELULAR MUITO PEQUENO
+========================================= */
 
 @media (max-width: 360px) {
 
+    body {
+        padding: 5px;
+    }
+
     .login-card {
-        padding: 15px;
+        padding: 16px;
+
+        border-radius: 20px;
     }
 
     .card-cad {
-        margin: -15px auto 20px auto;
-
         padding: 20px 15px;
+
+        border-radius: 20px;
     }
 
     .logo {
-        width: 150px;
+        width: 165px;
     }
 
     .card-cad h4 {
-        font-size: 21px;
-    }
-
-    .card-cad p {
-        font-size: 13px;
-    }
-
-    .forms h2 {
         font-size: 23px;
     }
 
-    .grid-login a {
-        width: 36px;
-        height: 36px;
+    .card-cad p {
+        font-size: 14px;
+    }
 
-        font-size: 17px;
+    .forms h2 {
+        font-size: 24px;
+    }
+
+    .grid-login {
+        gap: 5px;
+    }
+
+    .grid-login a {
+        padding: 7px;
+
+        margin: 0;
+
+        font-size: 18px;
     }
 
 }
