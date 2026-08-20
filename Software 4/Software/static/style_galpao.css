@@ -185,14 +185,12 @@ nav ul {
 #galpao-conteudo {
     margin-left: 250px;
     padding: 30px;
-<<<<<<< Updated upstream
     flex-grow: 1;
-=======
     max-width: none;
     flex: 1 1 auto;
     min-width: 0;
     box-sizing: border-box;
->>>>>>> Stashed changes
+
 }
 
 .galpao {
@@ -657,5 +655,4 @@ body.modo-escuro .total-spent {
 
 .conteudo:has(#galpao-conteudo) {
     padding: 0;
->>>>>>> Stashed changes
 }
