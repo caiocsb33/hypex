@@ -1,13 +1,27 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-br">
 
-{% block title %}
-Software HYPEX - Fornecedores
-{% endblock %}
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software HYPEX - Pedidos Clientes</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style_pedidos.css') }}">
+</head>
 
-{% block css %}
+<body>
+    <aside id="menu">
+        <div class="status-dots">
+            <span class="dot-red"></span>
+            <span class="dot-yellow"></span>
+            <span class="dot-green"></span>
+        </div>
 
-<link rel="stylesheet"
-      href="{{ url_for('static', filename='style_pedidos.css') }}">
+        <div class="perfil">
+            <img src="{{ url_for('static', filename='imagem/perfil.png') }}" class="perfil-img">
+            <h3>Empresa</h3>
+        </div>
 
         <nav>
             <ul>
@@ -29,9 +43,14 @@ Software HYPEX - Fornecedores
             </ul>
         </nav>
 
-{% endblock %}
-
-{% block content %}
+        <div class="menu-opcoes">
+            <a href="/config" class="opcoes-btn"><i class="bi bi-gear-fill"></i></a>
+            <button class="opcoes-btn selected-opcoes-btn"><i class="bi bi-circle-half"></i></button>
+            <a href="{{ url_for('logout') }}" class="opcoes-btn red-opcoes-btn">
+                <i class="bi bi-door-open-fill"></i>
+            </a>
+        </div>
+    </aside>
 
     <main id="orders-content">
         <header class="orders-header">
@@ -162,4 +181,9 @@ Software HYPEX - Fornecedores
                 </tbody>
             </table>
         </section>
-{% endblock %}
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

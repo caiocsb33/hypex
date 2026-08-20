@@ -1,4 +1,5 @@
-{% extends "base.html" %}
+<!DOCTYPE html>
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
@@ -9,16 +10,19 @@
         <link rel="stylesheet" href="style_config.css"> 
 </head>
 
-{% block title %}
-Software HYPEX - Configuração
-{% endblock %}
+<body>
 
-{% block css %}
+    <aside id="menu">
+        <div class="status-dots">
+            <span class="dot-red"></span>
+            <span class="dot-yellow"></span>
+            <span class="dot-green"></span>
+        </div>
 
-<link rel="stylesheet"
-      href="{{ url_for('static', filename='style_config.css') }}">
-
-{% endblock %}
+        <div class="perfil">
+            <img src="{{ url_for('static', filename='imagem/perfil.png') }}">
+            <h3>Empresa</h3>
+        </div>
 
         <nav>
             <ul>
@@ -69,8 +73,6 @@ Software HYPEX - Configuração
             </a>
         </div>
     </aside>
-
-{% block content %}
 
     <main id="config-conteudo">
         <header class="config-texto">
@@ -206,4 +208,7 @@ Software HYPEX - Configuração
                 </table>
             </div>
         </section>
-{% endblock %}
+    </main>
+</body>
+
+</html>

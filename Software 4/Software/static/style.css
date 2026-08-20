@@ -20,111 +20,32 @@ body {
     padding: 0;
 }
 
-
-
-/* =========================================
-   SIDEBAR
-========================================= */
-/* =========================================
-   RESTAURAÇÃO INSTANTÂNEA DA SIDEBAR
-========================================= */
-
-html.sidebar-pre-minimizada #menu {
-    width: 75px;
-    min-width: 75px;
-}
-
-html.sidebar-pre-minimizada .conteudo {
-    width: calc(100% - 75px);
-    margin-left: 75px;
-}
-
-html.sidebar-pre-minimizada #menu,
-html.sidebar-pre-minimizada #menu *,
-html.sidebar-pre-minimizada .conteudo {
-    transition: none !important;
-}
-
-  a5ea7f4bae660275c9bc995bd2834a814a676b47
 #menu {
     width: 250px;
-    min-width: 250px;
-    height: 100vh;
-
     background-color: #15477F;
-
+    color: white;
+    height: 100vh;
     position: fixed;
-    left: 0;
     top: 0;
-
-    z-index: 1000;
-
+    left: 0;
+    padding: 20px 0;
     display: flex;
     flex-direction: column;
     box-sizing: border-box;
 }
 
 .status-dots {
-
-    overflow: hidden;
-
-    transition:
-        width 0.3s ease,
-        min-width 0.3s ease,
-        transform 0.3s ease;
-}
-
-
-/* =========================================
-   BOTÃO DOS TRÊS PONTOS
-========================================= */
-
-.btn-minimizar {
-    position: absolute;
-
-    top: 18px;
-    left: 22px;
-
-    width: 55px;
-    height: 25px;
-
-  a5ea7f4bae660275c9bc995bd2834a814a676b47
     display: flex;
-    align-items: center;
-
-    gap: 7px;
-
-    padding: 0;
-
-    border: none;
-    background: transparent;
-
-    cursor: pointer;
-
-    z-index: 10;
+    gap: 8px;
+    padding: 0 20px 25px 20px;
 }
 
 .status-dots span {
     width: 8px;
     height: 8px;
-
-
-/* OS TRÊS PONTOS */
-
-.btn-minimizar span {
-    width: 9px;
-    height: 9px;
-
-  a5ea7f4bae660275c9bc995bd2834a814a676b47
     border-radius: 50%;
-
-    background-color: #dce9f7;
-
-    transition: opacity 0.2s ease;
-}
-
-.btn-minimizar span:nth-child(3) {
-    opacity: 0.35;
+    background-color: white;
+    border: 1px solid white;
 }
 
 .status-dots .dot-red {
@@ -138,82 +59,34 @@ html.sidebar-pre-minimizada .conteudo {
 .status-dots .dot-green {
     background-color: #2B6BB9;
     border-color: #2B6BB9;
-
-
-/* =========================================
-   SIDEBAR MINIMIZADA
-========================================= */
-
-#menu.minimizada {
-    width: 75px;
-    min-width: 75px;
-  a5ea7f4bae660275c9bc995bd2834a814a676b47
 }
 
 
 .perfil img {
     width: 70px;
     height: 70px;
-
     border-radius: 50%;
-
     margin-right: 10px;
 }
 
 .perfil {
     display: flex;
     align-items: center;
-
     color: #EAEFF6;
-
-    padding: 60px 20px 20px 20px;
-
+    padding: 0 20px 20px 20px;
     margin-bottom: 20px;
-
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
 
 .perfil i {
     font-size: 28px;
     margin-right: 10px;
-
-    transition:
-        opacity 0.2s ease,
-        padding 0.3s ease,
-        margin 0.3s ease;
 }
 
 .perfil h3 {
     font-size: 18px;
-
     margin: 0;
-
     font-weight: 500;
-
-    white-space: nowrap;
-}
-
-
-/* PERFIL MINIMIZADO */
-
-#menu.minimizada .perfil {
-    justify-content: center;
-
-    padding: 60px 0 20px 0;
-
-    margin-bottom: 20px;
-}
-
-
-#menu.minimizada .perfil img {
-    width: 42px;
-    height: 42px;
-
-    margin: 0;
-}
-
-
-#menu.minimizada .perfil h3 {
-    display: none;
 }
 
 nav {
@@ -222,7 +95,6 @@ nav {
 
 nav ul {
     list-style-type: none;
-
     padding: 0;
     margin: 0;
 }
@@ -234,80 +106,28 @@ nav ul {
 .nav-menu a {
     display: flex;
     align-items: center;
-
     color: #EAE4D7;
-
     text-decoration: none;
-
     font-size: 15px;
-
     padding: 12px 20px;
-
-    transition:
-        background-color 0.2s,
-        padding 0.3s ease;
-
+    transition: background-color 0.2s;
     text-transform: uppercase;
-
     font-weight: 600;
-
-    white-space: nowrap;
 }
 
 .nav-menu a i {
     margin-right: 10px;
-
     font-size: 18px;
-
     color: #98B4CA;
-
-    min-width: 20px;
-
-    text-align: center;
-
-    transition:
-        margin 0.3s ease,
-        font-size 0.3s ease;
 }
 
 .nav-menu.selected {
     background-color: var(#2B6BB9);
-
-/* =========================================
-   MENU MINIMIZADO
-========================================= */
-
-#menu.minimizada .nav-menu a {
-    justify-content: center;
-
-    padding: 15px 0;
-}
-
-
-#menu.minimizada .nav-menu a i {
-    margin-right: 0;
-
-    font-size: 22px;
-}
-
-
-#menu.minimizada .nav-menu a {
-    font-size: 0;
-}
-
-
-/* ITEM SELECIONADO */
-
-.nav-menu.selected {
-    background-color: #2B6BB9;
-
-  a5ea7f4bae660275c9bc995bd2834a814a676b47
     border-left: 5px solid white;
 }
 
 .nav-menu.selected a {
     color: white;
-
     padding-left: 15px;
 }
 
@@ -315,21 +135,6 @@ nav ul {
     color: white;
 }
 
-/* AJUSTE DO ITEM SELECIONADO MINIMIZADO */
-
-#menu.minimizada .nav-menu.selected {
-    border-left: 4px solid white;
-}
-
-
-#menu.minimizada .nav-menu.selected a {
-    padding-left: 0;
-}
-
-
-/* HOVER */
-
-  a5ea7f4bae660275c9bc995bd2834a814a676b47
 .nav-menu:not(.selected):hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
@@ -344,47 +149,25 @@ nav ul {
 
 .menu-opcoes {
     padding: 20px;
-
     display: flex;
-
     justify-content: space-between;
-
     gap: 10px;
-
-    transition:
-        padding 0.3s ease,
-        gap 0.3s ease;
 }
 
 .opcoes-btn {
     flex: 1;
-
     height: 40px;
-
     background-color: #7E9EC4;
-
     border: none;
-
     border-radius: 8px;
-
     color: #15477F;
-
     font-size: 18px;
-
     cursor: pointer;
-
-    transition:
-        background-color 0.2s,
-        width 0.3s ease;
-
+    transition: background-color 0.2s;
     display: flex;
-
     align-items: center;
-
     justify-content: center;
-
     text-decoration: none;
-
     box-sizing: border-box;
 }
 
@@ -399,60 +182,16 @@ nav ul {
 
 .red-opcoes-btn {
     background-color: #d63031;
-
     color: white;
 }
 
-
-/* =========================================
-   BOTÕES INFERIORES MINIMIZADOS
-========================================= */
-
-#menu.minimizada .menu-opcoes {
-    padding: 15px 10px;
-
-    flex-direction: column;
-
-    gap: 8px;
-}
-
-
-#menu.minimizada .opcoes-btn {
-    width: 55px;
-
-    min-width: 55px;
-
-    flex: none;
-
-    margin: 0 auto;
-}
-
-
-/* =========================================
-   ÁREA PRINCIPAL
-========================================= */
-
-.conteudo {
-    width: calc(100% - 250px);
-    margin-left: 250px;
-
-    padding: 30px;
-    box-sizing: border-box;
-
-    transition:
-        margin-left 0.3s ease,
-        width 0.3s ease;
-}
-
-
-/* SIDEBAR MINIMIZADA */
-
-body.sidebar-minimizada .conteudo {
-    width: calc(100% - 75px);
-    margin-left: 75px;
-}
- a5ea7f4bae660275c9bc995bd2834a814a676b47
 /*=======dashboard.css=======*/
+
+#dashboard-conteudo {
+    margin-left: 250px;
+    padding: 30px;
+    flex-grow: 1;
+}
 
 .dashboard-texto {
     margin-bottom: 30px;
@@ -730,220 +469,3 @@ body.sidebar-minimizada .conteudo {
     text-decoration: underline;
 }
 
-
-/* =========================================
-   MODO ESCURO
-========================================= */
-
-body.modo-escuro {
-    background-color: #121212;
-    color: #ffffff;
-}
-
-
-/* Área principal */
-
-body.modo-escuro .conteudo {
-    background-color: #121212;
-}
-
-
-/* Sidebar */
-
-body.modo-escuro #menu {
-    background-color: #111111;
-}
-
-
-/* Botão do tema */
-
-body.modo-escuro #btnTema {
-    background-color: #2B6BB9;
-    color: white;
-}
-
-
-/* Cards */
-
-body.modo-escuro .cards-valor {
-    background-color: #1e1e1e;
-    color: white;
-}
-
-
-/* Textos do Dashboard */
-
-body.modo-escuro .dashboard-texto .title {
-    color: white;
-}
-
-
-body.modo-escuro .dashboard-texto .subtitle {
-    color: #aaaaaa;
-}
-
-
-body.modo-escuro .icon-text {
-    color: #bbbbbb;
-}
-
-
-body.modo-escuro .valor {
-    color: white;
-}
-
-
-body.modo-escuro .grafico-texto .icon-text {
-    color: white;
-}
-
-
-body.modo-escuro .grafico-texto .tempo {
-    color: #aaaaaa;
-}
-
-
-body.modo-escuro .grafico-porcentagem-positiva {
-    color: #aaaaaa;
-}
-
-
-/* Alertas */
-
-body.modo-escuro .cards-valor-header {
-    border-bottom-color: #333333;
-}
-
-
-body.modo-escuro .cards-valor-header .alertas-titulo {
-    color: white;
-}
-
-
-body.modo-escuro .cards-valor-header .alertas-sub {
-    color: #aaaaaa;
-}
-
-
-body.modo-escuro .alertas-texto,
-body.modo-escuro .alertas-text {
-    color: #dddddd;
-}
-
-
-body.modo-escuro .alertas-tempo,
-body.modo-escuro .alertas-info {
-    color: #999999;
-}
-
-
-body.modo-escuro .ver-atividade {
-    border-top-color: #333333;
-}
-
-
-/* =========================================
-   RESPONSIVIDADE - LAYOUT PRINCIPAL
-========================================= */
-
-/* =========================================
-   TABLET
-========================================= */
-
-@media (max-width: 992px) {
-
-    .conteudo {
-        width: calc(100% - 250px);
-
-        margin-left: 250px;
-
-        padding: 25px;
-    }
-
-}
-
-
-/* CELULAR */
-@media (max-width: 768px) {
-
-    .conteudo {
-        width: 100%;
-        margin-left: 0;
-        padding: 20px;
-    }
-
-}
-
-
-/* CELULAR PEQUENO */
-@media (max-width: 480px) {
-
-    .conteudo {
-        padding: 15px;
-    }
-
-}
-
-/* =========================================
-   MENU MOBILE
-========================================= */
-
-.btn-menu-mobile {
-    display: none;
-
-    position: fixed;
-    top: 15px;
-    left: 15px;
-
-    width: 45px;
-    height: 45px;
-
-    border: none;
-    border-radius: 8px;
-
-    background-color: #15477F;
-    color: white;
-
-    font-size: 24px;
-
-    align-items: center;
-    justify-content: center;
-
-    cursor: pointer;
-
-    z-index: 2000;
-
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-}
-
-
-/* =========================================
-   SIDEBAR NO CELULAR
-========================================= */
-
-@media (max-width: 768px) {
-
-    #menu {
-        transform: translateX(-100%);
-        transition: transform 0.3s ease;
-
-        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
-    }
-
-    #menu.menu-aberto {
-        transform: translateX(0);
-    }
-
-    .btn-menu-mobile {
-        display: flex;
-    }
-
-}
-
-@media (max-width: 768px) {
-
-    .btn-minimizar {
-        display: none;
-    }
-
-}}
