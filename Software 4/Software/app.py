@@ -63,7 +63,58 @@ def to_float(value, default=0.0):
     except:
         return default
 
-# ------------VALIDAÇÕES----------#
+# ------------VALIDAÇÃO CNPJ----------#
+
+def validar_cnpj(cnpj):
+    # Remove pontos, barras, traços e qualquer outro caractere
+    cnpj = re.sub(r"\D", "", cnpj)
+
+    # CNPJ precisa ter exatamente 14 números
+    if len(cnpj) != 14:
+        return False
+
+    # Não aceita CNPJ com todos os números iguais
+    if len(set(cnpj)) == 1:
+        return False
+
+    # Primeiro dígito verificador
+    pesos_1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+    soma = sum(
+        int(cnpj[i]) * pesos_1[i]
+        for i in range(12)
+    )
+
+    resto = soma % 11
+
+    if resto < 2:
+        digito_1 = 0
+    else:
+        digito_1 = 11 - resto
+
+    if int(cnpj[12]) != digito_1:
+        return False
+
+    # Segundo dígito verificador
+    pesos_2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+    soma = sum(
+        int(cnpj[i]) * pesos_2[i]
+        for i in range(13)
+    )
+
+    resto = soma % 11
+
+    if resto < 2:
+        digito_2 = 0
+    else:
+        digito_2 = 11 - resto
+
+    if int(cnpj[13]) != digito_2:
+        return False
+
+    return True
+# ------------VALIDAÇÃO TELEFONE----------#
 
 def telefone_valido(telefone):
     numeros = re.sub(r'\D', '', telefone)
@@ -669,20 +720,6 @@ def movimentar_estoque():
 
 # ---------------- INFO GALPAO ---------------- #
 
-@app.route("/info_galpao/<int:galpao_id>")
-@login_obrigatorio
-def info_galpao(galpao_id):
-    galpao = Galpao.find_by_id(galpao_id)
-    funcionarios = Funcionario.find_by_galpao(galpao_id)
-    empilhadeiras = Empilhadeira.find_by_galpao(galpao_id)
-
-    return render_template(
-        "info_galpao.html",
-        galpao=galpao,
-        funcionarios=funcionarios,
-        empilhadeiras=empilhadeiras
-    )
-
 @app.route("/galpao/atualizar/<int:galpao_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_galpao(galpao_id):
@@ -691,43 +728,77 @@ def atualizar_galpao(galpao_id):
         telefone = request.form.get("telefone", "").strip()
         telefone = formatar_telefone(telefone)
 
-        caixas_por_nivel      = to_int(request.form.get("caixas_por_nivel"))
-        niveis_por_prateleira = to_int(request.form.get("niveis_por_prateleira"))
-        total_prateleiras     = to_int(request.form.get("total_prateleiras"))
-        capacidade_total      = caixas_por_nivel * niveis_por_prateleira * total_prateleiras
+        cep = request.form.get("cep", "").strip()
+
+        # Validação do CEP
+        if not cep:
+            flash("O CEP é obrigatório.", "erro")
+            return redirect(url_for("info_galpao", galpao_id=galpao_id))
+
+        if not cep.isdigit():
+            flash("O CEP deve conter apenas números.", "erro")
+            return redirect(url_for("info_galpao", galpao_id=galpao_id))
+
+        if len(cep) != 8:
+            flash("O CEP deve conter exatamente 8 números.", "erro")
+            return redirect(url_for("info_galpao", galpao_id=galpao_id))
+
+        caixas_por_nivel = to_int(
+            request.form.get("caixas_por_nivel")
+        )
+
+        niveis_por_prateleira = to_int(
+            request.form.get("niveis_por_prateleira")
+        )
+
+        total_prateleiras = to_int(
+            request.form.get("total_prateleiras")
+        )
+
+        capacidade_total = (
+            caixas_por_nivel
+            * niveis_por_prateleira
+            * total_prateleiras
+        )
 
         dados = {
-            "nome_resp":             request.form.get("nome_resp"),
-            "email_resp":            request.form.get("email_resp"),
-            "telefone":              request.form.get("telefone"),
-            "stats":                 request.form.get("stats"),
-            "nome":                  request.form.get("nome"),
-            "cep":                   request.form.get("cep"),
-            "endereco":              request.form.get("endereco"),
-            "referencia":            request.form.get("referencia"),
-            "area_total":            to_float(request.form.get("area_total")),
-            "caixas_por_nivel":      caixas_por_nivel,
+            "nome_resp": request.form.get("nome_resp"),
+            "email_resp": request.form.get("email_resp"),
+            "telefone": telefone,
+            "stats": request.form.get("stats"),
+            "nome": request.form.get("nome"),
+            "cep": cep,
+            "endereco": request.form.get("endereco"),
+            "referencia": request.form.get("referencia"),
+            "area_total": to_float(
+                request.form.get("area_total")
+            ),
+            "caixas_por_nivel": caixas_por_nivel,
             "niveis_por_prateleira": niveis_por_prateleira,
-            "total_prateleiras":     total_prateleiras,
-            "capacidade_total":      capacidade_total,
+            "total_prateleiras": total_prateleiras,
+            "capacidade_total": capacidade_total,
         }
+
         Galpao.update(galpao_id, dados)
-        flash("Galpão atualizado com sucesso!", "sucesso")
+
+        flash(
+            "Galpão atualizado com sucesso!",
+            "sucesso"
+        )
+
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
-    return redirect(url_for("info_galpao", galpao_id=galpao_id))
 
+        flash(
+            f"Erro: {e}",
+            "erro"
+        )
 
-
-@app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
-@login_obrigatorio
-def deletar_galpao(galpao_id):
-    try:
-        Galpao.delete(galpao_id)
-        flash("Galpão excluído com sucesso!", "sucesso")
-    except Exception as e:
-        flash(f"Erro: {e}", "erro")
-    return redirect(url_for("galpao"))
+    return redirect(
+        url_for(
+            "info_galpao",
+            galpao_id=galpao_id
+        )
+    )
     
 
 
@@ -1051,6 +1122,25 @@ def info_produtos(id):
 def galpao():
     return render_template("galpao.html", galpoes=Galpao.find_all())
 
+@app.route("/info_galpao/<int:galpao_id>")
+@login_obrigatorio
+def info_galpao(galpao_id):
+    galpao = Galpao.find_by_id(galpao_id)
+
+    if not galpao:
+        flash("Galpão não encontrado.", "erro")
+        return redirect(url_for("galpao"))
+
+    funcionarios = Funcionario.find_by_galpao(galpao_id)
+    empilhadeiras = Empilhadeira.find_by_galpao(galpao_id)
+
+    return render_template(
+        "info_galpao.html",
+        galpao=galpao,
+        funcionarios=funcionarios,
+        empilhadeiras=empilhadeiras
+    )
+
 @app.route("/galpao/novo")
 @login_obrigatorio
 def novo_galpao():
@@ -1060,48 +1150,124 @@ def novo_galpao():
 @login_obrigatorio
 def salvar_galpao():
     try:
+        # =========================
+        # E-MAIL
+        # =========================
+
         email = request.form.get("email_resp", "").strip()
 
         if not email_valido(email):
             flash("Informe um e-mail válido.", "erro")
             return redirect(url_for("galpao"))
 
+
+        # =========================
+        # NOME DO RESPONSÁVEL
+        # =========================
+
         nome_resp = request.form.get("nome_resp", "").strip()
 
         if not nome_valido(nome_resp):
-            flash("O nome do responsável deve conter apenas letras.", "erro")
+            flash(
+                "O nome do responsável deve conter apenas letras.",
+                "erro"
+            )
             return redirect(url_for("galpao"))
+
+
+        # =========================
+        # CEP
+        # =========================
+
+        cep = request.form.get("cep", "").strip()
+
+        # Remove espaços e caracteres de formatação
+        cep = cep.replace("-", "").replace(" ", "")
+
+        if not cep:
+            flash("O CEP é obrigatório.", "erro")
+            return redirect(url_for("galpao"))
+
+        if not cep.isdigit():
+            flash("O CEP deve conter apenas números.", "erro")
+            return redirect(url_for("galpao"))
+
+        if len(cep) != 8:
+            flash(
+                "O CEP deve conter exatamente 8 números.",
+                "erro"
+            )
+            return redirect(url_for("galpao"))
+
+
+        # =========================
+        # ÁREA TOTAL
+        # =========================
 
         area_total = request.form.get("area_total", "").strip()
 
         if not area_valida(area_total):
-            flash("A área total deve ser um número maior que zero.", "erro")
+            flash(
+                "A área total deve ser um número maior que zero.",
+                "erro"
+            )
             return redirect(url_for("galpao"))
 
+
+        # =========================
+        # TELEFONE
+        # =========================
 
         telefone = request.form.get("telefone", "").strip()
 
         if not telefone_valido(telefone):
-            flash("Informe um telefone válido com 10 ou 11 números.", "erro")
-            return redirect(url_for("info_galpao", galpao_id=galpao_id))
+            flash(
+                "Informe um telefone válido com 10 ou 11 números.",
+                "erro"
+            )
+            return redirect(url_for("galpao"))
 
         telefone = formatar_telefone(telefone)
 
         if not telefone_valido(telefone):
-            flash("Informe um telefone válido com 10 ou 11 números.", "erro")
+            flash(
+                "Informe um telefone válido com 10 ou 11 números.",
+                "erro"
+            )
             return redirect(url_for("galpao"))
 
-        caixas_por_nivel = to_int(request.form.get("caixas_por_nivel"))
 
-        caixas_por_nivel = to_int(request.form.get("caixas_por_nivel"))
-        niveis_por_prateleira = to_int(request.form.get("niveis_por_prateleira"))
-        total_prateleiras = to_int(request.form.get("total_prateleiras"))
-        capacidade_total = caixas_por_nivel * niveis_por_prateleira * total_prateleiras
+        # =========================
+        # CAPACIDADE DO GALPÃO
+        # =========================
+
+        caixas_por_nivel = to_int(
+            request.form.get("caixas_por_nivel")
+        )
+
+        niveis_por_prateleira = to_int(
+            request.form.get("niveis_por_prateleira")
+        )
+
+        total_prateleiras = to_int(
+            request.form.get("total_prateleiras")
+        )
+
+        capacidade_total = (
+            caixas_por_nivel
+            * niveis_por_prateleira
+            * total_prateleiras
+        )
+
+
+        # =========================
+        # CRIAÇÃO DO GALPÃO
+        # =========================
 
         g = Galpao(
             nome=request.form.get("nome"),
             stats=request.form.get("stats"),
-            cep=request.form.get("cep"),
+            cep=cep,
             email_resp=email,
             nome_resp=nome_resp,
             endereco=request.form.get("endereco"),
@@ -1115,11 +1281,40 @@ def salvar_galpao():
             caixas_por_nivel=caixas_por_nivel,
             capacidade_total=capacidade_total
         )
+
         g.insert()
-        flash("Galpão cadastrado com sucesso!", "sucesso")
+
+        flash(
+            "Galpão cadastrado com sucesso!",
+            "sucesso"
+        )
 
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
+
+        flash(
+            f"Erro: {e}",
+            "erro"
+        )
+
+    return redirect(url_for("galpao"))
+
+@app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
+@login_obrigatorio
+def deletar_galpao(galpao_id):
+    try:
+        Galpao.delete(galpao_id)
+
+        flash(
+            "Galpão excluído com sucesso!",
+            "sucesso"
+        )
+
+    except Exception as e:
+
+        flash(
+            f"Erro ao excluir o galpão: {e}",
+            "erro"
+        )
 
     return redirect(url_for("galpao"))
 
@@ -1208,55 +1403,295 @@ def novo_fornecedor():
 @app.route("/fornecedor/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_fornecedor():
-    try:
-        fornecedor = Fornecedor(
-            nome=request.form.get("nome"),
-            ativo=request.form.get("ativo"),
-            cnpj=request.form.get("cnpj"),
-            nome_ctt=request.form.get("nome_ctt"),
-            telefone=request.form.get("telefone"),
-            email=request.form.get("email")
-        )
-        fornecedor.insert()
-        flash("Fornecedor cadastrado!", "sucesso")
-    except Exception as e:
-        flash(f"Erro: {e}", "erro")
-    return redirect(url_for("fornecedores"))
 
+    try:
+        # ==============================
+        # RECEBE OS DADOS
+        # ==============================
+
+        nome = request.form.get("nome", "").strip()
+        cnpj = request.form.get("cnpj", "").strip()
+        nome_ctt = request.form.get("nome_ctt", "").strip()
+        telefone = request.form.get("telefone", "").strip()
+        email = request.form.get("email", "").strip()
+        ativo = request.form.get("ativo", "").strip()
+
+        # ==============================
+        # CAMPOS OBRIGATÓRIOS
+        # ==============================
+
+        if not nome:
+            flash("O nome da empresa é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not cnpj:
+            flash("O CNPJ é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not nome_ctt:
+            flash("O nome do contato é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not telefone:
+            flash("O telefone é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not email:
+            flash("O e-mail é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # NOME DA EMPRESA
+        # ==============================
+
+        if len(nome) < 3:
+            flash("O nome da empresa deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if nome.isdigit():
+            flash("O nome da empresa não pode conter somente números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # NOME DO CONTATO
+        # ==============================
+
+        if len(nome_ctt) < 3:
+            flash("O nome do contato deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if nome_ctt.isdigit():
+            flash("O nome do contato não pode conter somente números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # CNPJ
+        # ==============================
+
+        cnpj_numeros = re.sub(r"\D", "", cnpj)
+
+        if len(cnpj_numeros) != 14:
+            flash("O CNPJ deve possuir exatamente 14 números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not validar_cnpj(cnpj_numeros):
+            flash("O CNPJ informado é inválido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # TELEFONE
+        # ==============================
+
+        telefone_numeros = re.sub(r"\D", "", telefone)
+
+        if len(telefone_numeros) not in [10, 11]:
+            flash("O telefone deve possuir 10 ou 11 números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # Impede números todos iguais
+        if len(set(telefone_numeros)) == 1:
+            flash("Digite um telefone válido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # E-MAIL
+        # ==============================
+
+        email_regex = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
+        if not re.match(email_regex, email):
+            flash("Digite um e-mail válido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # STATUS
+        # ==============================
+
+        if ativo not in ["ativo", "inativo"]:
+            flash("Status do fornecedor inválido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # SALVA NO BANCO
+        # ==============================
+
+        fornecedor = Fornecedor(
+            nome=nome,
+            ativo=ativo,
+            cnpj=cnpj_numeros,
+            nome_ctt=nome_ctt,
+            telefone=telefone_numeros,
+            email=email
+        )
+
+        fornecedor.insert()
+
+        flash("Fornecedor cadastrado com sucesso!", "sucesso")
+
+    except Exception as e:
+        flash(f"Erro ao cadastrar fornecedor: {e}", "erro")
+
+    return redirect(url_for("fornecedores"))
 
 @app.route("/fornecedor/atualizar/<int:fornecedor_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_fornecedor(fornecedor_id):
+
+    conexao = None
+    cursor = None
+
     try:
+        # ==============================
+        # RECEBE OS DADOS
+        # ==============================
+
+        nome = request.form.get("nome", "").strip()
+        cnpj = request.form.get("cnpj", "").strip()
+        nome_ctt = request.form.get("nome_ctt", "").strip()
+        email = request.form.get("email", "").strip()
+        telefone = request.form.get("telefone", "").strip()
+        ativo = request.form.get("ativo", "").strip()
+
+        # ==============================
+        # CAMPOS OBRIGATÓRIOS
+        # ==============================
+
+        if not nome:
+            flash("O nome da empresa é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not cnpj:
+            flash("O CNPJ é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not nome_ctt:
+            flash("O nome do contato é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not telefone:
+            flash("O telefone é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not email:
+            flash("O e-mail é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # NOME
+        # ==============================
+
+        if len(nome) < 3:
+            flash("O nome da empresa deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if nome.isdigit():
+            flash("O nome da empresa não pode conter somente números.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # CONTATO
+        # ==============================
+
+        if len(nome_ctt) < 3:
+            flash("O nome do contato deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if nome_ctt.isdigit():
+            flash("O nome do contato não pode conter somente números.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # CNPJ
+        # ==============================
+
+        cnpj_numeros = re.sub(r"\D", "", cnpj)
+
+        if len(cnpj_numeros) != 14:
+            flash("O CNPJ deve possuir exatamente 14 números.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not validar_cnpj(cnpj_numeros):
+            flash("O CNPJ informado é inválido.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # TELEFONE
+        # ==============================
+
+        telefone_numeros = re.sub(r"\D", "", telefone)
+
+        if len(telefone_numeros) not in [10, 11]:
+            flash("O telefone deve possuir 10 ou 11 números.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if len(set(telefone_numeros)) == 1:
+            flash("Digite um telefone válido.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # E-MAIL
+        # ==============================
+
+        email_regex = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
+        if not re.match(email_regex, email):
+            flash("Digite um e-mail válido.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # STATUS
+        # ==============================
+
+        if ativo not in ["ativo", "inativo"]:
+            flash("Status do fornecedor inválido.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # ATUALIZA NO BANCO
+        # ==============================
+
         conexao = Database.connect()
         cursor = conexao.cursor()
 
         cursor.execute("""
             UPDATE fornecedor
-            SET nome=%s, cnpj=%s, nome_ctt=%s, email=%s, telefone=%s, ativo=%s
+            SET nome=%s,
+                cnpj=%s,
+                nome_ctt=%s,
+                email=%s,
+                telefone=%s,
+                ativo=%s
             WHERE id=%s
         """, (
-            request.form.get("nome"),
-            request.form.get("cnpj"),
-            request.form.get("nome_ctt"),
-            request.form.get("email"),
-            request.form.get("telefone"),
-            request.form.get("ativo"),
+            nome,
+            cnpj_numeros,
+            nome_ctt,
+            email,
+            telefone_numeros,
+            ativo,
             fornecedor_id
         ))
 
         conexao.commit()
+
         flash("Fornecedor atualizado com sucesso!", "sucesso")
 
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
+
+        if conexao:
+            conexao.rollback()
+
+        flash(f"Erro ao atualizar fornecedor: {e}", "erro")
 
     finally:
-        cursor.close()
-        conexao.close()
 
-    return redirect(url_for("fornecedores"))
+        if cursor:
+            cursor.close()
 
+        if conexao:
+            conexao.close()
+
+    return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
 @app.route("/fornecedor/deletar/<int:fornecedor_id>", methods=["POST"])
 @login_obrigatorio
@@ -1494,21 +1929,88 @@ def novo_cliente():
 @login_obrigatorio
 def salvar_cliente():
     try:
+        # =========================
+        # RECEBER DADOS DO FORMULÁRIO
+        # =========================
+
+        nome = request.form.get("nome", "").strip()
+        ativo = request.form.get("ativo", "").strip()
+        cidade = request.form.get("cidade", "").strip()
+        empresa = request.form.get("empresa", "").strip()
+        estado = request.form.get("estado", "").strip()
+        email = request.form.get("email", "").strip()
+
+        cpf_cnpj = request.form.get("cpf", "").strip()
+        telefone = request.form.get("telefone", "").strip()
+        cep = request.form.get("cep", "").strip()
+
+        # =========================
+        # DEIXAR SOMENTE NÚMEROS
+        # =========================
+
+        cpf_cnpj = re.sub(r"\D", "", cpf_cnpj)
+        telefone = re.sub(r"\D", "", telefone)
+        cep = re.sub(r"\D", "", cep)
+
+        # =========================
+        # VALIDAÇÃO CPF / CNPJ
+        # =========================
+
+        if len(cpf_cnpj) not in (11, 14):
+            flash(
+                "CPF deve possuir exatamente 11 números ou CNPJ deve possuir exatamente 14 números.",
+                "erro"
+            )
+            return redirect(url_for("cliente"))
+
+        # =========================
+        # VALIDAÇÃO TELEFONE
+        # =========================
+
+        if telefone and len(telefone) not in (10, 11):
+            flash(
+                "O telefone deve possuir DDD e ter 10 ou 11 números.",
+                "erro"
+            )
+            return redirect(url_for("cliente"))
+
+        # =========================
+        # VALIDAÇÃO CEP
+        # =========================
+
+        if cep and len(cep) != 8:
+            flash(
+                "O CEP deve possuir exatamente 8 números.",
+                "erro"
+            )
+            return redirect(url_for("cliente"))
+
+        # =========================
+        # CRIAR CLIENTE
+        # =========================
+
         c = Cliente(
-            nome=request.form.get("nome"),
-            ativo=request.form.get("ativo"),
-            cidade=request.form.get("cidade"),
-            empresa=request.form.get("empresa"),
-            cep=request.form.get("cep"),
-            estado=request.form.get("estado"),
-            cpf_cnpj=request.form.get("cpf"),
-            email=request.form.get("email"),
-            telefone=request.form.get("telefone")
+            nome=nome,
+            ativo=ativo,
+            cidade=cidade,
+            empresa=empresa,
+            cep=cep,
+            estado=estado,
+            cpf_cnpj=cpf_cnpj,
+            email=email,
+            telefone=telefone
         )
         c.insert()
-        flash("Cliente cadastrado!", "sucesso")
+        flash(
+            "Cliente cadastrado!",
+            "sucesso"
+        )
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
+
+        flash(
+            f"Erro: {e}",
+            "erro"
+        )
     return redirect(url_for("cliente"))
 
 # ---------------- FUNCIONÁRIOS ---------------- #
@@ -1666,26 +2168,97 @@ def info_cliente(cliente_id):
     pedidos = PedidoCliente.find_by_cliente(cliente_id)
     return render_template("info_cliente.html", cliente=c, pedidos=pedidos)
 
-
 @app.route("/cliente/atualizar/<int:cliente_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_cliente(cliente_id):
     try:
+
+        # =========================
+        # RECEBER DADOS
+        # =========================
+
+        nome = request.form.get("nome", "").strip()
+        empresa = request.form.get("empresa", "").strip()
+        email = request.form.get("email", "").strip()
+        telefone = request.form.get("telefone", "").strip()
+        cep = request.form.get("cep", "").strip()
+        cidade = request.form.get("cidade", "").strip()
+        estado = request.form.get("estado", "").strip()
+        ativo = request.form.get("ativo", "").strip()
+
+        # =========================
+        # DEIXAR SOMENTE NÚMEROS
+        # =========================
+
+        telefone = re.sub(r"\D", "", telefone)
+        cep = re.sub(r"\D", "", cep)
+
+        # =========================
+        # VALIDAÇÃO TELEFONE
+        # =========================
+
+        if telefone and len(telefone) not in (10, 11):
+            flash(
+                "O telefone deve possuir DDD e ter 10 ou 11 números.",
+                "erro"
+            )
+            return redirect(
+                url_for(
+                    "info_cliente",
+                    cliente_id=cliente_id
+                )
+            )
+
+        # =========================
+        # VALIDAÇÃO CEP
+        # =========================
+
+        if cep and len(cep) != 8:
+            flash(
+                "O CEP deve possuir exatamente 8 números.",
+                "erro"
+            )
+            return redirect(
+                url_for(
+                    "info_cliente",
+                    cliente_id=cliente_id
+                )
+            )
+
+        # =========================
+        # DADOS PARA ATUALIZAÇÃO
+        # =========================
+
         dados = {
-            "nome":     request.form.get("nome"),
-            "ativo":   request.form.get("ativo"),
-            "empresa":  request.form.get("empresa"),
-            "email":    request.form.get("email"),
-            "telefone": request.form.get("telefone"),
-            "cep":      request.form.get("cep"),
-            "cidade":   request.form.get("cidade"),
-            "estado":   request.form.get("estado"),
+            "nome": nome,
+            "ativo": ativo,
+            "empresa": empresa,
+            "email": email,
+            "telefone": telefone,
+            "cep": cep,
+            "cidade": cidade,
+            "estado": estado
         }
-        Cliente.update(cliente_id, dados)
-        flash("Cliente atualizado com sucesso!", "sucesso")
+        Cliente.update(
+            cliente_id,
+            dados
+        )
+        flash(
+            "Cliente atualizado com sucesso!",
+            "sucesso"
+        )
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
-    return redirect(url_for("info_cliente", cliente_id=cliente_id))
+
+        flash(
+            f"Erro: {e}",
+            "erro"
+        )
+    return redirect(
+        url_for(
+            "info_cliente",
+            cliente_id=cliente_id
+        )
+    )
 
 
 @app.route("/cliente/deletar/<int:cliente_id>", methods=["POST"])
