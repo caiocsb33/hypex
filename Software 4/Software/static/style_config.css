@@ -1,8 +1,9 @@
 #config-conteudo {
     width: 100%;
-    padding: 40px;
+    padding: 0;
     box-sizing: border-box;
 }
+
 .config-texto {
     display: flex;
     justify-content: space-between;
@@ -367,6 +368,11 @@ input:checked+.slider:before {
     transform: translateY(0);
 }
 
+#config-conteudo {
+    width: 100%;
+    padding: 0;
+    box-sizing: border-box;
+}
 
 .config-grid {
     width: 100%;
@@ -507,209 +513,4 @@ input:checked+.slider:before {
         background-color 0.3s ease,
         border-color 0.3s ease,
         color 0.3s ease;
-}
-
-/* =========================================================
-   RESPONSIVIDADE - CONFIGURAÇÕES
-   ========================================================= */
-
-
-/* =========================
-   TABLET
-   até 992px
-   ========================= */
-
-@media (max-width: 992px) {
-
-    #config-conteudo {
-        padding: 30px !important;
-    }
-
-    .config-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .full-width {
-        grid-column: auto;
-    }
-
-    .inputs-empresa {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .sensor-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .config-texto {
-        gap: 20px;
-    }
-
-    .salvar-btn {
-        white-space: nowrap;
-    }
-}
-
-
-/* =========================
-   TABLET PEQUENO / MOBILE
-   até 768px
-   ========================= */
-
-@media (max-width: 768px) {
-
-    #config-conteudo,
-    body.sidebar-minimizada #config-conteudo {
-        width: 100% !important;
-        margin-left: 0 !important;
-        padding: 20px !important;
-        box-sizing: border-box;
-    }
-
-    /* Cabeçalho */
-
-    .config-texto {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 15px;
-        margin-bottom: 25px;
-    }
-
-    .config-info h1 {
-        font-size: 22px;
-    }
-
-    .config-info p {
-        font-size: 14px;
-        line-height: 1.5;
-    }
-
-    .salvar-btn {
-        width: 100%;
-        padding: 12px 20px;
-    }
-
-    /* Cards */
-
-    .config-grid {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-
-    .config-card,
-    .config-card.full-width,
-    .sensor-conteudo {
-        padding: 20px !important;
-    }
-
-    .config-card h3 {
-        font-size: 15px;
-        line-height: 1.4;
-    }
-
-    /* Empresa */
-
-    .inputs-empresa {
-        grid-template-columns: 1fr;
-        gap: 0;
-    }
-
-    /* Sensores */
-
-    .sensor-grid {
-        grid-template-columns: 1fr;
-        gap: 5px;
-    }
-
-    .vin-sensor {
-        width: 100%;
-    }
-
-    .add-sensor-btn {
-        width: 100%;
-        padding: 0 20px;
-    }
-
-    /* Tabela */
-
-    .sensor-lista-container {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .sensor-lista {
-        min-width: 700px;
-    }
-
-    .sensor-lista th,
-    .sensor-lista td {
-        padding: 10px;
-        font-size: 12px;
-    }
-}
-
-
-/* =========================
-   CELULAR PEQUENO
-   até 480px
-   ========================= */
-
-@media (max-width: 480px) {
-
-    #config-conteudo,
-    body.sidebar-minimizada #config-conteudo {
-        padding: 15px !important;
-    }
-
-    .config-info h1 {
-        font-size: 20px;
-    }
-
-    .config-info p {
-        font-size: 13px;
-    }
-
-    .config-card,
-    .config-card.full-width,
-    .sensor-conteudo {
-        padding: 16px !important;
-        border-radius: 10px;
-    }
-
-    .config-card h3 {
-        font-size: 14px;
-        margin-bottom: 15px;
-    }
-
-    .input-resp label {
-        font-size: 11px;
-    }
-
-    .input-resp input,
-    .input-resp select {
-        height: 44px;
-        font-size: 14px;
-    }
-
-    .modo-escolha {
-        gap: 15px;
-        align-items: center;
-        font-size: 13px;
-    }
-
-    .senha-btn {
-        font-size: 13px;
-        padding: 12px 8px;
-    }
-
-    .add-sensor-btn {
-        height: 44px;
-        font-size: 12px;
-        letter-spacing: 0.5px;
-    }
-
-    .salvar-btn {
-        font-size: 14px;
-    }
 }

@@ -20,6 +20,30 @@ class Estoque:
 
     # CORREÇÃO: método novo — busca todos os produtos de um galpão específico
     # Era chamado como find_by_produto(galpao_id) em estoque_galpao(), o que estava errado
+# Retorna todos os produtos com o estoque total somado de todos os galpões
+    @staticmethod
+    def find_all_consolidado():
+        conn = Database.connect()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("""
+                SELECT 
+                    p.*, 
+                    COALESCE(SUM(e.quantidade), 0) AS quantidade,
+                    COALESCE(MIN(e.estoque_minimo), 0) AS quantidade_minimo,
+                    GROUP_CONCAT(DISTINCT f.nome ORDER BY f.nome SEPARATOR ', ') AS fornecedor
+                FROM produto p
+                LEFT JOIN estoque e ON p.id = e.produto_id
+                LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
+                LEFT JOIN fornecedor f ON fp.fornecedor_id = f.id
+                GROUP BY p.id
+                ORDER BY p.nome
+            """)
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+            conn.close()
+
     @staticmethod
     def find_by_galpao(galpao_id):
         conn = Database.connect()
@@ -29,9 +53,9 @@ class Estoque:
                 SELECT
                     p.*,
                     e.quantidade,
-                    e.estoque_minimo          AS quantidade_minimo,
-                    e.id                      AS estoque_id,
-                    f.nome                    AS fornecedor
+                    e.estoque_minimo AS quantidade_minimo,
+                    e.id AS estoque_id,
+                    f.nome AS fornecedor
                 FROM estoque e
                 JOIN produto p ON p.id = e.produto_id
                 LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
@@ -39,6 +63,29 @@ class Estoque:
                 WHERE e.galpao_id = %s
                 ORDER BY p.nome
             """, (galpao_id,))
+            return cursor.fetchall()
+        finally:
+            cursor.close()
+            conn.close()
+
+    @staticmethod
+    def find_all_consolidado():
+        conn = Database.connect()
+        cursor = conn.cursor(dictionary=True)
+        try:
+            cursor.execute("""
+                SELECT 
+                    p.*, 
+                    COALESCE(SUM(e.quantidade), 0) AS quantidade,
+                    COALESCE(MIN(e.estoque_minimo), 0) AS quantidade_minimo,
+                    GROUP_CONCAT(DISTINCT f.nome ORDER BY f.nome SEPARATOR ', ') AS fornecedor
+                FROM produto p
+                LEFT JOIN estoque e ON p.id = e.produto_id
+                LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
+                LEFT JOIN fornecedor f ON fp.fornecedor_id = f.id
+                GROUP BY p.id
+                ORDER BY p.nome
+            """)
             return cursor.fetchall()
         finally:
             cursor.close()

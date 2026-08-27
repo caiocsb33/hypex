@@ -13,8 +13,6 @@ from models.cliente import Cliente
 from models.funcionario import Funcionario
 from models.endereco import Endereco
 from models.empilhadeira import Empilhadeira
-
-
 import re
 import secrets
 from datetime import datetime, timedelta
@@ -598,22 +596,59 @@ def cadastro_emp():
 @app.route("/estoque")
 @login_obrigatorio
 def estoque():
-    produtos = Estoque.resumo_geral()
-    return render_template("estoque.html", produtos=produtos, galpao=None)
+    conn = Database.connect()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT 
+                    p.*, 
+                    COALESCE(SUM(e.quantidade), 0) AS quantidade,
+                    COALESCE(MIN(e.estoque_minimo), 0) AS quantidade_minimo,
+                    GROUP_CONCAT(DISTINCT f.nome ORDER BY f.nome SEPARATOR ', ') AS fornecedor
+                FROM produto p
+                LEFT JOIN estoque e ON p.id = e.produto_id
+                LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
+                LEFT JOIN fornecedor f ON fp.fornecedor_id = f.id
+                GROUP BY p.id
+        """)
+        produtos = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    lista = Estoque.find_all_consolidado()
+    return render_template("estoque.html", produtos=lista, galpao=None)
+
 
 @app.route("/estoque/<int:galpao_id>")
 @login_obrigatorio
 def estoque_galpao(galpao_id):
-    produtos = Estoque.find_by_galpao(galpao_id)
     galpao = Galpao.find_by_id(galpao_id)
     fornecedores = Fornecedor.find_all()
 
-    return render_template(
-        "estoque.html",
-        produtos=produtos,
-        galpao=galpao,
-        fornecedores=fornecedores
-    )
+    conn = Database.connect()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT 
+                p.*, 
+                COALESCE(SUM(e.quantidade), 0) AS quantidade,
+                COALESCE(MIN(e.estoque_minimo), 0) AS estoque_minimo,
+                GROUP_CONCAT(DISTINCT f.nome ORDER BY f.nome SEPARATOR ', ') AS fornecedor
+            FROM produto p
+            JOIN estoque e ON p.id = e.produto_id
+            LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
+            LEFT JOIN fornecedor f ON fp.fornecedor_id = f.id
+            WHERE e.galpao_id = %s
+            GROUP BY p.id
+        """, (galpao_id,))
+        produtos = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+
+    produtos = Estoque.find_by_galpao(galpao_id)
+    return render_template("estoque.html", produtos=produtos, galpao=galpao)
 
 @app.route("/estoque/movimentar", methods=["POST"])
 @login_obrigatorio
@@ -763,267 +798,120 @@ def deletar_empilhadeira(empilhadeira_id):
         flash(f"Erro: {e}", "erro")
     return redirect(url_for("info_galpao", galpao_id=galpao_id))
 
-
 # ---------------- PRODUTOS ---------------- #
 
 @app.route("/produtos")
 @login_obrigatorio
 def produtos():
-    lista = Produto.find_all_completo()
+    
+    # Agora a rota /produtos faz a mesma busca agrupada
+    conn = Database.connect()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT 
+                p.*, 
+                COALESCE(SUM(e.quantidade), 0) AS quantidade,
+                COALESCE(MIN(e.estoque_minimo), 0) AS estoque_minimo,
+                GROUP_CONCAT(DISTINCT f.nome ORDER BY f.nome SEPARATOR ', ') AS fornecedor
+            FROM produto p
+            LEFT JOIN estoque e ON p.id = e.produto_id
+            LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
+            LEFT JOIN fornecedor f ON fp.fornecedor_id = f.id
+            GROUP BY p.id
+        """)
+        lista = cursor.fetchall()
+    finally:
+        cursor.close()
+        conn.close()
+        
+    lista = Estoque.find_all_consolidado()
     return render_template("estoque.html", produtos=lista, galpao=None)
 
 @app.route("/produto/salvar", methods=["POST"])
 @login_obrigatorio
+def salvar_produto():
+    sku = request.form.get("sku", "").strip()
+    nome = request.form.get("nome", "").strip()
+    galpao_id = to_int(request.form.get("galpao_id"))
+    quantidade = to_int(request.form.get("quantidade", 1))
+    estoque_minimo = to_int(request.form.get("quantidade_minimo", 0))
 
-def salvar_produto(id):
+    if not sku or not nome:
+        flash("SKU e Nome são obrigatórios.", "erro")
+        return redirect(url_for("produtos"))
+
+    conn = Database.connect()
+    cursor = conn.cursor(dictionary=True)
 
     try:
+        # 1. Verifica se o produto já existe pelo SKU
+        cursor.execute("SELECT id FROM produto WHERE sku = %s LIMIT 1", (sku,))
+        produto_existente = cursor.fetchone()
 
-        # =========================================================
-        # DADOS DO PRODUTO
-        # =========================================================
-
-        dados = {
-            "sku": request.form.get("sku"),
-            "nome": request.form.get("nome"),
-            "descricao": request.form.get("descricao"),
-            "categoria": request.form.get("categoria"),
-            "preco_custo": to_float(request.form.get("preco_custo")),
-            "preco_venda": to_float(request.form.get("preco_venda")),
-            "peso": to_float(request.form.get("peso")),
-            "volume": to_float(request.form.get("volume")),
-            "tipo": request.form.get("tipo"),
-            "codigo_barras": request.form.get("codigo_barras"),
-            "item_por_caixa": to_int(
-                request.form.get("item_por_caixa")
-            ),
-
-            # No seu HTML o name é quantidade_minimo
-            "estoque_minimo": to_int(
-                request.form.get("quantidade_minimo")
+        if produto_existente:
+            produto_id = produto_existente["id"]
+        else:
+            # 2. Se não existir, insere o novo produto
+            dados_produto = (
+                sku,
+                nome,
+                request.form.get("descricao"),
+                request.form.get("categoria"),
+                to_float(request.form.get("preco_custo")),
+                to_float(request.form.get("preco_venda")),
+                to_float(request.form.get("peso")),
+                to_float(request.form.get("volume")),
+                request.form.get("tipo"),
+                request.form.get("codigo_barras"),
+                to_int(request.form.get("item_por_caixa"))
             )
-        }
+            
+            cursor.execute("""
+                INSERT INTO produto 
+                (sku, nome, descricao, categoria, preco_custo, preco_venda, peso, volume, tipo, codigo_barras, item_por_caixa, ativo)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+            """, dados_produto)
+            
+            produto_id = cursor.lastrowid
 
-
-        # =========================================================
-        # IMAGEM ENVIADA PELO FORMULÁRIO
-        # =========================================================
-
+        # 3. Trata o upload da imagem (se enviada)
         imagem = request.files.get("imagem")
-
-
-        # =========================================================
-        # BUSCAR IMAGEM ATUAL NO BANCO
-        # =========================================================
-
-        conn = Database.connect()
-        cursor = conn.cursor(dictionary=True)
-
-        try:
-
-            cursor.execute(
-                """
-                SELECT imagem
-                FROM produto
-                WHERE id = %s
-                """,
-                (id,)
-            )
-
-            produto_atual = cursor.fetchone()
-
-            imagem_atual = None
-
-            if produto_atual:
-                imagem_atual = produto_atual.get("imagem")
-
-
-            # =====================================================
-            # MANTÉM A IMAGEM ATUAL
-            # =====================================================
-
-            nome_imagem = imagem_atual
-
-
-            # =====================================================
-            # SE O USUÁRIO ESCOLHEU UMA NOVA IMAGEM
-            # =====================================================
-
-            if imagem and imagem.filename:
-
-                # Extensões permitidas
-                extensoes_permitidas = {
-                    "png",
-                    "jpg",
-                    "jpeg",
-                    "webp"
-                }
-
-                nome_original = imagem.filename
-
-                if "." not in nome_original:
-                    raise ValueError(
-                        "O arquivo selecionado não possui uma extensão válida."
-                    )
-
-                extensao = nome_original.rsplit(".", 1)[-1].lower()
-
-
-                # Verifica extensão
-
-                if extensao not in extensoes_permitidas:
-
-                    raise ValueError(
-                        "Formato de imagem inválido. "
-                        "Use PNG, JPG, JPEG ou WEBP."
-                    )
-
-
-                # =================================================
-                # VERIFICAR TAMANHO
-                # =================================================
-
-                imagem.seek(0, 2)
-
-                tamanho = imagem.tell()
-
-                imagem.seek(0)
-
-
-                # Máximo de 5 MB
-
-                if tamanho > 5 * 1024 * 1024:
-
-                    raise ValueError(
-                        "A imagem deve ter no máximo 5 MB."
-                    )
-
-
-                # =================================================
-                # PASTA DAS IMAGENS
-                # =================================================
-
-                pasta_imagem = os.path.join(
-                    app.root_path,
-                    "static",
-                    "imagem"
-                )
-
-
-                # Cria a pasta se não existir
-
-                os.makedirs(
-                    pasta_imagem,
-                    exist_ok=True
-                )
-
-
-                # =================================================
-                # NOME DO NOVO ARQUIVO
-                # =================================================
-
-                nome_imagem = f"produto_{id}.{extensao}"
-
-
-                # =================================================
-                # EXCLUIR IMAGEM ANTIGA
-                # =================================================
-
-                if imagem_atual:
-
-                    caminho_antigo = os.path.join(
-                        pasta_imagem,
-                        imagem_atual
-                    )
-
-                    if os.path.isfile(caminho_antigo):
-
-                        os.remove(caminho_antigo)
-
-
-                # =================================================
-                # SALVAR NOVA IMAGEM
-                # =================================================
-
-                caminho_nova = os.path.join(
-                    pasta_imagem,
-                    nome_imagem
-                )
-
-                imagem.save(caminho_nova)
-
-
-            # =====================================================
-            # COLOCA O NOME DA IMAGEM NOS DADOS
-            # =====================================================
-
-            dados["imagem"] = nome_imagem
-
-
-            # =====================================================
-            # ATUALIZA PRODUTO
-            # =====================================================
-
-            Produto.update(id, dados)
-
-
-            # =====================================================
-            # ATUALIZA ESTOQUE
-            # =====================================================
-
-            cursor.execute(
-                """
-                UPDATE estoque
-                SET estoque_minimo = %s
-                WHERE produto_id = %s
-                """,
-                (
-                    dados["estoque_minimo"],
-                    id
-                )
-            )
-
-
-            # =====================================================
-            # CONFIRMA ALTERAÇÕES
-            # =====================================================
-
-            conn.commit()
-
-
-            flash(
-                "Produto atualizado com sucesso!",
-                "sucesso"
-            )
-
-
-        except Exception:
-
-            conn.rollback()
-
-            raise
-
-
-        finally:
-
-            cursor.close()
-            conn.close()
-
+        if imagem and imagem.filename:
+            extensaovalida = {"png", "jpg", "jpeg", "webp"}
+            extensao = imagem.filename.rsplit(".", 1)[-1].lower() if "." in imagem.filename else ""
+            
+            if extensao in extensaovalida:
+                nome_imagem = f"produto_{produto_id}.{extensao}"
+                pasta_imagem = os.path.join(app.root_path, "static", "imagem")
+                os.makedirs(pasta_imagem, exist_ok=True)
+                imagem.save(os.path.join(pasta_imagem, nome_imagem))
+                
+                cursor.execute("UPDATE produto SET imagem = %s WHERE id = %s", (nome_imagem, produto_id))
+
+        # 4. Atualiza ou insere a quantidade no estoque do galpão (evita duplicar linhas)
+        if galpao_id:
+            cursor.execute("""
+                INSERT INTO estoque (produto_id, galpao_id, quantidade, estoque_minimo)
+                VALUES (%s, %s, %s, %s)
+                ON DUPLICATE KEY UPDATE 
+                    quantidade = quantidade + VALUES(quantidade),
+                    estoque_minimo = VALUES(estoque_minimo)
+            """, (produto_id, galpao_id, quantidade, estoque_minimo))
+
+        conn.commit()
+        flash("Produto e estoque processados com sucesso!", "sucesso")
 
     except Exception as e:
+        conn.rollback()
+        flash(f"Erro ao salvar produto: {e}", "erro")
+    finally:
+        cursor.close()
+        conn.close()
 
-        flash(
-            f"Erro ao atualizar produto: {e}",
-            "erro"
-        )
-
-
-    return redirect(
-        url_for(
-            "info_produtos",
-            id=id
-        )
-    )
+    if galpao_id:
+        return redirect(url_for("estoque_galpao", galpao_id=galpao_id))
+    return redirect(url_for("produtos"))
 
 
 @app.route("/produto/editar/<int:id>")
@@ -1819,22 +1707,57 @@ def deletar_cliente(cliente_id):
 @login_obrigatorio
 def api_produtos_do_galpao(galpao_id):
     from flask import jsonify
+
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
+
     try:
         cursor.execute("""
-            SELECT p.id, p.sku, p.nome, p.preco_venda,
-                   e.quantidade AS estoque_disponivel
+            SELECT 
+                p.id,
+                p.sku,
+                p.nome,
+                COALESCE(p.preco_venda, 0) AS preco_venda,
+                COALESCE(e.quantidade, 0) AS estoque_disponivel
             FROM estoque e
-            JOIN produto p ON e.produto_id = p.id
-            WHERE e.galpao_id = %s AND e.quantidade > 0
+            INNER JOIN produto p
+                ON e.produto_id = p.id
+            WHERE e.galpao_id = %s
+              AND e.quantidade > 0
+              AND p.ativo = TRUE
             ORDER BY p.nome ASC
         """, (galpao_id,))
-        return jsonify(cursor.fetchall())
+
+        produtos = cursor.fetchall()
+
+        # Converte Decimal para float antes de enviar para o JavaScript
+        for produto in produtos:
+            produto["preco_venda"] = float(
+                produto["preco_venda"] or 0
+            )
+
+            produto["estoque_disponivel"] = int(
+                produto["estoque_disponivel"] or 0
+            )
+
+        print("========================================")
+        print("GALPÃO:", galpao_id)
+        print("PRODUTOS:", produtos)
+        print("========================================")
+
+        return jsonify(produtos)
+
+    except Exception as e:
+
+        print("ERRO API PRODUTOS:", e)
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
     finally:
         cursor.close()
         conn.close()
-        
 @app.route("/api/todos_produtos")
 @login_obrigatorio
 def api_todos_produtos():
@@ -1860,6 +1783,7 @@ def api_produtos_do_fornecedor(fornecedor_id):
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
+        # 1. Tenta buscar os produtos vinculados a este fornecedor
         cursor.execute("""
             SELECT
                 p.id,
@@ -1879,7 +1803,30 @@ def api_produtos_do_fornecedor(fornecedor_id):
               AND p.ativo = TRUE
             ORDER BY p.nome ASC
         """, (fornecedor_id,))
-        return jsonify(cursor.fetchall())
+        
+        produtos = cursor.fetchall()
+
+        # 2. FALLBACK: Se o fornecedor não tiver vínculos, retorna todos os produtos ativos do sistema
+        if not produtos:
+            cursor.execute("""
+                SELECT
+                    p.id,
+                    p.sku,
+                    p.nome,
+                    p.preco_custo,
+                    COALESCE(e_total.estoque_disponivel, 0) AS estoque_disponivel
+                FROM produto p
+                LEFT JOIN (
+                    SELECT produto_id, SUM(quantidade) AS estoque_disponivel
+                    FROM estoque
+                    GROUP BY produto_id
+                ) e_total ON e_total.produto_id = p.id
+                WHERE p.ativo = TRUE
+                ORDER BY p.nome ASC
+            """)
+            produtos = cursor.fetchall()
+
+        return jsonify(produtos)
     finally:
         cursor.close()
         conn.close()
@@ -1978,6 +1925,16 @@ def salvar_pedido_entrada():
                 VALUES (%s, %s, %s, %s)
             """, (pedido_id, item["produto_id"],
                   item["quantidade"], item["preco_unitario"]))
+
+            # AUTO-VÍNCULO: Associa o produto ao fornecedor se ainda não estiver vinculado
+            cursor.execute("""
+                INSERT INTO fornecedor_produto
+                    (fornecedor_id, produto_id, preco_custo, desconto, quantidade_minima, prazo_entrega_dias, ativo)
+                VALUES (%s, %s, %s, 0, 1, 0, 1)
+                ON DUPLICATE KEY UPDATE
+                    preco_custo = VALUES(preco_custo),
+                    ativo = 1
+            """, (fornecedor_id, item["produto_id"], item["preco_unitario"]))
 
             # Incrementa estoque automaticamente
             cursor.execute("""
