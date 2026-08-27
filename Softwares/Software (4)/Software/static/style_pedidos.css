@@ -1,0 +1,437 @@
+#orders-content {
+    width: 100%;
+}
+
+.orders-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+.orders-header h1 {
+    font-size: 24px;
+    color: #333;
+    font-weight: bold;
+    margin: 0 0 5px 0;
+}
+
+.orders-header h1 i {
+    margin-right: 10px;
+}
+
+.orders-header p {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+}
+
+.add-supplier-btn {
+    background-color: #4A90E2;
+    /* Azul */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-supplier-btn:hover {
+    background-color: #387bd8;
+}
+
+.add-supplier-btn i {
+    margin-right: 5px;
+}
+
+
+.barra-pesquisa {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.caixa-pesquisa {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 8px 15px;
+    width: 40%;
+}
+
+.caixa-pesquisa i {
+    color: #999;
+    margin-right: 10px;
+}
+
+.caixa-pesquisa input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+}
+
+.pesquias-botao {
+    display: flex;
+    gap: 10px;
+}
+
+.action-btn {
+    background-color: transparent;
+    border: 1px solid #ccc;
+    color: #333;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.action-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.action-btn i {
+    margin-right: 5px;
+}
+
+.status-pedido {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    text-align: center;
+}
+
+.status-processando {
+    background-color: #FFFBEA;
+    color: #FFC90E;
+}
+
+.status-enviando {
+    background-color: #E6F0F0;
+    color: #4A90E2;
+}
+
+.status-completado {
+    background-color: #E6F7E9;
+    color: #38C172;
+}
+
+.status-cancelado {
+    background-color: #FEEEEE;
+    color: #E3342F;
+}
+
+.lista-inventario {
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+thead th {
+    text-align: left;
+    padding: 15px 20px;
+    color: #666;
+    font-weight: 600;
+    border-bottom: 1px solid #eee;
+}
+
+tbody td {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f9f9f9;
+    color: #333;
+    vertical-align: top;
+}
+
+tbody tr:hover {
+    background-color: #f0f0f0;
+}
+
+.acao-btn {
+    border: none;
+    width: 30px !important;
+    height: 38px !important;
+    
+    /* Força o container a centralizar o que estiver dentro */
+    display: inline-flex !important;
+    align-items: center !important;       /* Centro vertical */
+    justify-content: center !important;   /* Centro horizontal */
+    vertical-align: middle;
+    
+    text-decoration: none;
+    margin-left: 5px;
+    border-radius: 6px; 
+    background: #f1f1f1;
+    cursor: pointer;
+    transition: all 0.2s ease; 
+}
+
+.acao-btn i {
+    font-size: 1.1rem;
+    line-height: 1 !important;
+    display: inline-block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    text-align: center !important;
+    width: auto !important;
+}
+
+.acao-btn:hover {
+    background: #15477F;
+    color: white;
+}
+
+.acao-btn.desativar:hover {
+    background: #dd9104;
+    color: white;
+}
+
+.acao-btn.delete:hover {
+    background: #d63031;
+    color: white;
+}
+/* =========================================
+   MODO ESCURO - PEDIDOS
+========================================= */
+
+/* =========================================
+   CABEÇALHO
+========================================= */
+
+body.modo-escuro .orders-header h1 {
+    color: #ffffff;
+}
+
+body.modo-escuro .orders-header p {
+    color: #aaaaaa;
+}
+
+
+/* =========================================
+   BARRA DE PESQUISA
+========================================= */
+
+body.modo-escuro .barra-pesquisa {
+    background-color: #1e1e1e;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+
+/* Caixa de pesquisa */
+
+body.modo-escuro .caixa-pesquisa {
+    background-color: #1e1e1e;
+    border-color: #444444;
+}
+
+body.modo-escuro .caixa-pesquisa i {
+    color: #888888;
+}
+
+body.modo-escuro .caixa-pesquisa input {
+    background-color: transparent;
+    color: #ffffff;
+}
+
+body.modo-escuro .caixa-pesquisa input::placeholder {
+    color: #888888;
+}
+
+
+/* =========================================
+   BOTÕES DE FILTRO / EXPORTAÇÃO
+========================================= */
+
+body.modo-escuro .action-btn {
+    background-color: transparent;
+    border-color: #444444;
+    color: #dddddd;
+}
+
+body.modo-escuro .action-btn:hover {
+    background-color: #2a2a2a;
+}
+
+
+/* =========================================
+   TABELA
+========================================= */
+
+body.modo-escuro .lista-inventario {
+    background-color: #1e1e1e;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+
+/* Cabeçalho */
+
+body.modo-escuro thead th {
+    color: #aaaaaa;
+    border-bottom-color: #333333;
+}
+
+
+/* Células */
+
+body.modo-escuro tbody td {
+    color: #dddddd;
+    border-bottom-color: #333333;
+}
+
+
+/* Hover das linhas */
+
+body.modo-escuro tbody tr:hover {
+    background-color: #2a2a2a;
+}
+
+
+/* =========================================
+   INFORMAÇÕES DO PEDIDO
+========================================= */
+
+body.modo-escuro .ordem-id {
+    color: #ffffff;
+}
+
+body.modo-escuro .produto-info {
+    color: #ffffff;
+}
+
+body.modo-escuro .produto-info strong {
+    color: #ffffff;
+}
+
+body.modo-escuro .cliente-pedido {
+    color: #999999;
+}
+
+
+/* =========================================
+   BADGE DO DOCUMENTO
+========================================= */
+
+body.modo-escuro .badge.bg-light.text-dark {
+    background-color: #333333 !important;
+    color: #dddddd !important;
+}
+
+
+/* =========================================
+   STATUS DOS PEDIDOS
+========================================= */
+
+body.modo-escuro .status-processando {
+    background-color: #443a16;
+    color: #ffd54a;
+}
+
+body.modo-escuro .status-enviando {
+    background-color: #193344;
+    color: #5fa8e8;
+}
+
+body.modo-escuro .status-completado {
+    background-color: #173d25;
+    color: #5bd98a;
+}
+
+body.modo-escuro .status-cancelado {
+    background-color: #431d1d;
+    color: #ff6b6b;
+}
+
+
+/* =========================================
+   BOTÕES DE AÇÃO
+========================================= */
+
+body.modo-escuro .acao-btn {
+    background-color: #2a2a2a;
+    color: #dddddd;
+}
+
+body.modo-escuro .acao-btn:hover {
+    background-color: #15477F;
+    color: #ffffff;
+}
+
+body.modo-escuro .acao-btn.desativar:hover {
+    background-color: #dd9104;
+    color: #ffffff;
+}
+
+body.modo-escuro .acao-btn.delete {
+    background-color: #2a2a2a;
+    color: #dddddd;
+}
+
+body.modo-escuro .acao-btn.delete:hover {
+    background-color: #d63031;
+    color: #ffffff;
+}
+
+
+/* =========================================
+   MODAL DE EXCLUSÃO
+========================================= */
+
+body.modo-escuro .modal-content {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+body.modo-escuro .modal-header {
+    border-bottom-color: #333333;
+}
+
+body.modo-escuro .modal-footer {
+    border-top-color: #333333;
+}
+
+body.modo-escuro .modal-title {
+    color: #ffffff;
+}
+
+body.modo-escuro .modal-body {
+    color: #dddddd;
+}
+
+body.modo-escuro .modal-body strong {
+    color: #ffffff;
+}
+
+body.modo-escuro .btn-close {
+    filter: invert(1);
+}
+
+body.modo-escuro .btn-voltar {
+    color: #AAAAAA;
+}
+
+
+/* =========================================
+   NENHUM PEDIDO
+========================================= */
+
+body.modo-escuro tbody .text-muted {
+    color: #999999 !important;
+}

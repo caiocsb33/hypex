@@ -1,0 +1,479 @@
+/*=======galpao.css=======*/
+
+
+#galpao-conteudo {
+    margin-left: 0;
+    padding: 30px;
+    flex: 1;
+    min-width: 0;
+    box-sizing: border-box;
+    flex-grow: 1;
+    max-width: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    box-sizing: border-box;
+
+}
+
+.galpao {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    box-sizing: border-box;
+}
+
+.galpao h1 {
+    font-size: 24px;
+    color: #333;
+    font-weight: bold;
+    margin: 0 0 5px 0;
+}
+
+.galpao h1 i {
+    margin-right: 10px;
+}
+
+.galpao p {
+    font-size: 14px;
+    color: #666;
+    margin: 0;
+}
+
+.add-galpao-btn {
+    background-color: #4A90E2;
+    /* Azul */
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.add-galpao-btn:hover {
+    background-color: #387bd8;
+}
+
+.add-galpao-btn i {
+    margin-right: 5px;
+}
+
+/* --- CARDS DO GALPÃO --- */
+
+.cards-galpao {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 30px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.galpao-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid #f1f1f1;
+    transition: box-shadow 0.3s;
+}
+
+.btn-estoque {
+    background-color: #4A90E2;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn-estoque:hover {
+    background-color: #387bd8;
+    color: white;
+}
+
+.galpao-card:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.galpao-card.inactive {
+    opacity: 0.6;
+}
+
+.galpao-card .galpao-texto {
+    display: flex;
+    align-items: flex-start;
+    /* Alinhar itens ao topo */
+    justify-content: space-between;
+    margin-bottom: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #f9f9f9;
+}
+
+.galpao-icone {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    /* Icone circular */
+    font-size: 18px;
+    margin-right: 15px;
+    flex-shrink: 0;
+}
+
+.galpao-titulo {
+    flex-grow: 1;
+}
+
+.nome-galpao {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.link-estoque {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: transform 0.2s;
+}
+
+.card-link a {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+}
+
+.card-link:hover {
+    transform: translateY(-5px);
+}
+
+.galpao-resp {
+    font-size: 13px;
+    color: #999;
+    margin: 2px 0 0 0;
+}
+
+.green-bg-icon {
+    background-color: #E6F7E9;
+    color: #38C172;
+}
+
+.gray-bg-icon {
+    background-color: #f0f0f0;
+    color: #999;
+}
+
+/* ------- Barra de Pesquisa DO GALPÃO ------ */
+.barra-pesquisa {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+.caixa-pesquisa {
+    display: flex;
+    align-items: center;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    padding: 8px 15px;
+    width: 40%;
+}
+
+.caixa-pesquisa i {
+    color: #999;
+    margin-right: 10px;
+}
+
+.caixa-pesquisa input {
+    border: none;
+    outline: none;
+    width: 100%;
+    font-size: 14px;
+}
+
+.pesquias-botao {
+    display: flex;
+    gap: 10px;
+}
+
+.filtro-botao {
+    background-color: transparent;
+    border: 1px solid #ccc;
+    color: #333;
+    padding: 8px 15px;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.filtro-botao:hover {
+    background-color: #f0f0f0;
+}
+
+.filtro-botao i {
+    margin-right: 5px;
+}
+
+.cards-info-galpao {
+    margin-bottom: 15px;
+}
+
+.detalhe-galpao {
+    font-size: 14px;
+    color: #666;
+    margin: 5px 0;
+}
+
+.detalhe-galpao i {
+    color: #999;
+    margin-right: 8px;
+    width: 14px;
+    text-align: center;
+}
+
+.galpao-card .cards-detalhe-galpao {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 15px;
+    border-top: 1px solid #f9f9f9;
+}
+
+.stats-galpao {
+    flex-grow: 1;
+    text-align: center;
+}
+
+.stats-galpao:first-child {
+    border-right: 1px solid #f1f1f1;
+    text-align: left;
+    padding-right: 10px;
+}
+
+.stats-galpao:last-child {
+    text-align: right;
+    padding-left: 10px;
+}
+
+.stats-ocupa {
+    display: block;
+    font-size: 12px;  
+    color: #999;
+    margin-bottom: 5px;
+}
+
+.stats-area {
+    display: block;
+    font-size: 12px;  
+    color: #999;
+    margin-right: 80px;
+    margin-bottom: 5px;
+}
+
+.stats-espaco {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+}
+
+.status-ativo {
+    background-color: #E6F7E9;
+    color: #38C172;
+}
+.status-galpao {
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 10px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.status-inativo {
+    background-color: #FEEEEE;
+    color: #E3342F;
+}
+
+.status-manutencao {
+    background-color: #FFF5E5;
+    color: #E67E22;
+}
+
+.total-spent {
+    color: #38C172;
+}
+
+/* =========================================
+   MODO ESCURO - GALPÃO
+========================================= */
+
+body.modo-escuro #galpao-conteudo {
+    background-color: #121212;
+}
+
+/* Título e descrição */
+
+body.modo-escuro .galpao h1 {
+    color: #ffffff;
+}
+
+body.modo-escuro .galpao p {
+    color: #aaaaaa;
+}
+
+/* Cards */
+
+body.modo-escuro .galpao-card {
+    background-color: #1e1e1e;
+    border-color: #333333;
+    color: #ffffff;
+}
+
+body.modo-escuro .galpao-card:hover {
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
+}
+
+/* Nome do galpão */
+
+body.modo-escuro .nome-galpao {
+    color: #ffffff;
+}
+
+body.modo-escuro .galpao-resp {
+    color: #aaaaaa;
+}
+
+/* Separadores dos cards */
+
+body.modo-escuro .galpao-card .galpao-texto {
+    border-bottom-color: #333333;
+}
+
+body.modo-escuro .galpao-card .cards-detalhe-galpao {
+    border-top-color: #333333;
+}
+
+/* Informações */
+
+body.modo-escuro .detalhe-galpao {
+    color: #bbbbbb;
+}
+
+body.modo-escuro .detalhe-galpao i {
+    color: #888888;
+}
+
+/* Estatísticas */
+
+body.modo-escuro .stats-ocupa,
+body.modo-escuro .stats-area {
+    color: #999999;
+}
+
+body.modo-escuro .stats-espaco {
+    color: #ffffff;
+}
+
+body.modo-escuro .stats-galpao:first-child {
+    border-right-color: #333333;
+}
+
+/* Barra de pesquisa */
+
+body.modo-escuro .barra-pesquisa {
+    background-color: #1e1e1e;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+body.modo-escuro .caixa-pesquisa {
+    border-color: #444444;
+    background-color: #1e1e1e;
+}
+
+body.modo-escuro .caixa-pesquisa i {
+    color: #888888;
+}
+
+body.modo-escuro .caixa-pesquisa input {
+    background-color: transparent;
+    color: #ffffff;
+}
+
+body.modo-escuro .caixa-pesquisa input::placeholder {
+    color: #888888;
+}
+
+/* Botão de filtro */
+
+body.modo-escuro .filtro-botao {
+    border-color: #444444;
+    color: #dddddd;
+}
+
+body.modo-escuro .filtro-botao:hover {
+    background-color: #2a2a2a;
+}
+
+/* Ícones dos cards */
+
+body.modo-escuro .gray-bg-icon {
+    background-color: #2a2a2a;
+    color: #999999;
+}
+
+/* Status */
+
+body.modo-escuro .status-ativo {
+    background-color: rgba(56, 193, 114, 0.15);
+    color: #38C172;
+}
+
+body.modo-escuro .status-inativo {
+    background-color: rgba(227, 52, 47, 0.15);
+    color: #E3342F;
+}
+
+body.modo-escuro .status-manutencao {
+    background-color: rgba(230, 126, 34, 0.15);
+    color: #E67E22;
+}
+
+/* Botão estoque */
+
+body.modo-escuro .btn-estoque {
+    background-color: #2B6BB9;
+}
+
+body.modo-escuro .btn-estoque:hover {
+    background-color: #387bd8;
+}
+
+/* Total */
+
+body.modo-escuro .total-spent {
+    color: #38C172;
+}
+
+body.modo-escuro .total-spent {
+    color: #38C172;
+}
+
+
+/* AJUSTE EXCLUSIVO DA PÁGINA DE GALPÕES */
+
+.conteudo:has(#galpao-conteudo) {
+    padding: 0;
+}

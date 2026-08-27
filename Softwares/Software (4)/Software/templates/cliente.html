@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}Clientes{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style_clientes.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<section id="cliente-conteudo">
+
+    <header class="clientes">
+
+        <div class="cliente-texto">
+
+            <h1>
+                <i class="bi bi-person-fill"></i>
+                CLIENTES
+            </h1>
+
+            <p>
+                Gerencie sua base de clientes
+            </p>
+
+        </div>
+
+        <button
+            class="btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#exampleModal">
+
+            + Adicionar Cliente
+
+        </button>
+
+    </header>
+
+
+    <!-- MENSAGENS -->
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+
+        {% if messages %}
+
+            {% for categoria, mensagem in messages %}
+
+                <div class="alert alert-{{ 'danger' if categoria == 'erro' else 'success' }}">
+
+                    {{ mensagem }}
+
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    {% endwith %}
+
+
+    <!-- MODAL -->
+
+    <div class="modal fade" id="exampleModal" tabindex="-1">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <form method="POST" action="{{ url_for('salvar_cliente') }}">
+
+                    <div class="modal-header">
+
+                        <h5 class="modal-title">
+                            Adicionar Cliente
+                        </h5>
+
+                        <button
+                            type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal">
+                        </button>
+
+                    </div>
+
+
+                    <div class="modal-body">
+
+                        <div class="row g-3">
+
+                            <div class="col">
+
+                                <h6>Nome da Empresa</h6>
+
+                                <input
+                                    type="text"
+                                    name="empresa"
+                                    class="form-control"
+                                    required>
+
+                            </div>
+
+
+                            <div class="col">
+
+                                <h6>CPF ou CNPJ</h6>
+
+                                <input
+                                    type="text"
+                                    name="cpf"
+                                    class="form-control"
+                                    required>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="row mt-3">
+
+                            <div class="col">
+
+                                <h6>E-mail</h6>
+
+                                <input
+                                    type="email"
+                                    name="email"
+                                    class="form-control">
+
+                            </div>
+
+
+                            <div class="col">
+
+                                <h6>Nome do Contato</h6>
+
+                                <input
+                                    type="text"
+                                    name="nome"
+                                    class="form-control"
+                                    required>
+
+                            </div>
+
+
+                            <div class="col">
+
+                                <h6>Telefone</h6>
+
+                                <input
+                                    type="text"
+                                    name="telefone"
+                                    class="form-control">
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="row mt-3">
+
+                            <div class="col">
+
+                                <h6>Cidade</h6>
+
+                                <input
+                                    type="text"
+                                    name="cidade"
+                                    class="form-control">
+
+                            </div>
+
+
+                            <div class="col">
+
+                                <h6>CEP</h6>
+
+                                <input
+                                    type="text"
+                                    name="cep"
+                                    class="form-control">
+
+                            </div>
+
+
+                            <div class="col">
+
+                                <h6>Estado</h6>
+
+                                <select
+                                    name="estado"
+                                    class="form-select">
+
+                                    <option value="">
+                                        Selecione
+                                    </option>
+
+                                    <option value="Sp">
+                                        Sp
+                                    </option>
+
+                                    <option value="Rj">
+                                        Rj
+                                    </option>
+
+                                    <option value="Mg">
+                                        Mg
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <input
+                                type="hidden"
+                                name="ativo"
+                                value="ativo">
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="modal-footer">
+
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal">
+
+                            Fechar
+
+                        </button>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary">
+
+                            Salvar
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- BARRA DE PESQUISA -->
+
+    <section class="barra-pesquisa">
+
+        <div class="caixa-pesquisa">
+
+            <i class="bi bi-search"></i>
+
+            <input
+                type="text"
+                placeholder="Buscar clientes...">
+
+        </div>
+
+
+        <div class="pesquias-botao">
+
+            <button class="action-btn filter-btn">
+
+                <i class="bi bi-funnel-fill"></i>
+
+                Filtros
+
+            </button>
+
+
+            <button class="action-btn export-btn">
+
+                <i class="bi bi-cloud-arrow-down-fill"></i>
+
+                Exportar
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- CARDS DOS CLIENTES -->
+
+    <section class="clientes-cards">
+
+        {% if clientes %}
+
+            {% for cliente in clientes %}
+
+                <a
+                    href="/pedidos_cliente/{{ cliente.id }}"
+                    class="card-link">
+
+                    <div class="clientes-card {% if cliente.ativo != 'ativo' %}inactive{% endif %}">
+
+
+                        <div class="clientes-texto">
+
+
+                            <div class="clientes-icone
+                                {% if cliente.ativo == 'ativo' %}
+                                    green-bg-icon
+                                {% else %}
+                                    gray-bg-icon
+                                {% endif %}">
+
+                                <i class="bi bi-people-fill"></i>
+
+                            </div>
+
+
+                            <div class="clientes-titulo">
+
+                                <h2 class="cliente-nome">
+                                    {{ cliente.empresa }}
+                                </h2>
+
+                                <p class="contato-pessoa">
+                                    {{ cliente.nome }}
+                                </p>
+
+                            </div>
+
+
+                            <span class="status-cliente
+                                {% if cliente.ativo == 'ativo' %}
+                                    status-ativo
+                                {% else %}
+                                    status-inativo
+                                {% endif %}">
+
+                                {{ cliente.ativo }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="cards-info-clientes">
+
+                            <p class="contact-detail">
+
+                                <i class="bi bi-envelope-fill"></i>
+
+                                {{ cliente.email }}
+
+                            </p>
+
+
+                            <p class="contact-detail">
+
+                                <i class="bi bi-phone-fill"></i>
+
+                                {{ cliente.telefone }}
+
+                            </p>
+
+
+                            <p class="contact-detail">
+
+                                <i class="bi bi-geo-alt-fill"></i>
+
+                                {{ cliente.cidade }} -
+                                {{ cliente.estado }}
+
+                            </p>
+
+                        </div>
+
+
+                        <div class="card-detalhes-clientes">
+
+
+                            <div class="status-pedidos">
+
+                                <span class="stat-label">
+                                    Pedidos
+                                </span>
+
+                                <span class="stat-value">
+                                    {{ cliente.total_pedidos or 0 }}
+                                </span>
+
+                            </div>
+
+
+                            <div class="status-pedidos">
+
+                                <span class="stat-label">
+                                    Total Gasto
+                                </span>
+
+                                <span class="stat-value total-spent">
+
+                                    R$
+                                    {{ cliente.total_gasto or '0,00' }}
+
+                                </span>
+
+                            </div>
+
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            {% endfor %}
+
+
+        {% else %}
+
+            <div class="text-center mt-5 w-100">
+
+                <i
+                    class="bi bi-people"
+                    style="font-size: 60px; color: #ccc;">
+                </i>
+
+                <h3 class="mt-3">
+                    Nenhum Cliente cadastrado
+                </h3>
+
+                <p class="text-muted">
+                    Comece adicionando seu primeiro Cliente.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+</section>
+
+{% endblock %}
