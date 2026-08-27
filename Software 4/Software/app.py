@@ -63,58 +63,7 @@ def to_float(value, default=0.0):
     except:
         return default
 
-# ------------VALIDAÇÃO CNPJ----------#
-
-def validar_cnpj(cnpj):
-    # Remove pontos, barras, traços e qualquer outro caractere
-    cnpj = re.sub(r"\D", "", cnpj)
-
-    # CNPJ precisa ter exatamente 14 números
-    if len(cnpj) != 14:
-        return False
-
-    # Não aceita CNPJ com todos os números iguais
-    if len(set(cnpj)) == 1:
-        return False
-
-    # Primeiro dígito verificador
-    pesos_1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-
-    soma = sum(
-        int(cnpj[i]) * pesos_1[i]
-        for i in range(12)
-    )
-
-    resto = soma % 11
-
-    if resto < 2:
-        digito_1 = 0
-    else:
-        digito_1 = 11 - resto
-
-    if int(cnpj[12]) != digito_1:
-        return False
-
-    # Segundo dígito verificador
-    pesos_2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
-
-    soma = sum(
-        int(cnpj[i]) * pesos_2[i]
-        for i in range(13)
-    )
-
-    resto = soma % 11
-
-    if resto < 2:
-        digito_2 = 0
-    else:
-        digito_2 = 11 - resto
-
-    if int(cnpj[13]) != digito_2:
-        return False
-
-    return True
-# ------------VALIDAÇÃO TELEFONE----------#
+# ------------VALIDAÇÕES----------#
 
 def telefone_valido(telefone):
     numeros = re.sub(r'\D', '', telefone)
@@ -647,59 +596,22 @@ def cadastro_emp():
 @app.route("/estoque")
 @login_obrigatorio
 def estoque():
-    conn = Database.connect()
-    cursor = conn.cursor(dictionary=True)
-    try:
-        cursor.execute("""
-            SELECT 
-                    p.*, 
-                    COALESCE(SUM(e.quantidade), 0) AS quantidade,
-                    COALESCE(MIN(e.estoque_minimo), 0) AS quantidade_minimo,
-                    GROUP_CONCAT(DISTINCT f.nome ORDER BY f.nome SEPARATOR ', ') AS fornecedor
-                FROM produto p
-                LEFT JOIN estoque e ON p.id = e.produto_id
-                LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
-                LEFT JOIN fornecedor f ON fp.fornecedor_id = f.id
-                GROUP BY p.id
-        """)
-        produtos = cursor.fetchall()
-    finally:
-        cursor.close()
-        conn.close()
-
-    lista = Estoque.find_all_consolidado()
-    return render_template("estoque.html", produtos=lista, galpao=None)
-
+    produtos = Estoque.resumo_geral()
+    return render_template("estoque.html", produtos=produtos, galpao=None)
 
 @app.route("/estoque/<int:galpao_id>")
 @login_obrigatorio
 def estoque_galpao(galpao_id):
+    produtos = Estoque.find_by_galpao(galpao_id)
     galpao = Galpao.find_by_id(galpao_id)
     fornecedores = Fornecedor.find_all()
 
-    conn = Database.connect()
-    cursor = conn.cursor(dictionary=True)
-    try:
-        cursor.execute("""
-            SELECT 
-                p.*, 
-                COALESCE(SUM(e.quantidade), 0) AS quantidade,
-                COALESCE(MIN(e.estoque_minimo), 0) AS estoque_minimo,
-                GROUP_CONCAT(DISTINCT f.nome ORDER BY f.nome SEPARATOR ', ') AS fornecedor
-            FROM produto p
-            JOIN estoque e ON p.id = e.produto_id
-            LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
-            LEFT JOIN fornecedor f ON fp.fornecedor_id = f.id
-            WHERE e.galpao_id = %s
-            GROUP BY p.id
-        """, (galpao_id,))
-        produtos = cursor.fetchall()
-    finally:
-        cursor.close()
-        conn.close()
-
-    produtos = Estoque.find_by_galpao(galpao_id)
-    return render_template("estoque.html", produtos=produtos, galpao=galpao)
+    return render_template(
+        "estoque.html",
+        produtos=produtos,
+        galpao=galpao,
+        fornecedores=fornecedores
+    )
 
 @app.route("/estoque/movimentar", methods=["POST"])
 @login_obrigatorio
@@ -720,6 +632,20 @@ def movimentar_estoque():
 
 # ---------------- INFO GALPAO ---------------- #
 
+@app.route("/info_galpao/<int:galpao_id>")
+@login_obrigatorio
+def info_galpao(galpao_id):
+    galpao = Galpao.find_by_id(galpao_id)
+    funcionarios = Funcionario.find_by_galpao(galpao_id)
+    empilhadeiras = Empilhadeira.find_by_galpao(galpao_id)
+
+    return render_template(
+        "info_galpao.html",
+        galpao=galpao,
+        funcionarios=funcionarios,
+        empilhadeiras=empilhadeiras
+    )
+
 @app.route("/galpao/atualizar/<int:galpao_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_galpao(galpao_id):
@@ -728,77 +654,43 @@ def atualizar_galpao(galpao_id):
         telefone = request.form.get("telefone", "").strip()
         telefone = formatar_telefone(telefone)
 
-        cep = request.form.get("cep", "").strip()
-
-        # Validação do CEP
-        if not cep:
-            flash("O CEP é obrigatório.", "erro")
-            return redirect(url_for("info_galpao", galpao_id=galpao_id))
-
-        if not cep.isdigit():
-            flash("O CEP deve conter apenas números.", "erro")
-            return redirect(url_for("info_galpao", galpao_id=galpao_id))
-
-        if len(cep) != 8:
-            flash("O CEP deve conter exatamente 8 números.", "erro")
-            return redirect(url_for("info_galpao", galpao_id=galpao_id))
-
-        caixas_por_nivel = to_int(
-            request.form.get("caixas_por_nivel")
-        )
-
-        niveis_por_prateleira = to_int(
-            request.form.get("niveis_por_prateleira")
-        )
-
-        total_prateleiras = to_int(
-            request.form.get("total_prateleiras")
-        )
-
-        capacidade_total = (
-            caixas_por_nivel
-            * niveis_por_prateleira
-            * total_prateleiras
-        )
+        caixas_por_nivel      = to_int(request.form.get("caixas_por_nivel"))
+        niveis_por_prateleira = to_int(request.form.get("niveis_por_prateleira"))
+        total_prateleiras     = to_int(request.form.get("total_prateleiras"))
+        capacidade_total      = caixas_por_nivel * niveis_por_prateleira * total_prateleiras
 
         dados = {
-            "nome_resp": request.form.get("nome_resp"),
-            "email_resp": request.form.get("email_resp"),
-            "telefone": telefone,
-            "stats": request.form.get("stats"),
-            "nome": request.form.get("nome"),
-            "cep": cep,
-            "endereco": request.form.get("endereco"),
-            "referencia": request.form.get("referencia"),
-            "area_total": to_float(
-                request.form.get("area_total")
-            ),
-            "caixas_por_nivel": caixas_por_nivel,
+            "nome_resp":             request.form.get("nome_resp"),
+            "email_resp":            request.form.get("email_resp"),
+            "telefone":              request.form.get("telefone"),
+            "stats":                 request.form.get("stats"),
+            "nome":                  request.form.get("nome"),
+            "cep":                   request.form.get("cep"),
+            "endereco":              request.form.get("endereco"),
+            "referencia":            request.form.get("referencia"),
+            "area_total":            to_float(request.form.get("area_total")),
+            "caixas_por_nivel":      caixas_por_nivel,
             "niveis_por_prateleira": niveis_por_prateleira,
-            "total_prateleiras": total_prateleiras,
-            "capacidade_total": capacidade_total,
+            "total_prateleiras":     total_prateleiras,
+            "capacidade_total":      capacidade_total,
         }
-
         Galpao.update(galpao_id, dados)
-
-        flash(
-            "Galpão atualizado com sucesso!",
-            "sucesso"
-        )
-
+        flash("Galpão atualizado com sucesso!", "sucesso")
     except Exception as e:
+        flash(f"Erro: {e}", "erro")
+    return redirect(url_for("info_galpao", galpao_id=galpao_id))
 
-        flash(
-            f"Erro: {e}",
-            "erro"
-        )
 
-    return redirect(
-        url_for(
-            "info_galpao",
-            galpao_id=galpao_id
-        )
-    )
+
+@app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
+@login_obrigatorio
+def deletar_galpao(galpao_id):
+    try:
+        Galpao.delete(galpao_id)
+        flash("Galpão excluído com sucesso!", "sucesso")
+    except Exception as e:
+        flash(f"Erro: {e}", "erro")
+    return redirect(url_for("galpao"))
     
 
 
@@ -869,120 +761,267 @@ def deletar_empilhadeira(empilhadeira_id):
         flash(f"Erro: {e}", "erro")
     return redirect(url_for("info_galpao", galpao_id=galpao_id))
 
+
 # ---------------- PRODUTOS ---------------- #
 
 @app.route("/produtos")
 @login_obrigatorio
 def produtos():
-    
-    # Agora a rota /produtos faz a mesma busca agrupada
-    conn = Database.connect()
-    cursor = conn.cursor(dictionary=True)
-    try:
-        cursor.execute("""
-            SELECT 
-                p.*, 
-                COALESCE(SUM(e.quantidade), 0) AS quantidade,
-                COALESCE(MIN(e.estoque_minimo), 0) AS estoque_minimo,
-                GROUP_CONCAT(DISTINCT f.nome ORDER BY f.nome SEPARATOR ', ') AS fornecedor
-            FROM produto p
-            LEFT JOIN estoque e ON p.id = e.produto_id
-            LEFT JOIN fornecedor_produto fp ON p.id = fp.produto_id
-            LEFT JOIN fornecedor f ON fp.fornecedor_id = f.id
-            GROUP BY p.id
-        """)
-        lista = cursor.fetchall()
-    finally:
-        cursor.close()
-        conn.close()
-        
-    lista = Estoque.find_all_consolidado()
+    lista = Produto.find_all_completo()
     return render_template("estoque.html", produtos=lista, galpao=None)
 
 @app.route("/produto/salvar", methods=["POST"])
 @login_obrigatorio
-def salvar_produto():
-    sku = request.form.get("sku", "").strip()
-    nome = request.form.get("nome", "").strip()
-    galpao_id = to_int(request.form.get("galpao_id"))
-    quantidade = to_int(request.form.get("quantidade", 1))
-    estoque_minimo = to_int(request.form.get("quantidade_minimo", 0))
 
-    if not sku or not nome:
-        flash("SKU e Nome são obrigatórios.", "erro")
-        return redirect(url_for("produtos"))
-
-    conn = Database.connect()
-    cursor = conn.cursor(dictionary=True)
+def salvar_produto(id):
 
     try:
-        # 1. Verifica se o produto já existe pelo SKU
-        cursor.execute("SELECT id FROM produto WHERE sku = %s LIMIT 1", (sku,))
-        produto_existente = cursor.fetchone()
 
-        if produto_existente:
-            produto_id = produto_existente["id"]
-        else:
-            # 2. Se não existir, insere o novo produto
-            dados_produto = (
-                sku,
-                nome,
-                request.form.get("descricao"),
-                request.form.get("categoria"),
-                to_float(request.form.get("preco_custo")),
-                to_float(request.form.get("preco_venda")),
-                to_float(request.form.get("peso")),
-                to_float(request.form.get("volume")),
-                request.form.get("tipo"),
-                request.form.get("codigo_barras"),
-                to_int(request.form.get("item_por_caixa"))
+        # =========================================================
+        # DADOS DO PRODUTO
+        # =========================================================
+
+        dados = {
+            "sku": request.form.get("sku"),
+            "nome": request.form.get("nome"),
+            "descricao": request.form.get("descricao"),
+            "categoria": request.form.get("categoria"),
+            "preco_custo": to_float(request.form.get("preco_custo")),
+            "preco_venda": to_float(request.form.get("preco_venda")),
+            "peso": to_float(request.form.get("peso")),
+            "volume": to_float(request.form.get("volume")),
+            "tipo": request.form.get("tipo"),
+            "codigo_barras": request.form.get("codigo_barras"),
+            "item_por_caixa": to_int(
+                request.form.get("item_por_caixa")
+            ),
+
+            # No seu HTML o name é quantidade_minimo
+            "estoque_minimo": to_int(
+                request.form.get("quantidade_minimo")
             )
-            
-            cursor.execute("""
-                INSERT INTO produto 
-                (sku, nome, descricao, categoria, preco_custo, preco_venda, peso, volume, tipo, codigo_barras, item_por_caixa, ativo)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
-            """, dados_produto)
-            
-            produto_id = cursor.lastrowid
+        }
 
-        # 3. Trata o upload da imagem (se enviada)
+
+        # =========================================================
+        # IMAGEM ENVIADA PELO FORMULÁRIO
+        # =========================================================
+
         imagem = request.files.get("imagem")
-        if imagem and imagem.filename:
-            extensaovalida = {"png", "jpg", "jpeg", "webp"}
-            extensao = imagem.filename.rsplit(".", 1)[-1].lower() if "." in imagem.filename else ""
-            
-            if extensao in extensaovalida:
-                nome_imagem = f"produto_{produto_id}.{extensao}"
-                pasta_imagem = os.path.join(app.root_path, "static", "imagem")
-                os.makedirs(pasta_imagem, exist_ok=True)
-                imagem.save(os.path.join(pasta_imagem, nome_imagem))
-                
-                cursor.execute("UPDATE produto SET imagem = %s WHERE id = %s", (nome_imagem, produto_id))
 
-        # 4. Atualiza ou insere a quantidade no estoque do galpão (evita duplicar linhas)
-        if galpao_id:
-            cursor.execute("""
-                INSERT INTO estoque (produto_id, galpao_id, quantidade, estoque_minimo)
-                VALUES (%s, %s, %s, %s)
-                ON DUPLICATE KEY UPDATE 
-                    quantidade = quantidade + VALUES(quantidade),
-                    estoque_minimo = VALUES(estoque_minimo)
-            """, (produto_id, galpao_id, quantidade, estoque_minimo))
 
-        conn.commit()
-        flash("Produto e estoque processados com sucesso!", "sucesso")
+        # =========================================================
+        # BUSCAR IMAGEM ATUAL NO BANCO
+        # =========================================================
+
+        conn = Database.connect()
+        cursor = conn.cursor(dictionary=True)
+
+        try:
+
+            cursor.execute(
+                """
+                SELECT imagem
+                FROM produto
+                WHERE id = %s
+                """,
+                (id,)
+            )
+
+            produto_atual = cursor.fetchone()
+
+            imagem_atual = None
+
+            if produto_atual:
+                imagem_atual = produto_atual.get("imagem")
+
+
+            # =====================================================
+            # MANTÉM A IMAGEM ATUAL
+            # =====================================================
+
+            nome_imagem = imagem_atual
+
+
+            # =====================================================
+            # SE O USUÁRIO ESCOLHEU UMA NOVA IMAGEM
+            # =====================================================
+
+            if imagem and imagem.filename:
+
+                # Extensões permitidas
+                extensoes_permitidas = {
+                    "png",
+                    "jpg",
+                    "jpeg",
+                    "webp"
+                }
+
+                nome_original = imagem.filename
+
+                if "." not in nome_original:
+                    raise ValueError(
+                        "O arquivo selecionado não possui uma extensão válida."
+                    )
+
+                extensao = nome_original.rsplit(".", 1)[-1].lower()
+
+
+                # Verifica extensão
+
+                if extensao not in extensoes_permitidas:
+
+                    raise ValueError(
+                        "Formato de imagem inválido. "
+                        "Use PNG, JPG, JPEG ou WEBP."
+                    )
+
+
+                # =================================================
+                # VERIFICAR TAMANHO
+                # =================================================
+
+                imagem.seek(0, 2)
+
+                tamanho = imagem.tell()
+
+                imagem.seek(0)
+
+
+                # Máximo de 5 MB
+
+                if tamanho > 5 * 1024 * 1024:
+
+                    raise ValueError(
+                        "A imagem deve ter no máximo 5 MB."
+                    )
+
+
+                # =================================================
+                # PASTA DAS IMAGENS
+                # =================================================
+
+                pasta_imagem = os.path.join(
+                    app.root_path,
+                    "static",
+                    "imagem"
+                )
+
+
+                # Cria a pasta se não existir
+
+                os.makedirs(
+                    pasta_imagem,
+                    exist_ok=True
+                )
+
+
+                # =================================================
+                # NOME DO NOVO ARQUIVO
+                # =================================================
+
+                nome_imagem = f"produto_{id}.{extensao}"
+
+
+                # =================================================
+                # EXCLUIR IMAGEM ANTIGA
+                # =================================================
+
+                if imagem_atual:
+
+                    caminho_antigo = os.path.join(
+                        pasta_imagem,
+                        imagem_atual
+                    )
+
+                    if os.path.isfile(caminho_antigo):
+
+                        os.remove(caminho_antigo)
+
+
+                # =================================================
+                # SALVAR NOVA IMAGEM
+                # =================================================
+
+                caminho_nova = os.path.join(
+                    pasta_imagem,
+                    nome_imagem
+                )
+
+                imagem.save(caminho_nova)
+
+
+            # =====================================================
+            # COLOCA O NOME DA IMAGEM NOS DADOS
+            # =====================================================
+
+            dados["imagem"] = nome_imagem
+
+
+            # =====================================================
+            # ATUALIZA PRODUTO
+            # =====================================================
+
+            Produto.update(id, dados)
+
+
+            # =====================================================
+            # ATUALIZA ESTOQUE
+            # =====================================================
+
+            cursor.execute(
+                """
+                UPDATE estoque
+                SET estoque_minimo = %s
+                WHERE produto_id = %s
+                """,
+                (
+                    dados["estoque_minimo"],
+                    id
+                )
+            )
+
+
+            # =====================================================
+            # CONFIRMA ALTERAÇÕES
+            # =====================================================
+
+            conn.commit()
+
+
+            flash(
+                "Produto atualizado com sucesso!",
+                "sucesso"
+            )
+
+
+        except Exception:
+
+            conn.rollback()
+
+            raise
+
+
+        finally:
+
+            cursor.close()
+            conn.close()
+
 
     except Exception as e:
-        conn.rollback()
-        flash(f"Erro ao salvar produto: {e}", "erro")
-    finally:
-        cursor.close()
-        conn.close()
 
-    if galpao_id:
-        return redirect(url_for("estoque_galpao", galpao_id=galpao_id))
-    return redirect(url_for("produtos"))
+        flash(
+            f"Erro ao atualizar produto: {e}",
+            "erro"
+        )
+
+
+    return redirect(
+        url_for(
+            "info_produtos",
+            id=id
+        )
+    )
 
 
 @app.route("/produto/editar/<int:id>")
@@ -1122,25 +1161,6 @@ def info_produtos(id):
 def galpao():
     return render_template("galpao.html", galpoes=Galpao.find_all())
 
-@app.route("/info_galpao/<int:galpao_id>")
-@login_obrigatorio
-def info_galpao(galpao_id):
-    galpao = Galpao.find_by_id(galpao_id)
-
-    if not galpao:
-        flash("Galpão não encontrado.", "erro")
-        return redirect(url_for("galpao"))
-
-    funcionarios = Funcionario.find_by_galpao(galpao_id)
-    empilhadeiras = Empilhadeira.find_by_galpao(galpao_id)
-
-    return render_template(
-        "info_galpao.html",
-        galpao=galpao,
-        funcionarios=funcionarios,
-        empilhadeiras=empilhadeiras
-    )
-
 @app.route("/galpao/novo")
 @login_obrigatorio
 def novo_galpao():
@@ -1150,124 +1170,48 @@ def novo_galpao():
 @login_obrigatorio
 def salvar_galpao():
     try:
-        # =========================
-        # E-MAIL
-        # =========================
-
         email = request.form.get("email_resp", "").strip()
 
         if not email_valido(email):
             flash("Informe um e-mail válido.", "erro")
             return redirect(url_for("galpao"))
 
-
-        # =========================
-        # NOME DO RESPONSÁVEL
-        # =========================
-
         nome_resp = request.form.get("nome_resp", "").strip()
 
         if not nome_valido(nome_resp):
-            flash(
-                "O nome do responsável deve conter apenas letras.",
-                "erro"
-            )
+            flash("O nome do responsável deve conter apenas letras.", "erro")
             return redirect(url_for("galpao"))
-
-
-        # =========================
-        # CEP
-        # =========================
-
-        cep = request.form.get("cep", "").strip()
-
-        # Remove espaços e caracteres de formatação
-        cep = cep.replace("-", "").replace(" ", "")
-
-        if not cep:
-            flash("O CEP é obrigatório.", "erro")
-            return redirect(url_for("galpao"))
-
-        if not cep.isdigit():
-            flash("O CEP deve conter apenas números.", "erro")
-            return redirect(url_for("galpao"))
-
-        if len(cep) != 8:
-            flash(
-                "O CEP deve conter exatamente 8 números.",
-                "erro"
-            )
-            return redirect(url_for("galpao"))
-
-
-        # =========================
-        # ÁREA TOTAL
-        # =========================
 
         area_total = request.form.get("area_total", "").strip()
 
         if not area_valida(area_total):
-            flash(
-                "A área total deve ser um número maior que zero.",
-                "erro"
-            )
+            flash("A área total deve ser um número maior que zero.", "erro")
             return redirect(url_for("galpao"))
 
-
-        # =========================
-        # TELEFONE
-        # =========================
 
         telefone = request.form.get("telefone", "").strip()
 
         if not telefone_valido(telefone):
-            flash(
-                "Informe um telefone válido com 10 ou 11 números.",
-                "erro"
-            )
-            return redirect(url_for("galpao"))
+            flash("Informe um telefone válido com 10 ou 11 números.", "erro")
+            return redirect(url_for("info_galpao", galpao_id=galpao_id))
 
         telefone = formatar_telefone(telefone)
 
         if not telefone_valido(telefone):
-            flash(
-                "Informe um telefone válido com 10 ou 11 números.",
-                "erro"
-            )
+            flash("Informe um telefone válido com 10 ou 11 números.", "erro")
             return redirect(url_for("galpao"))
 
+        caixas_por_nivel = to_int(request.form.get("caixas_por_nivel"))
 
-        # =========================
-        # CAPACIDADE DO GALPÃO
-        # =========================
-
-        caixas_por_nivel = to_int(
-            request.form.get("caixas_por_nivel")
-        )
-
-        niveis_por_prateleira = to_int(
-            request.form.get("niveis_por_prateleira")
-        )
-
-        total_prateleiras = to_int(
-            request.form.get("total_prateleiras")
-        )
-
-        capacidade_total = (
-            caixas_por_nivel
-            * niveis_por_prateleira
-            * total_prateleiras
-        )
-
-
-        # =========================
-        # CRIAÇÃO DO GALPÃO
-        # =========================
+        caixas_por_nivel = to_int(request.form.get("caixas_por_nivel"))
+        niveis_por_prateleira = to_int(request.form.get("niveis_por_prateleira"))
+        total_prateleiras = to_int(request.form.get("total_prateleiras"))
+        capacidade_total = caixas_por_nivel * niveis_por_prateleira * total_prateleiras
 
         g = Galpao(
             nome=request.form.get("nome"),
             stats=request.form.get("stats"),
-            cep=cep,
+            cep=request.form.get("cep"),
             email_resp=email,
             nome_resp=nome_resp,
             endereco=request.form.get("endereco"),
@@ -1281,40 +1225,11 @@ def salvar_galpao():
             caixas_por_nivel=caixas_por_nivel,
             capacidade_total=capacidade_total
         )
-
         g.insert()
-
-        flash(
-            "Galpão cadastrado com sucesso!",
-            "sucesso"
-        )
+        flash("Galpão cadastrado com sucesso!", "sucesso")
 
     except Exception as e:
-
-        flash(
-            f"Erro: {e}",
-            "erro"
-        )
-
-    return redirect(url_for("galpao"))
-
-@app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
-@login_obrigatorio
-def deletar_galpao(galpao_id):
-    try:
-        Galpao.delete(galpao_id)
-
-        flash(
-            "Galpão excluído com sucesso!",
-            "sucesso"
-        )
-
-    except Exception as e:
-
-        flash(
-            f"Erro ao excluir o galpão: {e}",
-            "erro"
-        )
+        flash(f"Erro: {e}", "erro")
 
     return redirect(url_for("galpao"))
 
@@ -1403,295 +1318,55 @@ def novo_fornecedor():
 @app.route("/fornecedor/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_fornecedor():
-
     try:
-        # ==============================
-        # RECEBE OS DADOS
-        # ==============================
-
-        nome = request.form.get("nome", "").strip()
-        cnpj = request.form.get("cnpj", "").strip()
-        nome_ctt = request.form.get("nome_ctt", "").strip()
-        telefone = request.form.get("telefone", "").strip()
-        email = request.form.get("email", "").strip()
-        ativo = request.form.get("ativo", "").strip()
-
-        # ==============================
-        # CAMPOS OBRIGATÓRIOS
-        # ==============================
-
-        if not nome:
-            flash("O nome da empresa é obrigatório.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        if not cnpj:
-            flash("O CNPJ é obrigatório.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        if not nome_ctt:
-            flash("O nome do contato é obrigatório.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        if not telefone:
-            flash("O telefone é obrigatório.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        if not email:
-            flash("O e-mail é obrigatório.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        # ==============================
-        # NOME DA EMPRESA
-        # ==============================
-
-        if len(nome) < 3:
-            flash("O nome da empresa deve possuir pelo menos 3 caracteres.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        if nome.isdigit():
-            flash("O nome da empresa não pode conter somente números.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        # ==============================
-        # NOME DO CONTATO
-        # ==============================
-
-        if len(nome_ctt) < 3:
-            flash("O nome do contato deve possuir pelo menos 3 caracteres.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        if nome_ctt.isdigit():
-            flash("O nome do contato não pode conter somente números.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        # ==============================
-        # CNPJ
-        # ==============================
-
-        cnpj_numeros = re.sub(r"\D", "", cnpj)
-
-        if len(cnpj_numeros) != 14:
-            flash("O CNPJ deve possuir exatamente 14 números.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        if not validar_cnpj(cnpj_numeros):
-            flash("O CNPJ informado é inválido.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        # ==============================
-        # TELEFONE
-        # ==============================
-
-        telefone_numeros = re.sub(r"\D", "", telefone)
-
-        if len(telefone_numeros) not in [10, 11]:
-            flash("O telefone deve possuir 10 ou 11 números.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        # Impede números todos iguais
-        if len(set(telefone_numeros)) == 1:
-            flash("Digite um telefone válido.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        # ==============================
-        # E-MAIL
-        # ==============================
-
-        email_regex = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
-
-        if not re.match(email_regex, email):
-            flash("Digite um e-mail válido.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        # ==============================
-        # STATUS
-        # ==============================
-
-        if ativo not in ["ativo", "inativo"]:
-            flash("Status do fornecedor inválido.", "erro")
-            return redirect(url_for("fornecedores"))
-
-        # ==============================
-        # SALVA NO BANCO
-        # ==============================
-
         fornecedor = Fornecedor(
-            nome=nome,
-            ativo=ativo,
-            cnpj=cnpj_numeros,
-            nome_ctt=nome_ctt,
-            telefone=telefone_numeros,
-            email=email
+            nome=request.form.get("nome"),
+            ativo=request.form.get("ativo"),
+            cnpj=request.form.get("cnpj"),
+            nome_ctt=request.form.get("nome_ctt"),
+            telefone=request.form.get("telefone"),
+            email=request.form.get("email")
         )
-
         fornecedor.insert()
-
-        flash("Fornecedor cadastrado com sucesso!", "sucesso")
-
+        flash("Fornecedor cadastrado!", "sucesso")
     except Exception as e:
-        flash(f"Erro ao cadastrar fornecedor: {e}", "erro")
-
+        flash(f"Erro: {e}", "erro")
     return redirect(url_for("fornecedores"))
+
 
 @app.route("/fornecedor/atualizar/<int:fornecedor_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_fornecedor(fornecedor_id):
-
-    conexao = None
-    cursor = None
-
     try:
-        # ==============================
-        # RECEBE OS DADOS
-        # ==============================
-
-        nome = request.form.get("nome", "").strip()
-        cnpj = request.form.get("cnpj", "").strip()
-        nome_ctt = request.form.get("nome_ctt", "").strip()
-        email = request.form.get("email", "").strip()
-        telefone = request.form.get("telefone", "").strip()
-        ativo = request.form.get("ativo", "").strip()
-
-        # ==============================
-        # CAMPOS OBRIGATÓRIOS
-        # ==============================
-
-        if not nome:
-            flash("O nome da empresa é obrigatório.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        if not cnpj:
-            flash("O CNPJ é obrigatório.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        if not nome_ctt:
-            flash("O nome do contato é obrigatório.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        if not telefone:
-            flash("O telefone é obrigatório.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        if not email:
-            flash("O e-mail é obrigatório.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        # ==============================
-        # NOME
-        # ==============================
-
-        if len(nome) < 3:
-            flash("O nome da empresa deve possuir pelo menos 3 caracteres.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        if nome.isdigit():
-            flash("O nome da empresa não pode conter somente números.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        # ==============================
-        # CONTATO
-        # ==============================
-
-        if len(nome_ctt) < 3:
-            flash("O nome do contato deve possuir pelo menos 3 caracteres.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        if nome_ctt.isdigit():
-            flash("O nome do contato não pode conter somente números.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        # ==============================
-        # CNPJ
-        # ==============================
-
-        cnpj_numeros = re.sub(r"\D", "", cnpj)
-
-        if len(cnpj_numeros) != 14:
-            flash("O CNPJ deve possuir exatamente 14 números.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        if not validar_cnpj(cnpj_numeros):
-            flash("O CNPJ informado é inválido.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        # ==============================
-        # TELEFONE
-        # ==============================
-
-        telefone_numeros = re.sub(r"\D", "", telefone)
-
-        if len(telefone_numeros) not in [10, 11]:
-            flash("O telefone deve possuir 10 ou 11 números.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        if len(set(telefone_numeros)) == 1:
-            flash("Digite um telefone válido.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        # ==============================
-        # E-MAIL
-        # ==============================
-
-        email_regex = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
-
-        if not re.match(email_regex, email):
-            flash("Digite um e-mail válido.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        # ==============================
-        # STATUS
-        # ==============================
-
-        if ativo not in ["ativo", "inativo"]:
-            flash("Status do fornecedor inválido.", "erro")
-            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
-
-        # ==============================
-        # ATUALIZA NO BANCO
-        # ==============================
-
         conexao = Database.connect()
         cursor = conexao.cursor()
 
         cursor.execute("""
             UPDATE fornecedor
-            SET nome=%s,
-                cnpj=%s,
-                nome_ctt=%s,
-                email=%s,
-                telefone=%s,
-                ativo=%s
+            SET nome=%s, cnpj=%s, nome_ctt=%s, email=%s, telefone=%s, ativo=%s
             WHERE id=%s
         """, (
-            nome,
-            cnpj_numeros,
-            nome_ctt,
-            email,
-            telefone_numeros,
-            ativo,
+            request.form.get("nome"),
+            request.form.get("cnpj"),
+            request.form.get("nome_ctt"),
+            request.form.get("email"),
+            request.form.get("telefone"),
+            request.form.get("ativo"),
             fornecedor_id
         ))
 
         conexao.commit()
-
         flash("Fornecedor atualizado com sucesso!", "sucesso")
 
     except Exception as e:
-
-        if conexao:
-            conexao.rollback()
-
-        flash(f"Erro ao atualizar fornecedor: {e}", "erro")
+        flash(f"Erro: {e}", "erro")
 
     finally:
+        cursor.close()
+        conexao.close()
 
-        if cursor:
-            cursor.close()
+    return redirect(url_for("fornecedores"))
 
-        if conexao:
-            conexao.close()
-
-    return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
 @app.route("/fornecedor/deletar/<int:fornecedor_id>", methods=["POST"])
 @login_obrigatorio
@@ -1929,88 +1604,21 @@ def novo_cliente():
 @login_obrigatorio
 def salvar_cliente():
     try:
-        # =========================
-        # RECEBER DADOS DO FORMULÁRIO
-        # =========================
-
-        nome = request.form.get("nome", "").strip()
-        ativo = request.form.get("ativo", "").strip()
-        cidade = request.form.get("cidade", "").strip()
-        empresa = request.form.get("empresa", "").strip()
-        estado = request.form.get("estado", "").strip()
-        email = request.form.get("email", "").strip()
-
-        cpf_cnpj = request.form.get("cpf", "").strip()
-        telefone = request.form.get("telefone", "").strip()
-        cep = request.form.get("cep", "").strip()
-
-        # =========================
-        # DEIXAR SOMENTE NÚMEROS
-        # =========================
-
-        cpf_cnpj = re.sub(r"\D", "", cpf_cnpj)
-        telefone = re.sub(r"\D", "", telefone)
-        cep = re.sub(r"\D", "", cep)
-
-        # =========================
-        # VALIDAÇÃO CPF / CNPJ
-        # =========================
-
-        if len(cpf_cnpj) not in (11, 14):
-            flash(
-                "CPF deve possuir exatamente 11 números ou CNPJ deve possuir exatamente 14 números.",
-                "erro"
-            )
-            return redirect(url_for("cliente"))
-
-        # =========================
-        # VALIDAÇÃO TELEFONE
-        # =========================
-
-        if telefone and len(telefone) not in (10, 11):
-            flash(
-                "O telefone deve possuir DDD e ter 10 ou 11 números.",
-                "erro"
-            )
-            return redirect(url_for("cliente"))
-
-        # =========================
-        # VALIDAÇÃO CEP
-        # =========================
-
-        if cep and len(cep) != 8:
-            flash(
-                "O CEP deve possuir exatamente 8 números.",
-                "erro"
-            )
-            return redirect(url_for("cliente"))
-
-        # =========================
-        # CRIAR CLIENTE
-        # =========================
-
         c = Cliente(
-            nome=nome,
-            ativo=ativo,
-            cidade=cidade,
-            empresa=empresa,
-            cep=cep,
-            estado=estado,
-            cpf_cnpj=cpf_cnpj,
-            email=email,
-            telefone=telefone
+            nome=request.form.get("nome"),
+            ativo=request.form.get("ativo"),
+            cidade=request.form.get("cidade"),
+            empresa=request.form.get("empresa"),
+            cep=request.form.get("cep"),
+            estado=request.form.get("estado"),
+            cpf_cnpj=request.form.get("cpf"),
+            email=request.form.get("email"),
+            telefone=request.form.get("telefone")
         )
         c.insert()
-        flash(
-            "Cliente cadastrado!",
-            "sucesso"
-        )
+        flash("Cliente cadastrado!", "sucesso")
     except Exception as e:
-
-        flash(
-            f"Erro: {e}",
-            "erro"
-        )
+        flash(f"Erro: {e}", "erro")
     return redirect(url_for("cliente"))
 
 # ---------------- FUNCIONÁRIOS ---------------- #
@@ -2168,97 +1776,26 @@ def info_cliente(cliente_id):
     pedidos = PedidoCliente.find_by_cliente(cliente_id)
     return render_template("info_cliente.html", cliente=c, pedidos=pedidos)
 
+
 @app.route("/cliente/atualizar/<int:cliente_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_cliente(cliente_id):
     try:
-
-        # =========================
-        # RECEBER DADOS
-        # =========================
-
-        nome = request.form.get("nome", "").strip()
-        empresa = request.form.get("empresa", "").strip()
-        email = request.form.get("email", "").strip()
-        telefone = request.form.get("telefone", "").strip()
-        cep = request.form.get("cep", "").strip()
-        cidade = request.form.get("cidade", "").strip()
-        estado = request.form.get("estado", "").strip()
-        ativo = request.form.get("ativo", "").strip()
-
-        # =========================
-        # DEIXAR SOMENTE NÚMEROS
-        # =========================
-
-        telefone = re.sub(r"\D", "", telefone)
-        cep = re.sub(r"\D", "", cep)
-
-        # =========================
-        # VALIDAÇÃO TELEFONE
-        # =========================
-
-        if telefone and len(telefone) not in (10, 11):
-            flash(
-                "O telefone deve possuir DDD e ter 10 ou 11 números.",
-                "erro"
-            )
-            return redirect(
-                url_for(
-                    "info_cliente",
-                    cliente_id=cliente_id
-                )
-            )
-
-        # =========================
-        # VALIDAÇÃO CEP
-        # =========================
-
-        if cep and len(cep) != 8:
-            flash(
-                "O CEP deve possuir exatamente 8 números.",
-                "erro"
-            )
-            return redirect(
-                url_for(
-                    "info_cliente",
-                    cliente_id=cliente_id
-                )
-            )
-
-        # =========================
-        # DADOS PARA ATUALIZAÇÃO
-        # =========================
-
         dados = {
-            "nome": nome,
-            "ativo": ativo,
-            "empresa": empresa,
-            "email": email,
-            "telefone": telefone,
-            "cep": cep,
-            "cidade": cidade,
-            "estado": estado
+            "nome":     request.form.get("nome"),
+            "ativo":   request.form.get("ativo"),
+            "empresa":  request.form.get("empresa"),
+            "email":    request.form.get("email"),
+            "telefone": request.form.get("telefone"),
+            "cep":      request.form.get("cep"),
+            "cidade":   request.form.get("cidade"),
+            "estado":   request.form.get("estado"),
         }
-        Cliente.update(
-            cliente_id,
-            dados
-        )
-        flash(
-            "Cliente atualizado com sucesso!",
-            "sucesso"
-        )
+        Cliente.update(cliente_id, dados)
+        flash("Cliente atualizado com sucesso!", "sucesso")
     except Exception as e:
-
-        flash(
-            f"Erro: {e}",
-            "erro"
-        )
-    return redirect(
-        url_for(
-            "info_cliente",
-            cliente_id=cliente_id
-        )
-    )
+        flash(f"Erro: {e}", "erro")
+    return redirect(url_for("info_cliente", cliente_id=cliente_id))
 
 
 @app.route("/cliente/deletar/<int:cliente_id>", methods=["POST"])
@@ -2280,57 +1817,22 @@ def deletar_cliente(cliente_id):
 @login_obrigatorio
 def api_produtos_do_galpao(galpao_id):
     from flask import jsonify
-
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
-
     try:
         cursor.execute("""
-            SELECT 
-                p.id,
-                p.sku,
-                p.nome,
-                COALESCE(p.preco_venda, 0) AS preco_venda,
-                COALESCE(e.quantidade, 0) AS estoque_disponivel
+            SELECT p.id, p.sku, p.nome, p.preco_venda,
+                   e.quantidade AS estoque_disponivel
             FROM estoque e
-            INNER JOIN produto p
-                ON e.produto_id = p.id
-            WHERE e.galpao_id = %s
-              AND e.quantidade > 0
-              AND p.ativo = TRUE
+            JOIN produto p ON e.produto_id = p.id
+            WHERE e.galpao_id = %s AND e.quantidade > 0
             ORDER BY p.nome ASC
         """, (galpao_id,))
-
-        produtos = cursor.fetchall()
-
-        # Converte Decimal para float antes de enviar para o JavaScript
-        for produto in produtos:
-            produto["preco_venda"] = float(
-                produto["preco_venda"] or 0
-            )
-
-            produto["estoque_disponivel"] = int(
-                produto["estoque_disponivel"] or 0
-            )
-
-        print("========================================")
-        print("GALPÃO:", galpao_id)
-        print("PRODUTOS:", produtos)
-        print("========================================")
-
-        return jsonify(produtos)
-
-    except Exception as e:
-
-        print("ERRO API PRODUTOS:", e)
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
+        return jsonify(cursor.fetchall())
     finally:
         cursor.close()
         conn.close()
+        
 @app.route("/api/todos_produtos")
 @login_obrigatorio
 def api_todos_produtos():
@@ -2356,7 +1858,6 @@ def api_produtos_do_fornecedor(fornecedor_id):
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
-        # 1. Tenta buscar os produtos vinculados a este fornecedor
         cursor.execute("""
             SELECT
                 p.id,
@@ -2376,30 +1877,7 @@ def api_produtos_do_fornecedor(fornecedor_id):
               AND p.ativo = TRUE
             ORDER BY p.nome ASC
         """, (fornecedor_id,))
-        
-        produtos = cursor.fetchall()
-
-        # 2. FALLBACK: Se o fornecedor não tiver vínculos, retorna todos os produtos ativos do sistema
-        if not produtos:
-            cursor.execute("""
-                SELECT
-                    p.id,
-                    p.sku,
-                    p.nome,
-                    p.preco_custo,
-                    COALESCE(e_total.estoque_disponivel, 0) AS estoque_disponivel
-                FROM produto p
-                LEFT JOIN (
-                    SELECT produto_id, SUM(quantidade) AS estoque_disponivel
-                    FROM estoque
-                    GROUP BY produto_id
-                ) e_total ON e_total.produto_id = p.id
-                WHERE p.ativo = TRUE
-                ORDER BY p.nome ASC
-            """)
-            produtos = cursor.fetchall()
-
-        return jsonify(produtos)
+        return jsonify(cursor.fetchall())
     finally:
         cursor.close()
         conn.close()
@@ -2498,16 +1976,6 @@ def salvar_pedido_entrada():
                 VALUES (%s, %s, %s, %s)
             """, (pedido_id, item["produto_id"],
                   item["quantidade"], item["preco_unitario"]))
-
-            # AUTO-VÍNCULO: Associa o produto ao fornecedor se ainda não estiver vinculado
-            cursor.execute("""
-                INSERT INTO fornecedor_produto
-                    (fornecedor_id, produto_id, preco_custo, desconto, quantidade_minima, prazo_entrega_dias, ativo)
-                VALUES (%s, %s, %s, 0, 1, 0, 1)
-                ON DUPLICATE KEY UPDATE
-                    preco_custo = VALUES(preco_custo),
-                    ativo = 1
-            """, (fornecedor_id, item["produto_id"], item["preco_unitario"]))
 
             # Incrementa estoque automaticamente
             cursor.execute("""

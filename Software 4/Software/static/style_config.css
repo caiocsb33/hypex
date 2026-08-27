@@ -1,6 +1,8 @@
 #config-conteudo {
-    width: 100%;
-    padding: 0;
+    margin-left: 250px;
+    padding: 40px;
+    width: calc(100% - 250px);
+    max-width: none;
     box-sizing: border-box;
 }
 
@@ -369,8 +371,10 @@ input:checked+.slider:before {
 }
 
 #config-conteudo {
-    width: 100%;
-    padding: 0;
+    margin-left: 250px !important;
+    width: calc(100% - 250px) !important;
+    max-width: none !important;
+    padding: 40px !important;
     box-sizing: border-box;
 }
 
