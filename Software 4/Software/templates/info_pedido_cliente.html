@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 <!DOCTYPE html>
 <html lang="pt-br">
 
@@ -51,33 +52,76 @@
             </a>
         </div>
     </aside>
+=======
+    {% extends "base.html" %}
 
-    <main id="orders-content">
-        <header class="orders-header">
-            <div class="header-info">
-                <h1><i class="bi bi-receipt"></i> DETALHES DO PEDIDO #{{ pedido.id }}</h1>
-                <p>Informações detalhadas sobre a ordem de venda e itens inclusos</p>
-                
-                <a href="/pedidos" class="btn btn-secondary mt-2">
-                    <i class="bi bi-arrow-left"></i> Voltar para Pedidos
-                </a>
-            </div>
-        </header>
+    {% block title %}
+    Software HYPEX - Cadastro pedidos
+    {% endblock %}
 
-        <section class="container-fluid my-4">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="card h-100 shadow-sm border-0 bg-light p-3">
-                        <div class="card-body">
-                            <h5 class="card-title text-muted text-uppercase small font-weight-bold">Dados do Cliente</h5>
-                            <hr>
-                            <p class="mb-1"><strong>Nome:</strong> {{ pedido.cliente_nome }}</p>
-                            <p class="mb-1"><strong>E-mail:</strong> {{ pedido.cliente_email }}</p>
-                            <p class="mb-0"><strong>Documento:</strong> <span class="badge bg-secondary">{{ pedido.numero_documento }}</span></p>
+    {% block css %}
+
+    <link rel="stylesheet"
+        href="{{ url_for('static', filename='style_pedidos.css') }}">
+
+    {% endblock %}
+    
+    {% block content %}
+
+        <main id="orders-content">
+            <header class="orders-header">
+                <div class="header-info">
+                    <h1><i class="bi bi-receipt"></i> DETALHES DO PEDIDO #{{ pedido.id }}</h1>
+                    <p>Informações detalhadas sobre a ordem de venda e itens inclusos</p>
+                    
+                    <a href="/pedidos" class="btn btn-secondary mt-2">
+                        <i class="bi bi-arrow-left"></i> Voltar para Pedidos
+                    </a>
+                </div>
+            </header>
+>>>>>>> Stashed changes
+
+            <section class="container-fluid my-4">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="card h-100 shadow-sm border-0 bg-light p-3">
+                            <div class="card-body">
+                                <h5 class="card-title text-muted text-uppercase small font-weight-bold">Dados do Cliente</h5>
+                                <hr>
+                                <p class="mb-1"><strong>Nome:</strong> {{ pedido.cliente_nome }}</p>
+                                <p class="mb-1"><strong>E-mail:</strong> {{ pedido.cliente_email }}</p>
+                                <p class="mb-0"><strong>Documento:</strong> <span class="badge bg-secondary">{{ pedido.numero_documento }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="card h-100 shadow-sm border-0 bg-light p-3">
+                            <div class="card-body">
+                                <h5 class="card-title text-muted text-uppercase small font-weight-bold">Status & Totais</h5>
+                                <hr>
+                                <p class="mb-1"><strong>Data de Emissão:</strong> {{ pedido.created_at.strftime('%d/%m/%Y às %H:%M') }}</p>
+                                <p class="mb-1"><strong>Status Atual:</strong> 
+                                    <span class="status-pedido 
+                                        {% if pedido.status_pedido == 'pendente' %}status-processando
+                                        {% elif pedido.status_pedido == 'pago' %}status-pago
+                                        {% elif pedido.status_pedido == 'enviado' %}status-enviado
+                                        {% elif pedido.status_pedido == 'concluido' %}status-concluido
+                                        {% else %}status-cancelado{% endif %}">
+                                        {{ pedido.status_pedido.capitalize() }}
+                                    </span>
+                                </p>
+                                <p class="mb-0 text-primary fs-5">
+                                    <strong>Valor Total:</strong> 
+                                    R$ {{ "{:,.2f}".format(pedido.valor_total).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </section>
 
+<<<<<<< Updated upstream
                 <div class="col-md-6">
                     <div class="card h-100 shadow-sm border-0 bg-light p-3">
                         <div class="card-body">
@@ -146,3 +190,42 @@
 </body>
 
 </html>
+=======
+            <section class="lista-inventario mt-4">
+                <h4 class="mb-3 px-3"><i class="bi bi-box-seam"></i> Itens do Pedido</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Código/ID</th>
+                            <th>Produto</th>
+                            <th class="text-center">Quantidade</th>
+                            <th class="text-end">Preço Unitário</th>
+                            <th class="text-end">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {# Loop pelos itens vinculados a este pedido específico #}
+                        {% for item in itens %}
+                        <tr>
+                            <td class="ordem-id">#{{ item.produto_id }}</td>
+                            <td class="produto-info">
+                                <strong>{{ item.produto_nome }}</strong>
+                            </td>
+                            <td class="text-center">{{ item.quantidade }}</td>
+                            <td class="text-end">
+                                R$ {{ "{:,.2f}".format(item.preco_unitario).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </td>
+                            <td class="text-end fw-bold">
+                                R$ {{ "{:,.2f}".format(item.quantidade * item.preco_unitario).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted">Nenhum produto cadastrado para este pedido.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </section>
+    {% endblock %}
+>>>>>>> Stashed changes

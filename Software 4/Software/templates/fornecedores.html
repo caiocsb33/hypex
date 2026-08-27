@@ -13,148 +13,516 @@ Software HYPEX - Fornecedores
 
 {% block content %}
 
-    <main id="fornecedor-conteudo">
+<main id="fornecedor-conteudo">
 
-        <header class="fornecedor-texto">
-            <div class="fornecedor-info">
-                <h1><i class="bi-solid bi-truck"></i> FORNECEDORES</h1>
-                <p>Gerencie seus fornecedores e parcerias</p>
-            </div>
+    <header class="fornecedor-texto">
 
-            {% with messages = get_flashed_messages(with_categories=true) %}
+        <div class="fornecedor-info">
+
+            <h1>
+                <i class="bi-solid bi-truck"></i> FORNECEDORES
+            </h1>
+
+            <p>Gerencie seus fornecedores e parcerias</p>
+
+        </div>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+
             {% if messages %}
-            {% for categoria, mensagem in messages %}
-            <div class="alert alert-{{ 'danger' if categoria == 'erro' else 'success' }}">
-                {{ mensagem }}
-            </div>
-            {% endfor %}
+
+                {% for categoria, mensagem in messages %}
+
+                    <div class="alert alert-{{ 'danger' if categoria == 'erro' else 'success' }}">
+                        {{ mensagem }}
+                    </div>
+
+                {% endfor %}
+
             {% endif %}
-            {% endwith %}
 
-            <div id="add-forn">
-                <!-- Button -->
-                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-                    <i class="bi-solid bi-plus-lg"></i> Adicionar Fornecedor
-                </button>
+        {% endwith %}
 
-                <!-- Modal -->
-                <form method="POST" action="{{ url_for('salvar_fornecedor') }}">
-                    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
-                        aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h1 class="modal-title fs-5" id="exampleModalLabel">Adicionar Fornecedor</h1>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="row g-3">
-                                        <div class="col">
-                                            <h6>Nome da Empresa</h6>
-                                            <input type="text" name="nome" class="form-control" aria-label="First name">
-                                        </div>
-                                        <div class="col">
-                                            <h6>CNPJ</h6>
-                                            <input type="text" name="cnpj" class="form-control" aria-label="Last name">
-                                        </div>
-                                    </div>
-                                    <div class="row mt-3">
-                                        <div class="col">
-                                            <h6>E-mail</h6>
-                                            <input type="email" name="email" class="form-control"
-                                                aria-label="First name">
-                                        </div>
-                                    </div>
-                                    <div class="row mt-3">
-                                        <div class="col">
-                                            <h6>Nome do Contato</h6>
-                                            <input type="text" name="nome_ctt" class="form-control"
-                                                aria-label="First name">
-                                        </div>
-                                        <div class="col">
-                                            <h6>Telefone</h6>
-                                            <input type="tel" name="telefone" class="form-control"
-                                                aria-label="Last name">
-                                        </div>
-                                    </div>
-                                    <div class="row mt-3">
-                                        <div class="col">
-                                            <h6>Ativo</h6>
-                                            <select name="ativo" class="form-control" aria-label="First name">
-                                                <option value="ativo">Ativo</option>
-                                                <option value="inativo">Inativo</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary"
-                                        data-bs-dismiss="modal">fechar</button>
-                                    <button type="submit" class="btn btn-primary">Salvar</button>
-                                </div>
+
+        <div id="add-forn">
+
+            <button
+                type="button"
+                class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#exampleModal">
+
+                <i class="bi-solid bi-plus-lg"></i>
+                Adicionar Fornecedor
+
+            </button>
+
+
+            <!-- MODAL DE CADASTRO -->
+
+            <form
+                method="POST"
+                action="{{ url_for('salvar_fornecedor') }}">
+
+                <div
+                    class="modal fade"
+                    id="exampleModal"
+                    tabindex="-1"
+                    aria-labelledby="exampleModalLabel"
+                    aria-hidden="true">
+
+                    <div class="modal-dialog">
+
+                        <div class="modal-content">
+
+                            <div class="modal-header">
+
+                                <h1
+                                    class="modal-title fs-5"
+                                    id="exampleModalLabel">
+
+                                    Adicionar Fornecedor
+
+                                </h1>
+
+                                <button
+                                    type="button"
+                                    class="btn-close"
+                                    data-bs-dismiss="modal"
+                                    aria-label="Close">
+                                </button>
+
                             </div>
+
+
+                            <div class="modal-body">
+
+                                <!-- NOME E CNPJ -->
+
+                                <div class="row g-3">
+
+                                    <div class="col">
+
+                                        <h6>Nome da Empresa</h6>
+
+                                        <input
+                                            type="text"
+                                            name="nome"
+                                            class="form-control"
+                                            minlength="3"
+                                            maxlength="150"
+                                            required
+                                            aria-label="Nome da empresa"
+                                            placeholder="Ex: Distribuidora Hypex LTDA">
+
+                                    </div>
+
+
+                                    <div class="col">
+
+                                        <h6>CNPJ</h6>
+
+                                        <input
+                                            type="text"
+                                            name="cnpj"
+                                            id="cnpj"
+                                            class="form-control"
+                                            maxlength="18"
+                                            required
+                                            inputmode="numeric"
+                                            placeholder="00.000.000/0001-00"
+                                            aria-label="CNPJ">
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- E-MAIL -->
+
+                                <div class="row mt-3">
+
+                                    <div class="col">
+
+                                        <h6>E-mail</h6>
+
+                                        <input
+                                            type="email"
+                                            name="email"
+                                            class="form-control"
+                                            maxlength="150"
+                                            required
+                                            aria-label="E-mail"
+                                            placeholder="exemplo@email.com">
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- CONTATO E TELEFONE -->
+
+                                <div class="row mt-3">
+
+                                    <div class="col">
+
+                                        <h6>Nome do Contato</h6>
+
+                                        <input
+                                            type="text"
+                                            name="nome_ctt"
+                                            class="form-control"
+                                            minlength="3"
+                                            maxlength="150"
+                                            required
+                                            aria-label="Nome do contato"
+                                            placeholder="Nome do representante">
+
+                                    </div>
+
+
+                                    <div class="col">
+
+                                        <h6>Telefone</h6>
+
+                                        <input
+                                            type="tel"
+                                            name="telefone"
+                                            id="telefone"
+                                            class="form-control"
+                                            maxlength="15"
+                                            required
+                                            inputmode="numeric"
+                                            placeholder="(00) 00000-0000"
+                                            aria-label="Telefone">
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- STATUS -->
+
+                                <div class="row mt-3">
+
+                                    <div class="col">
+
+                                        <h6>Ativo</h6>
+
+                                        <select
+                                            name="ativo"
+                                            class="form-control"
+                                            required
+                                            aria-label="Status">
+
+                                            <option value="ativo">
+                                                Ativo
+                                            </option>
+
+                                            <option value="inativo">
+                                                Inativo
+                                            </option>
+
+                                        </select>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+
+                            <div class="modal-footer">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-secondary"
+                                    data-bs-dismiss="modal">
+
+                                    Fechar
+
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary">
+
+                                    Salvar
+
+                                </button>
+
+                            </div>
+
                         </div>
-                    </div>
-                </form>
-            </div>
 
-
-        </header>
-
-        <section class="barra-pesquisa">
-            <div class="caixa-pesquisa">
-                <i class="bi-solid bi-search"></i>
-                <input type="text" placeholder="Buscar Fornecedores...">
-            </div>
-            <div class="pesquias-botao">
-                <button class="action-btn filter-btn"><i class="bi-solid bi-funnel-fill"></i> Filtros</button>
-                <button class="action-btn export-btn"><i class="bi-solid bi-cloud-arrow-down-fill"></i>
-                    Exportar</button>
-            </div>
-        </section>
-
-        <section class="fornecedores-cards">
-            {% if fornecedores %}
-            {% for fornecedor in fornecedores %}
-            <a href="/itens_fornecedores/{{ fornecedor.id }}" class="card-link">
-
-                <div class="fornecedor-card">
-
-                    <div class="fornecedor-texto">
-                        <span class="fornecedor-icone"><i class="bi-solid bi-building-fill"></i></span>
-                        <div>
-                            <h2 class="fornecedor-nome">{{ fornecedor.nome }}</h2>
-                            <p class="contato-fornecedor">{{ fornecedor.nome_ctt }}</p>
-                        </div>
-                        <span class="status-fornecedor 
-                        {% if fornecedor.ativo == 'ativo' %} status-ativo 
-                        {% else %} status-inativo {% endif %}">
-                            {{ fornecedor.ativo }}
-                        </span>
                     </div>
 
-                    <div class="card-detalhe">
-                        <p class="contato-detalhe"><i class="bi-solid bi-envelope-fill"></i> {{ fornecedor.email }}</p>
-                        <p class="contato-detalhe"><i class="bi-solid bi-phone-fill"></i> {{ fornecedor.telefone }}</p>
-                    </div>
-
-                    <div class="card-produtos">
-                        <span class="produtos-fornecedor">
-                            {{ fornecedor.total_produtos }} produtos cadastrados
-                        </span>
-                    </div>
                 </div>
 
-            </a>
-            {% endfor %}
-            {% else %}
-            <div class="text-center mt-5 w-100">
-                <i class="bi bi-people" style="font-size: 60px; color: #ccc;"></i>
-                <h3 class="mt-3">Nenhum Fornecedor cadastrado</h3>
-                <p class="text-muted">Comece adicionando seu primeiro Fornecedor.</p>
-            </div>
-            {% endif %}
-        </section>
+            </form>
 
-{% endblock %}  
+        </div>
+
+    </header>
+
+
+    <!-- PESQUISA -->
+
+    <section class="barra-pesquisa">
+
+        <div class="caixa-pesquisa">
+
+            <i class="bi-solid bi-search"></i>
+
+            <input
+                type="text"
+                placeholder="Buscar Fornecedores...">
+
+        </div>
+
+
+        <div class="pesquias-botao">
+
+            <button class="action-btn filter-btn">
+
+                <i class="bi-solid bi-funnel-fill"></i>
+                Filtros
+
+            </button>
+
+
+            <button class="action-btn export-btn">
+
+                <i class="bi-solid bi-cloud-arrow-down-fill"></i>
+                Exportar
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- CARDS DOS FORNECEDORES -->
+
+    <section class="fornecedores-cards">
+
+        {% if fornecedores %}
+
+            {% for fornecedor in fornecedores %}
+
+                <a
+                    href="{{ url_for('info_fornecedor', fornecedor_id=fornecedor.id) }}"
+                    class="card-link">
+
+                    <div class="fornecedor-card">
+
+                        <div class="fornecedor-texto">
+
+                            <span class="fornecedor-icone">
+
+                                <i class="bi-solid bi-building-fill"></i>
+
+                            </span>
+
+
+                            <div>
+
+                                <h2 class="fornecedor-nome">
+                                    {{ fornecedor.nome }}
+                                </h2>
+
+                                <p class="contato-fornecedor">
+                                    {{ fornecedor.nome_ctt }}
+                                </p>
+
+                            </div>
+
+
+                            <span class="status-fornecedor
+                                {% if fornecedor.ativo == 'ativo' %}
+                                    status-ativo
+                                {% else %}
+                                    status-inativo
+                                {% endif %}">
+
+                                {{ fornecedor.ativo }}
+
+                            </span>
+
+                        </div>
+
+
+                        <div class="card-detalhe">
+
+                            <p class="contato-detalhe">
+
+                                <i class="bi-solid bi-envelope-fill"></i>
+
+                                {{ fornecedor.email }}
+
+                            </p>
+
+
+                            <p class="contato-detalhe">
+
+                                <i class="bi-solid bi-phone-fill"></i>
+
+                                {{ fornecedor.telefone }}
+
+                            </p>
+
+                        </div>
+
+
+                        <div class="card-produtos">
+
+                            <span class="produtos-fornecedor">
+
+                                {{ fornecedor.total_produtos }}
+                                produtos cadastrados
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </a>
+
+            {% endfor %}
+
+
+        {% else %}
+
+            <div class="text-center mt-5 w-100">
+
+                <i
+                    class="bi bi-people"
+                    style="font-size: 60px; color: #ccc;">
+                </i>
+
+                <h3 class="mt-3">
+                    Nenhum Fornecedor cadastrado
+                </h3>
+
+                <p class="text-muted">
+                    Comece adicionando seu primeiro Fornecedor.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </section>
+
+</main>
+
+
+<!-- MÁSCARAS DE CNPJ E TELEFONE -->
+
+<script>
+
+    // ==============================
+    // MÁSCARA DO CNPJ
+    // ==============================
+
+    const campoCnpj = document.getElementById("cnpj");
+
+    if (campoCnpj) {
+
+        campoCnpj.addEventListener("input", function () {
+
+            let valor = this.value.replace(/\D/g, "");
+
+            // Máximo de 14 números
+            valor = valor.substring(0, 14);
+
+            if (valor.length > 12) {
+
+                valor = valor.replace(
+                    /^(\d{2})(\d{3})(\d{3})(\d{4})(\d{0,2}).*/,
+                    "$1.$2.$3/$4-$5"
+                );
+
+            } else if (valor.length > 8) {
+
+                valor = valor.replace(
+                    /^(\d{2})(\d{3})(\d{3})(\d{0,4}).*/,
+                    "$1.$2.$3/$4"
+                );
+
+            } else if (valor.length > 5) {
+
+                valor = valor.replace(
+                    /^(\d{2})(\d{3})(\d{0,3}).*/,
+                    "$1.$2.$3"
+                );
+
+            } else if (valor.length > 2) {
+
+                valor = valor.replace(
+                    /^(\d{2})(\d{0,3}).*/,
+                    "$1.$2"
+                );
+
+            }
+
+            this.value = valor;
+
+        });
+
+    }
+
+
+    // ==============================
+    // MÁSCARA DO TELEFONE
+    // ==============================
+
+    const campoTelefone = document.getElementById("telefone");
+
+    if (campoTelefone) {
+
+        campoTelefone.addEventListener("input", function () {
+
+            let valor = this.value.replace(/\D/g, "");
+
+            // Máximo de 11 números
+            valor = valor.substring(0, 11);
+
+            if (valor.length > 10) {
+
+                valor = valor.replace(
+                    /^(\d{2})(\d{5})(\d{0,4}).*/,
+                    "($1) $2-$3"
+                );
+
+            } else if (valor.length > 6) {
+
+                valor = valor.replace(
+                    /^(\d{2})(\d{4})(\d{0,4}).*/,
+                    "($1) $2-$3"
+                );
+
+            } else if (valor.length > 2) {
+
+                valor = valor.replace(
+                    /^(\d{2})(\d{0,5}).*/,
+                    "($1) $2"
+                );
+
+            } else {
+
+                this.value = valor;
+
+            }
+
+            this.value = valor;
+
+        });
+
+    }
+
+</script>
+
+{% endblock %}

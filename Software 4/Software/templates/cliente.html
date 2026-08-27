@@ -25,10 +25,22 @@
             <span class="dot-green"></span>
         </div>
 
+<<<<<<< Updated upstream
         <div class="perfil">
             <img src="{{ url_for('static', filename='imagem/perfil.png') }}" class="perfil-img">
             <h3>Empresa</h3>
         </div>
+=======
+        <button class="btn btn-primary"
+                data-bs-toggle="modal"
+                data-bs-target="#exampleModal">
+
+            + Adicionar Cliente
+
+        </button>
+
+    </header>
+>>>>>>> Stashed changes
 
 
 
@@ -109,6 +121,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
 
+<<<<<<< Updated upstream
                     <form method="POST" action="{{ url_for('salvar_cliente') }}">
 
                         <div class="modal-header">
@@ -180,9 +193,254 @@
                         </div>
                     </form>
                 </div>
+=======
+                <div class="alert alert-{{ 'danger' if categoria == 'erro' else 'success' }}">
+                    {{ mensagem }}
+                </div>
+
+            {% endfor %}
+
+        {% endif %}
+
+    {% endwith %}
+
+
+    <!-- MODAL -->
+
+    <div class="modal fade"
+         id="exampleModal"
+         tabindex="-1">
+
+        <div class="modal-dialog">
+
+            <div class="modal-content">
+
+                <form method="POST"
+                      action="{{ url_for('salvar_cliente') }}">
+
+                    <div class="modal-header">
+
+                        <h5 class="modal-title">
+                            Adicionar Cliente
+                        </h5>
+
+                        <button type="button"
+                                class="btn-close"
+                                data-bs-dismiss="modal">
+                        </button>
+
+                    </div>
+
+
+                    <div class="modal-body">
+
+                        <div class="row g-3">
+
+                            <!-- EMPRESA -->
+
+                            <div class="col">
+
+                                <h6>Nome da Empresa</h6>
+
+                                <input
+                                    type="text"
+                                    name="empresa"
+                                    class="form-control"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <!-- CPF / CNPJ -->
+
+                            <div class="col">
+
+                                <h6>CPF ou CNPJ</h6>
+
+                                <input
+                                    type="text"
+                                    name="cpf"
+                                    class="form-control"
+                                    required
+                                    maxlength="14"
+                                    minlength="11"
+                                    inputmode="numeric"
+                                    pattern="[0-9]{11}|[0-9]{14}"
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 14)"
+                                    placeholder="Digite CPF ou CNPJ"
+                                >
+
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="row mt-3">
+
+                            <!-- EMAIL -->
+
+                            <div class="col">
+
+                                <h6>E-mail</h6>
+
+                                <input
+                                    type="email"
+                                    name="email"
+                                    class="form-control"
+                                >
+
+                            </div>
+
+
+                            <!-- NOME -->
+
+                            <div class="col">
+
+                                <h6>Nome do Contato</h6>
+
+                                <input
+                                    type="text"
+                                    name="nome"
+                                    class="form-control"
+                                    required
+                                >
+
+                            </div>
+
+
+                            <!-- TELEFONE -->
+
+                            <div class="col">
+
+                                <h6>Telefone</h6>
+
+                                <input
+                                    type="text"
+                                    name="telefone"
+                                    class="form-control"
+                                    maxlength="11"
+                                    minlength="10"
+                                    inputmode="numeric"
+                                    pattern="[0-9]{10,11}"
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 11)"
+                                    placeholder="DDD + telefone"
+                                >
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="row mt-3">
+
+                            <!-- CIDADE -->
+
+                            <div class="col">
+
+                                <h6>Cidade</h6>
+
+                                <input
+                                    type="text"
+                                    name="cidade"
+                                    class="form-control"
+                                >
+
+                            </div>
+
+
+                            <!-- CEP -->
+
+                            <div class="col">
+
+                                <h6>CEP</h6>
+
+                                <input
+                                    type="text"
+                                    name="cep"
+                                    class="form-control"
+                                    maxlength="8"
+                                    minlength="8"
+                                    inputmode="numeric"
+                                    pattern="[0-9]{8}"
+                                    oninput="this.value = this.value.replace(/\D/g, '').slice(0, 8)"
+                                    placeholder="00000000"
+                                >
+
+                            </div>
+
+
+                            <!-- ESTADO -->
+
+                            <div class="col">
+
+                                <h6>Estado</h6>
+
+                                <select
+                                    name="estado"
+                                    class="form-select"
+                                >
+
+                                    <option value="">
+                                        Selecione
+                                    </option>
+
+                                    <option value="SP">
+                                        SP
+                                    </option>
+
+                                    <option value="RJ">
+                                        RJ
+                                    </option>
+
+                                    <option value="MG">
+                                        MG
+                                    </option>
+
+                                </select>
+
+                            </div>
+
+
+                            <input
+                                type="hidden"
+                                name="ativo"
+                                value="ativo"
+                            >
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="modal-footer">
+
+                        <button
+                            type="button"
+                            class="btn btn-secondary"
+                            data-bs-dismiss="modal"
+                        >
+                            Fechar
+                        </button>
+
+
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                        >
+                            Salvar
+                        </button>
+
+                    </div>
+
+                </form>
+
+>>>>>>> Stashed changes
             </div>
         </div>
 
+<<<<<<< Updated upstream
         <!-- BARRA DE PESQUISA -->
         <section class="barra-pesquisa">
             <div class="caixa-pesquisa">
@@ -194,6 +452,54 @@
                 <button class="action-btn export-btn"><i class="bi-solid bi-cloud-arrow-down-fill"></i>Exportar</button>
             </div>
         </section>
+=======
+    </div>
+
+
+    <!-- BARRA DE PESQUISA -->
+
+    <section class="barra-pesquisa">
+
+        <div class="caixa-pesquisa">
+
+            <i class="bi bi-search"></i>
+
+            <input
+                type="text"
+                placeholder="Buscar clientes..."
+            >
+
+        </div>
+
+
+        <div class="pesquias-botao">
+
+            <button class="action-btn filter-btn">
+
+                <i class="bi bi-funnel-fill"></i>
+                Filtros
+
+            </button>
+
+
+            <button class="action-btn export-btn">
+
+                <i class="bi bi-cloud-arrow-down-fill"></i>
+                Exportar
+
+            </button>
+
+        </div>
+
+    </section>
+
+
+    <!-- CARDS DOS CLIENTES -->
+
+    <section class="clientes-cards">
+
+        {% if clientes %}
+>>>>>>> Stashed changes
 
         <section class="clientes-cards">
             {% if clientes %}
@@ -201,10 +507,66 @@
             <a href="/pedidos_cliente/{{ cliente.id }}" class="card-link">
                 <div class="clientes-card {% if cliente.ativo != 'ativo' %}inactive{% endif %}">
 
+<<<<<<< Updated upstream
                     <div class="clientes-texto">
                         <div
                             class="clientes-icone {% if cliente.ativo == 'ativo' %}green-bg-icon{% else %}gray-bg-icon{% endif %}">
                             <i class="bi bi-people-fill"></i>
+=======
+                <a
+                    href="/pedidos_cliente/{{ cliente.id }}"
+                    class="card-link"
+                >
+
+                    <div class="clientes-card
+                        {% if cliente.ativo != 'ativo' %}
+                            inactive
+                        {% endif %}
+                    ">
+
+
+                        <div class="clientes-texto">
+
+
+                            <div class="clientes-icone
+                                {% if cliente.ativo == 'ativo' %}
+                                    green-bg-icon
+                                {% else %}
+                                    gray-bg-icon
+                                {% endif %}
+                            ">
+
+                                <i class="bi bi-people-fill"></i>
+
+                            </div>
+
+
+                            <div class="clientes-titulo">
+
+                                <h2 class="cliente-nome">
+                                    {{ cliente.empresa }}
+                                </h2>
+
+                                <p class="contato-pessoa">
+                                    {{ cliente.nome }}
+                                </p>
+
+                            </div>
+
+
+                            <span class="status-cliente
+                                {% if cliente.ativo == 'ativo' %}
+                                    status-ativo
+                                {% else %}
+                                    status-inativo
+                                {% endif %}
+                            ">
+
+                                {{ cliente.ativo }}
+
+                            </span>
+
+>>>>>>> Stashed changes
                         </div>
 
                         <div class="clientes-titulo">
@@ -240,9 +602,26 @@
             {% endfor %}
             {% else %}
             <div class="text-center mt-5 w-100">
+<<<<<<< Updated upstream
                 <i class="bi bi-people" style="font-size: 60px; color: #ccc;"></i>
                 <h3 class="mt-3">Nenhum Cliente cadastrado</h3>
                 <p class="text-muted">Comece adicionando seu primeiro Cliente.</p>
+=======
+
+                <i
+                    class="bi bi-people"
+                    style="font-size: 60px; color: #ccc;"
+                ></i>
+
+                <h3 class="mt-3">
+                    Nenhum Cliente cadastrado
+                </h3>
+
+                <p class="text-muted">
+                    Comece adicionando seu primeiro Cliente.
+                </p>
+
+>>>>>>> Stashed changes
             </div>
             {% endif %}
         </section>
