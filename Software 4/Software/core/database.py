@@ -9,3 +9,4 @@ class Database:
             return mysql.connector.connect(**DB_CONFIG)
         except Error as e:
             raise Exception(f"Falha na conexão com o banco de dados: {e}")
+    
