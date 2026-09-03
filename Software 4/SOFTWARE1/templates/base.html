@@ -33,15 +33,18 @@
     <!-- ========================= -->
     <!-- SIDEBAR -->
     <!-- ========================= -->
-
     <!-- BOTÃO DO MENU MOBILE -->
-    <button id="btnMenuMobile" class="btn-menu-mobile" type="button">
-        <i class="bi bi-list"></i>
+    <button id="btnMenuMobile" class="btn-menu-mobile" type="button" aria-label="Abrir menu" aria-controls="menu"
+        aria-expanded="false">
+
+        <i class="bi bi-list" aria-hidden="true"></i>
+
     </button>
 
     <aside id="menu">
 
-        <button id="btn-minimizar" class="btn-minimizar" type="button" title="Minimizar menu">
+        <button id="btn-minimizar" class="btn-minimizar" type="button" aria-label="Minimizar menu" aria-expanded="true"
+            title="Minimizar menu">
             <span></span>
             <span></span>
             <span></span>
@@ -50,22 +53,18 @@
 
         <div class="perfil">
 
-            <img src="{{ url_for('static', filename='imagem/perfil.png') }}">
-
+            <img src="{{ url_for('static', filename='imagem/perfil.png') }}" alt="Logo ou perfil da empresa">
             <h3>{{ empresa_nome }}</h3>
         </div>
 
 
-        <nav>
-
+        <nav aria-label="Menu principal">
             <ul>
 
                 <li class="nav-menu {% if request.path == '/dashboard' %}selected{% endif %}">
 
-                    <a href="/dashboard">
-
-                        <i class="bi bi-bar-chart-fill"></i>
-
+                    <a href="/dashboard" aria-label="Dashboard">
+                        <i class="bi bi-bar-chart-fill" aria-hidden="true"></i>
                         DASHBOARD
 
                     </a>
@@ -75,9 +74,8 @@
 
                 <li class="nav-menu {% if request.path == '/galpao' %}selected{% endif %}">
 
-                    <a href="/galpao">
-
-                        <i class="bi bi-box-seam-fill"></i>
+                    <a href="/galpao" aria-label="Estoque">
+                        <i class="bi-box-seam-fill" aria-hidden="true"></i>
 
                         ESTOQUE
 
@@ -88,9 +86,8 @@
 
                 <li class="nav-menu {% if request.path == '/fornecedores' %}selected{% endif %}">
 
-                    <a href="/fornecedores">
-
-                        <i class="bi bi-people-fill"></i>
+                    <a href="/fornecedores" aria-label="Fornecedores">
+                        <i class="bi-people-fill" aria-hidden="true"></i>
 
                         FORNECEDORES
 
@@ -101,9 +98,9 @@
 
                 <li class="nav-menu {% if request.path == '/pedidos' %}selected{% endif %}">
 
-                    <a href="/pedidos">
+                    <a href="/pedidos" aria-label="Pedidos">
 
-                        <i class="bi bi-basket2-fill"></i>
+                        <i class="bi-basket2-fill" aria-hidden="true"></i>
 
                         PEDIDOS
 
@@ -114,9 +111,9 @@
 
                 <li class="nav-menu {% if request.path == '/clientes' %}selected{% endif %}">
 
-                    <a href="/clientes">
+                    <a href="/clientes" aria-label="Clientes">
 
-                        <i class="bi bi-person-fill"></i>
+                        <i class="bi-person-fill" aria-hidden="true"></i>
 
                         CLIENTES
 
@@ -135,23 +132,28 @@
 
         <div class="menu-opcoes">
 
-            <a href="/config" class="opcoes-btn">
-
-                <i class="bi bi-gear-fill"></i>
-
+            <a href="/config" class="opcoes-btn" aria-label="Configurações">
+                <i class="bi bi-gear-fill" aria-hidden="true"></i>
             </a>
 
+            <!-- BOTÃO DE LEITURA POR VOZ -->
+            <button id="btnVoz" class="opcoes-btn" type="button" aria-label="Ativar leitura por voz"
+                aria-pressed="false" title="Ativar leitura por voz">
 
-            <button id="btnTema" class="opcoes-btn">
-
-                <i id="iconeTema" class="bi bi-circle-half"></i>
+                <i id="iconeVoz" class="bi bi-volume-mute-fill" aria-hidden="true"></i>
 
             </button>
 
+            <button id="btnTema" class="opcoes-btn" type="button" aria-label="Ativar modo escuro">
 
-            <a href="{{ url_for('logout') }}" class="opcoes-btn red-opcoes-btn" onclick="return confirmarLogout()">
+                <i id="iconeTema" class="bi bi-circle-half" aria-hidden="true"></i>
 
-                <i class="bi bi-door-open-fill"></i>
+            </button>
+
+            <a href="{{ url_for('logout') }}" class="opcoes-btn red-opcoes-btn" aria-label="Sair"
+                onclick="return confirmarLogout()">
+
+                <i class="bi bi-door-open-fill" aria-hidden="true"></i>
 
             </a>
 
@@ -164,26 +166,21 @@
     <!-- CONTEÚDO DA PÁGINA -->
     <!-- ========================= -->
 
-    <div class="conteudo">
-
+    <main id="conteudo-principal" class="conteudo">
         {% block content %}
         {% endblock %}
+    </main>
 
-    </div>
-
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
-    </script>
-
-
-    <!-- JavaScript do tema -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="{{ url_for('static', filename='js/tema.js') }}"></script>
+
     <script src="{{ url_for('static', filename='js/menu.js') }}"></script>
+    
+    <script src="{{ url_for('static', filename='js/acessibilidade.js') }}"></script>
 
     {% block javascript %}
     {% endblock %}
-
 </body>
 
 </html>

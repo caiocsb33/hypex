@@ -940,3 +940,21 @@ body.modo-escuro .ver-atividade {
     }
 
 }
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 3px solid #15477F;
+    outline-offset: 3px;
+}
+
+#btnVoz {
+    cursor: pointer;
+}
+
+#btnVoz[aria-pressed="true"] {
+    outline: 2px solid #ffffff;
+    outline-offset: 2px;
+}
