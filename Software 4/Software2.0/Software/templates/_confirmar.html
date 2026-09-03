@@ -1,0 +1,58 @@
+{# ---------------------------------------------------------------
+   Botão que pede confirmação antes de enviar um formulário.
+
+   Substitui os `onsubmit="return confirm(...)"`, que usavam a caixa do
+   navegador. A janela é aberta por um checkbox escondido + CSS, e não pelo
+   JavaScript do Bootstrap: se o CDN não carregar, a confirmação continua
+   funcionando em vez de o texto vazar solto na tela.
+
+   Parâmetros:
+     id        - identificador único na página
+     form_id   - id do formulário enviado ao confirmar
+     titulo    - título da janela
+     texto     - pergunta mostrada ao usuário
+     rotulo    - texto do botão que abre (opcional)
+     icone     - classe do ícone do botão (ex.: 'bi-trash3-fill')
+     classe    - classe do botão que abre
+     confirmar - texto do botão de confirmação
+     perigo    - true pinta o confirmar de vermelho
+--------------------------------------------------------------- #}
+
+<input type="checkbox" id="abrir-{{ id }}" class="confirmacao-gatilho" hidden>
+
+<label for="abrir-{{ id }}" class="{{ classe | default('acao-btn') }}"
+    title="{{ titulo }}" role="button" tabindex="0">
+    {% if icone %}<i class="bi {{ icone }}"></i>{% endif %}
+    {%- if rotulo %} {{ rotulo }}{% endif %}
+</label>
+
+<div class="confirmacao">
+
+    <!-- Clicar fora fecha a janela -->
+    <label for="abrir-{{ id }}" class="confirmacao-fundo" aria-hidden="true"></label>
+
+    <div class="confirmacao-caixa" role="dialog" aria-modal="true"
+        aria-labelledby="titulo-{{ id }}">
+
+        <div class="confirmacao-topo">
+            <h5 id="titulo-{{ id }}">{{ titulo }}</h5>
+            <label for="abrir-{{ id }}" class="confirmacao-x" title="Fechar">
+                <i class="bi bi-x-lg"></i>
+            </label>
+        </div>
+
+        <div class="confirmacao-corpo">
+            {{ texto }}
+        </div>
+
+        <div class="confirmacao-acoes">
+            <label for="abrir-{{ id }}" class="btn btn-secondary">Cancelar</label>
+
+            <button type="submit" form="{{ form_id }}"
+                class="btn {{ 'btn-danger' if perigo else 'btn-primary' }}">
+                {{ confirmar | default('Confirmar') }}
+            </button>
+        </div>
+
+    </div>
+</div>

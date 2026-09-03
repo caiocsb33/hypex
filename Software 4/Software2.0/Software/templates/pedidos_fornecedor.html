@@ -1,0 +1,195 @@
+{% extends "base.html" %}
+
+{% block title %}
+Software HYPEX - Pedido de Entrada
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style_info_galpao.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<main id="config-conteudo">
+    <header class="config-texto">
+        <div class="config-info">
+            <h1><i class="bi bi-basket2-fill"></i> PEDIDO DE FORNECEDOR (ENTRADA)</h1>
+            <p>Selecione o fornecedor, o galpão de destino e adicione os produtos</p>
+        </div>
+
+
+        <button class="salvar-btn" form="form-fechar-pedido" type="submit">Fechar Pedido</button>
+    </header>
+
+    <section class="config-grid">
+
+        <!-- CARD 1: dados da nota. Mesmo formulário que fecha o pedido. -->
+        <div class="config-card">
+            <h3><i class="bi bi-file-earmark-text-fill"></i> Fornecedor e Documento</h3>
+
+            <form id="form-fechar-pedido" method="POST" action="{{ url_for('salvar_pedido_entrada') }}">
+                <input type="hidden" name="fornecedor_id" id="fornecedor-do-pedido"
+                    value="{{ fornecedor_id or '' }}">
+                <input type="hidden" name="galpao_id" id="galpao-do-pedido"
+                    value="{{ galpao_id or '' }}">
+
+                <div class="inputs-empresa">
+                    <div class="input-resp">
+                        <label>Nº da Nota Fiscal / Doc</label>
+                        <input type="text" name="numero_documento" placeholder="NF-001" required>
+                    </div>
+                    <div class="input-resp">
+                        <label>Data de Entrada</label>
+                        <input type="date" name="data_entrada" value="{{ hoje }}" required>
+                    </div>
+                </div>
+
+                <div class="input-resp">
+                    <label>Observação</label>
+                    <input type="text" name="observacao" placeholder="Opcional...">
+                </div>
+            </form>
+        </div>
+
+        <!-- CARD 2: destino e escolha do produto.
+             Todos os produtos ativos vêm renderizados; o script mostra os do
+             fornecedor escolhido (mais os sem vínculo) e sugere o custo na
+             hora, sem recarregar a página. -->
+        <div class="config-card">
+            <h3><i class="bi bi-geo-alt-fill"></i> Destino e Produtos</h3>
+
+            <form method="POST" action="{{ url_for('adicionar_item_entrada') }}">
+
+                <div class="input-resp">
+                    <label>Fornecedor</label>
+                    <select name="fornecedor_id" id="select-fornecedor" required>
+                        <option value="">Selecione o fornecedor</option>
+                        {% for fornecedor in fornecedores %}
+                        <option value="{{ fornecedor.id }}" {% if fornecedor_id==fornecedor.id %}selected{% endif %}>
+                            {{ fornecedor.nome }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-resp mt-2">
+                    <label>Galpão de Destino</label>
+                    <select name="galpao_id" id="select-galpao" required>
+                        <option value="">Selecione o galpão</option>
+                        {% for g in galpoes %}
+                        <option value="{{ g.id }}" {% if galpao_id==g.id %}selected{% endif %}>
+                            {{ g.nome }}{% if g.stats %} - {{ g.stats }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-resp mt-2">
+                    <label>Produto para Entrada</label>
+                    <select name="produto_id" id="select-produto" required>
+                        <option value="">-- Selecione primeiro o fornecedor --</option>
+                        {% for produto in produtos %}
+                        <option value="{{ produto.id }}"
+                            data-fornecedor="{{ produto.fornecedor_id or '' }}"
+                            data-preco="{{ '%.2f' | format(produto.preco_custo) }}"
+                            {% if produto_id==produto.id %}selected{% endif %}>
+                            {% if produto.sku %}{{ produto.sku }} - {% endif %}{{ produto.nome }}
+                            (custo R$ {{ produto.preco_custo | moeda }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="inputs-empresa mt-2">
+                    <div class="input-resp">
+                        <label>Preço de Custo Unitário (R$)</label>
+                        <!-- Editável: o custo é o da nota e pode diferir do
+                             cadastro. O valor sugerido vem do último custo. -->
+                        <input type="number" name="preco_unitario" id="campo-preco"
+                            step="0.01" min="0" placeholder="0,00" required>
+                    </div>
+                    <div class="input-resp">
+                        <label>Quantidade de Entrada</label>
+                        <input type="number" name="quantidade" id="campo-quantidade"
+                            min="1" step="1" value="1" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="add-sensor-btn w-100 mt-2">
+                    <i class="bi bi-plus-lg"></i> Adicionar ao Pedido
+                </button>
+            </form>
+        </div>
+
+        <!-- CARD 3: itens já adicionados, vindos da sessão -->
+        <div class="config-card full-width mt-2">
+            <h3><i class="bi bi-cart-check-fill"></i> Itens da Nota/Pedido</h3>
+
+            <div class="sensor-lista-container">
+                <table class="sensor-lista">
+                    <thead>
+                        <tr>
+                            <th>Código/SKU</th>
+                            <th>Produto</th>
+                            <th>Qtd. Entrada</th>
+                            <th>Preço de Custo</th>
+                            <th>Subtotal</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td>{{ item.sku }}</td>
+                            <td>{{ item.nome }}</td>
+                            <td>{{ item.quantidade | quantidade }}</td>
+                            <td>R$ {{ item.preco_unitario | moeda }}</td>
+                            <td>R$ {{ (item.quantidade * item.preco_unitario) | moeda }}</td>
+                            <td>
+                                <form method="POST"
+                                    action="{{ url_for('remover_item_entrada', indice=loop.index0) }}">
+                                    <input type="hidden" name="fornecedor_id" value="{{ fornecedor_id or '' }}">
+                                    <input type="hidden" name="galpao_id" value="{{ galpao_id or '' }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Excluir
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                Nenhum produto adicionado ao pedido ainda.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row mt-4 align-items-center">
+                <div class="col-md-6">
+                    {% if itens %}
+                    <form method="POST" action="{{ url_for('limpar_pedido_entrada') }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Limpar itens
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <div class="total-pedido-box">
+                        Total do Pedido: R$ {{ total | moeda }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+</main>
+
+{% endblock %}
+
+{% block javascript %}
+<script src="{{ url_for('static', filename='js/preco-produto.js') }}"></script>
+{% endblock %}

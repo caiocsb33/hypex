@@ -1,0 +1,36 @@
+{# ---------------------------------------------------------------
+   Campo de imagem reutilizável (produto, fornecedor, galpão, empresa).
+
+   Parâmetros:
+     campo_id  - id único do input, para o label apontar
+     imagem    - nome do arquivo salvo no banco (pode ser nulo)
+     padrao    - imagem mostrada quando não há nenhuma enviada
+     alt       - texto alternativo
+     titulo    - título do bloco
+
+   O botão é um <label for>, não um botão com onclick: abrir o seletor de
+   arquivo é comportamento nativo do HTML e não precisa de JavaScript.
+   O formulário que inclui este bloco precisa de enctype="multipart/form-data".
+--------------------------------------------------------------- #}
+
+<div class="campo-imagem">
+
+    <h3><i class="bi bi-image"></i> {{ titulo | default('Imagem') }}</h3>
+
+    <img class="img-galpao preview-imagem"
+        src="{{ url_for('static', filename='imagem/' + (imagem | imagem_ou(padrao | default('imagemproduto.png')))) }}"
+        alt="{{ alt | default('Imagem') }}">
+
+    <input type="file" id="{{ campo_id }}" name="imagem" class="input-imagem"
+        accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+
+    <label for="{{ campo_id }}" class="alterar-btn">
+        <i class="bi bi-pencil-fill"></i>
+        Alterar Imagem
+    </label>
+
+    <small class="text-muted d-block mt-1">
+        PNG, JPG, WEBP ou GIF, até 5 MB. A imagem é salva junto com o formulário.
+    </small>
+
+</div>

@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+# Imagens enviadas pelos usuários (produto_1.png, fornecedor_2.jpg, ...).
+# As imagens que acompanham o projeto não têm esse prefixo e continuam versionadas.
+static/imagem/produto_*
+static/imagem/fornecedor_*
+static/imagem/galpao_*
+static/imagem/empresa_*

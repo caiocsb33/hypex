@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block title %}
+Software HYPEX - Pedido de Saída
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style_info_galpao.css') }}">
+{% endblock %}
+
+{% block content %}
+
+<main id="config-conteudo">
+    <header class="config-texto">
+        <div class="config-info">
+            <h1><i class="bi bi-basket2-fill"></i> ABERTURA DE PEDIDO (SAÍDA)</h1>
+            <p>
+                {% if cliente %}
+                Pedido de saída para <strong>{{ cliente.nome }}</strong>
+                {% else %}
+                Selecione o cliente, o galpão de origem e adicione os produtos
+                {% endif %}
+            </p>
+        </div>
+
+
+        <button class="salvar-btn" form="form-fechar-pedido" type="submit">Fechar Pedido</button>
+    </header>
+
+    <section class="config-grid">
+
+        <!-- CARD 1: dados do documento. Fica no mesmo formulário que fecha o
+             pedido, para os campos irem junto no envio. -->
+        <div class="config-card">
+            <h3><i class="bi bi-person-fill"></i> Cliente e Documento</h3>
+
+            <form id="form-fechar-pedido" method="POST" action="{{ url_for('salvar_pedido_saida') }}">
+                <input type="hidden" name="galpao_id" id="galpao-do-pedido"
+                    value="{{ galpao_id or '' }}">
+
+                {% if cliente %}
+                <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                {% else %}
+                <div class="input-resp">
+                    <label>Cliente</label>
+                    <select name="cliente_id" required>
+                        <option value="">Selecione o cliente</option>
+                        {% for c in clientes %}
+                        <option value="{{ c.id }}">{{ c.nome }}{% if c.empresa %} - {{ c.empresa }}{% endif %}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="inputs-empresa">
+                    <div class="input-resp">
+                        <label>Nº do Documento</label>
+                        <input type="text" name="numero_documento" placeholder="NF-001">
+                    </div>
+                    <div class="input-resp">
+                        <label>Data do Pedido</label>
+                        <input type="date" name="data_saida" value="{{ hoje }}">
+                    </div>
+                </div>
+
+                <div class="input-resp">
+                    <label>Observação</label>
+                    <input type="text" name="observacao" placeholder="Opcional...">
+                </div>
+            </form>
+        </div>
+
+        <!-- CARD 2: origem e escolha do produto.
+             Todos os produtos com saldo vêm renderizados; o script mostra só
+             os do galpão escolhido e preenche o preço na hora, sem recarregar.
+             Sem JavaScript a lista aparece inteira e o servidor recusa o que
+             não pertencer ao galpão. -->
+        <div class="config-card">
+            <h3><i class="bi bi-geo-alt-fill"></i> Origem e Produtos</h3>
+
+            <form method="POST" action="{{ url_for('adicionar_item_saida') }}">
+                <input type="hidden" name="cliente_id" value="{{ cliente.id if cliente else '' }}">
+
+                <div class="input-resp">
+                    <label>Galpão de Retirada</label>
+                    <select name="galpao_id" id="select-galpao" required>
+                        <option value="">Selecione</option>
+                        {% for g in galpoes %}
+                        <option value="{{ g.id }}" {% if galpao_id==g.id %}selected{% endif %}>
+                            {{ g.nome }}{% if g.stats %} - {{ g.stats }}{% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="input-resp mt-2">
+                    <label>Produto (disponíveis no galpão)</label>
+                    <select name="produto_id" id="select-produto" required>
+                        <option value="">-- Selecione primeiro o galpão --</option>
+                        {% for produto in produtos %}
+                        <option value="{{ produto.id }}"
+                            data-galpao="{{ produto.galpao_id }}"
+                            data-preco="{{ '%.2f' | format(produto.preco_venda) }}"
+                            data-saldo="{{ produto.estoque_disponivel | quantidade }}"
+                            {% if produto_id==produto.id and galpao_id==produto.galpao_id %}selected{% endif %}>
+                            {% if produto.sku %}{{ produto.sku }} - {% endif %}{{ produto.nome }}
+                            (R$ {{ produto.preco_venda | moeda }} · saldo {{ produto.estoque_disponivel | quantidade }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="inputs-empresa mt-2">
+                    <div class="input-resp">
+                        <label>Preço Unitário (R$)</label>
+                        <input type="text" id="campo-preco" readonly placeholder="0,00"
+                            title="Preço de venda do produto, aplicado pelo servidor.">
+                    </div>
+                    <div class="input-resp">
+                        <label>Quantidade</label>
+                        <input type="number" name="quantidade" id="campo-quantidade"
+                            min="1" step="1" value="1" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="add-sensor-btn w-100 mt-2">
+                    <i class="bi bi-plus-lg"></i> Adicionar ao Pedido
+                </button>
+            </form>
+        </div>
+
+        <!-- CARD 3: itens do pedido, vindos da sessão -->
+        <div class="config-card full-width mt-2">
+            <h3><i class="bi bi-cart-check-fill"></i> Itens do Pedido</h3>
+
+            <div class="sensor-lista-container">
+                <table class="sensor-lista">
+                    <thead>
+                        <tr>
+                            <th>Código/SKU</th>
+                            <th>Produto</th>
+                            <th>Qtd. Solicitada</th>
+                            <th>Preço Unitário</th>
+                            <th>Subtotal</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens %}
+                        <tr>
+                            <td>{{ item.sku }}</td>
+                            <td>{{ item.nome }}</td>
+                            <td>{{ item.quantidade | quantidade }}</td>
+                            <td>R$ {{ item.preco_unitario | moeda }}</td>
+                            <td>R$ {{ (item.quantidade * item.preco_unitario) | moeda }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('remover_item_saida', indice=loop.index0) }}">
+                                    <input type="hidden" name="cliente_id" value="{{ cliente.id if cliente else '' }}">
+                                    <input type="hidden" name="galpao_id" value="{{ galpao_id or '' }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i> Excluir
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted py-4">
+                                Nenhum produto adicionado ao pedido ainda.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="row mt-4 align-items-center">
+                <div class="col-md-6">
+                    {% if itens %}
+                    <form method="POST" action="{{ url_for('limpar_pedido_saida') }}">
+                        <input type="hidden" name="cliente_id" value="{{ cliente.id if cliente else '' }}">
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-x-circle"></i> Limpar itens
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+                <div class="col-md-6">
+                    <div class="total-pedido-box">
+                        Total do Pedido: R$ {{ total | moeda }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </section>
+</main>
+
+{% endblock %}
+
+{% block javascript %}
+<script src="{{ url_for('static', filename='js/preco-produto.js') }}"></script>
+{% endblock %}
