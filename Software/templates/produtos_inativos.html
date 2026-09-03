@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}
+Software HYPEX - Produtos Inativos
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style_estoque_do_galpao.css') }}">
+{% endblock %}
+
+{% block content %}
+<main id="inventario-conteudo">
+
+    <header class="inventario-texto">
+        <div class="inventario-info">
+            <h1><i class="bi bi-slash-circle-fill"></i> PRODUTOS INATIVOS</h1>
+            <p>Produtos desativados — reative para voltar a movimentá-los no estoque</p>
+
+            <a href="{{ url_for('produtos') }}">
+                <button class="btn btn-voltar">
+                    <i class="bi bi-arrow-left"></i> Voltar ao Estoque
+                </button>
+            </a>
+        </div>
+
+    </header>
+
+    <section class="inventario-lista">
+        <table>
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>ID</th>
+                    <th>SKU</th>
+                    <th>Categoria</th>
+                    <th>Preço de Venda</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produto in produtos %}
+                <tr>
+                    <td class="produto-info">
+                        <strong>{{ produto.nome }}</strong>
+                    </td>
+                    <td>{{ produto.id }}</td>
+                    <td>{{ produto.sku or '—' }}</td>
+                    <td>{{ produto.categoria or '—' }}</td>
+                    <td>R$ {{ produto.preco_venda | moeda }}</td>
+                    <td class="acao-estoque">
+                        <a href="{{ url_for('info_produtos', id=produto.id) }}" class="acao-btn btn-visualizar"
+                            title="Visualizar">
+                            <i class="bi bi-eye-fill"></i>
+                        </a>
+
+                        <form method="POST" id="reativar-{{ produto.id }}"
+                            action="{{ url_for('reativar_produto', id=produto.id) }}"
+                            class="d-inline"></form>
+
+                        {% with id='reativar-' ~ produto.id,
+                                form_id='reativar-' ~ produto.id,
+                                titulo='Reativar produto',
+                                texto='Reativar o produto ' ~ produto.nome ~ '?',
+                                icone='bi-arrow-counterclockwise',
+                                classe='acao-btn btn-editar',
+                                confirmar='Reativar' %}
+                        {% include '_confirmar.html' %}
+                        {% endwith %}
+
+                        <form method="POST" id="excluir-{{ produto.id }}"
+                            action="{{ url_for('excluir_produto', id=produto.id) }}"
+                            class="d-inline"></form>
+
+                        {% with id='excluir-' ~ produto.id,
+                                form_id='excluir-' ~ produto.id,
+                                titulo='Excluir produto',
+                                texto='Excluir definitivamente o produto ' ~ produto.nome ~ '? Esta ação não pode ser desfeita.',
+                                icone='bi-trash3-fill',
+                                classe='acao-btn delete',
+                                confirmar='Excluir', perigo=True %}
+                        {% include '_confirmar.html' %}
+                        {% endwith %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        Nenhum produto inativo.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+</main>
+{% endblock %}

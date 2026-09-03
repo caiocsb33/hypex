@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Banco de dados desatualizado - HYPEX</title>
+
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f2f2f2;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #2c3e50;
+            padding: 20px;
+        }
+
+        .aviso {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+            padding: 40px;
+            max-width: 640px;
+        }
+
+        h1 {
+            margin: 0 0 10px;
+            font-size: 22px;
+            color: #15477F;
+        }
+
+        p {
+            line-height: 1.6;
+        }
+
+        ul {
+            background-color: #fdf3f3;
+            border: 1px solid #f0d0d0;
+            border-radius: 6px;
+            padding: 15px 15px 15px 35px;
+        }
+
+        code {
+            display: block;
+            background-color: #1e1e1e;
+            color: #eaeaea;
+            padding: 14px 18px;
+            border-radius: 6px;
+            font-size: 14px;
+            margin: 14px 0;
+            overflow-x: auto;
+        }
+
+        .rodape {
+            font-size: 13px;
+            color: #777;
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="aviso">
+        <h1>O banco de dados precisa ser atualizado</h1>
+
+        <p>
+            O sistema está rodando com uma versão do banco anterior a estas
+            alterações. Falta o seguinte:
+        </p>
+
+        <ul>
+            {% for item in faltando %}
+            <li>{{ item }}</li>
+            {% endfor %}
+        </ul>
+
+        <p>Para resolver, rode a migração uma única vez:</p>
+
+        <code>mysql -u root -p &lt; migracao.sql</code>
+
+        <p>
+            Depois recarregue esta página. A migração preserva os dados que já
+            existem — não é preciso recriar o banco.
+        </p>
+
+        <p class="rodape">
+            Se o banco for novo, use <strong>banco.sql</strong>, que já vem com
+            tudo isso.
+        </p>
+    </div>
+</body>
+
+</html>

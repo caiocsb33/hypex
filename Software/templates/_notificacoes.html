@@ -1,0 +1,39 @@
+{# ---------------------------------------------------------------
+   Notificações do sistema (flash messages).
+
+   Substitui os blocos de "alert" que apareciam empurrando o conteúdo da
+   página. Aqui elas flutuam no canto da tela, com ícone do Bootstrap Icons
+   conforme a categoria, e sem depender de JavaScript: o fechar é um
+   checkbox + CSS, e cada notificação some sozinha por animação.
+--------------------------------------------------------------- #}
+
+{% with mensagens = get_flashed_messages(with_categories=true) %}
+{% if mensagens %}
+<div class="notificacoes" role="status" aria-live="polite">
+
+    {% for categoria, mensagem in mensagens %}
+    {% set indice = loop.index %}
+
+    <input type="checkbox" id="fechar-notificacao-{{ indice }}" class="notificacao-fechar" hidden>
+
+    <div class="notificacao notificacao-{{ 'erro' if categoria == 'erro' else categoria }}">
+
+        <i class="bi
+            {%- if categoria == 'erro' %} bi-exclamation-triangle-fill
+            {%- elif categoria == 'aviso' %} bi-exclamation-circle-fill
+            {%- elif categoria == 'info' %} bi-info-circle-fill
+            {%- else %} bi-check-circle-fill{% endif %}"></i>
+
+        <span class="notificacao-texto">{{ mensagem }}</span>
+
+        <label for="fechar-notificacao-{{ indice }}" class="notificacao-x"
+            title="Fechar" aria-label="Fechar notificação">
+            <i class="bi bi-x-lg"></i>
+        </label>
+
+    </div>
+    {% endfor %}
+
+</div>
+{% endif %}
+{% endwith %}

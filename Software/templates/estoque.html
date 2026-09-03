@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}
+Software HYPEX - Gestão de Estoque
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style_estoque_do_galpao.css') }}">
+{% endblock %}
+
+{% block content %}
+<main id="inventario-conteudo">
+
+    <header class="inventario-texto">
+        <div class="inventario-info">
+            <h1><i class="bi bi-box-seam-fill"></i> GESTÃO DE ESTOQUE</h1>
+
+            {% if galpao %}
+            <p>Produtos armazenados no galpão <strong>{{ galpao.nome }}</strong></p>
+
+            <a href="{{ url_for('info_galpao', galpao_id=galpao.id) }}">
+                <button class="btn btn-voltar">
+                    <i class="bi bi-eye-fill"></i>
+                    Visualizar Galpão
+                </button>
+            </a>
+            {% else %}
+            <p>Estoque consolidado de todos os galpões</p>
+
+            <a href="{{ url_for('galpao') }}">
+                <button class="btn btn-voltar">
+                    <i class="bi bi-buildings-fill"></i>
+                    Ver Galpões
+                </button>
+            </a>
+            {% endif %}
+        </div>
+
+
+        {% if galpao %}
+        <div id="add-produto">
+            <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                data-bs-target="#modalAdicionarProduto">
+                <i class="bi bi-plus-lg"></i> Adicionar Produto
+            </button>
+
+            <div class="modal fade" id="modalAdicionarProduto" tabindex="-1"
+                aria-labelledby="modalAdicionarProdutoLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-scrollable modal-lg">
+                    <form method="POST" action="{{ url_for('salvar_produto') }}">
+                        <input type="hidden" name="galpao_id" value="{{ galpao.id }}">
+
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h1 class="modal-title fs-5" id="modalAdicionarProdutoLabel">
+                                    Adicionar Produto
+                                </h1>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                    aria-label="Fechar"></button>
+                            </div>
+
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col">
+                                        <h6>Fornecedor</h6>
+                                        <select class="form-select" name="fornecedor_id">
+                                            <option selected disabled value="">
+                                                Selecione o fornecedor
+                                            </option>
+                                            {% for fornecedor in fornecedores %}
+                                            <option value="{{ fornecedor.id }}">
+                                                {{ fornecedor.nome }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Nome do Produto</h6>
+                                        <input type="text" name="nome" class="form-control" required>
+                                    </div>
+                                    <div class="col">
+                                        <h6>Descrição</h6>
+                                        <input type="text" name="descricao" class="form-control">
+                                    </div>
+                                    <div class="col">
+                                        <h6>SKU</h6>
+                                        <input type="text" name="sku" class="form-control" required>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Quantidade</h6>
+                                        <input type="number" name="quantidade" class="form-control" min="0" value="0">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Quantidade Mínima</h6>
+                                        <input type="number" name="quantidade_minimo" class="form-control" min="0"
+                                            value="0">
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Preço de Venda</h6>
+                                        <input type="number" step="0.01" name="preco_venda" class="form-control" min="0"
+                                            value="0">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Preço de Compra</h6>
+                                        <input type="number" step="0.01" name="preco_custo" class="form-control" min="0"
+                                            value="0">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Código de Barras</h6>
+                                        <input type="text" name="codigo_barras" class="form-control">
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Categoria</h6>
+                                        <input type="text" name="categoria" class="form-control">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Peso (kg)</h6>
+                                        <input type="number" step="0.01" name="peso" class="form-control" min="0"
+                                            value="0">
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Volume (m³)</h6>
+                                        <input type="number" step="0.01" name="volume" class="form-control" min="0"
+                                            value="0">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Tipo de Produto</h6>
+                                        <select class="form-select" name="tipo">
+                                            <option value="leve">Leve</option>
+                                            <option value="medio">Médio</option>
+                                            <option value="pesado">Pesado</option>
+                                            <option value="fragil">Frágil</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col">
+                                        <h6>Setor</h6>
+                                        <input type="text" name="setor" class="form-control">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Prateleira</h6>
+                                        <input type="text" name="prateleira" class="form-control">
+                                    </div>
+                                    <div class="col">
+                                        <h6>Nível</h6>
+                                        <input type="text" name="nivel" class="form-control">
+                                    </div>
+                                </div>
+
+                                <div class="row mt-3">
+                                    <div class="col-4">
+                                        <h6>Itens por Caixa</h6>
+                                        <input type="number" name="item_por_caixa" class="form-control" min="0"
+                                            value="0">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted">
+            Selecione um galpão para cadastrar novos produtos.
+        </p>
+        {% endif %}
+    </header>
+
+    <!-- O <form> é a própria barra: a caixa de busca fica à esquerda e os
+         botões à direita, como no restante do sistema. -->
+    <form method="GET" class="barra-pesquisa"
+        action="{{ url_for('estoque_galpao', galpao_id=galpao.id) if galpao else url_for('estoque') }}">
+
+        <div class="caixa-pesquisa">
+            <i class="bi bi-search"></i>
+            <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar por produto...">
+        </div>
+
+        <div class="pesquias-botao">
+            <button class="filtro-btn filter-btn" type="submit">
+                <i class="bi bi-funnel-fill"></i> Filtros
+            </button>
+            {% if busca %}
+            <a class="filtro-btn"
+                href="{{ url_for('estoque_galpao', galpao_id=galpao.id) if galpao else url_for('estoque') }}">
+                <i class="bi bi-x-lg"></i> Limpar
+            </a>
+            {% endif %}
+        </div>
+    </form>
+
+    <section class="inventario-lista">
+        <table id="tabelaProdutos">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>ID</th>
+                    <th>Categoria</th>
+                    <th>Quantidade</th>
+                    <th>Preço de Venda</th>
+                    <th>Preço de Compra</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for produto in produtos %}
+                <tr>
+                    <td class="produto-info">
+                        <strong>{{ produto.nome }}</strong>
+                        <span class="fornecedor-nome">
+                            Fornecedor: {{ produto.fornecedor or '—' }}
+                        </span>
+                    </td>
+                    <td>{{ produto.id }}</td>
+                    <td>{{ produto.categoria or '—' }}</td>
+                    <td>
+                        {{ produto.quantidade | quantidade }}
+                        <span class="min-estoque">Min: {{ produto.quantidade_minimo | quantidade }}</span>
+                    </td>
+                    <td>R$ {{ produto.preco_venda | moeda }}</td>
+                    <td>R$ {{ produto.preco_custo | moeda }}</td>
+                    <td>
+                        {% if produto.quantidade == 0 %}
+                        <span class="status-estoque status-zero">Crítico</span>
+                        {% elif produto.quantidade <= produto.quantidade_minimo %} <span
+                            class="status-estoque status-low">Abaixo</span>
+                            {% else %}
+                            <span class="status-estoque status-disponivel">Disponível</span>
+                            {% endif %}
+                    </td>
+                    <td class="acao-estoque">
+                        <a href="{{ url_for('editar_produto', id=produto.id) }}" class="acao-btn btn-editar"
+                            title="Editar">
+                            <i class="bi bi-pen-fill"></i>
+                        </a>
+
+                        <form method="POST" id="desativar-{{ produto.id }}"
+                            action="{{ url_for('desativar_produto', id=produto.id) }}"
+                            class="d-inline"></form>
+
+                        {% with id='desativar-produto-' ~ produto.id,
+                                form_id='desativar-' ~ produto.id,
+                                titulo='Desativar produto',
+                                texto='Desativar o produto ' ~ produto.nome ~ '? Ele deixa de aparecer nas telas de pedido.',
+                                icone='bi-slash-circle-fill',
+                                classe='acao-btn desativar',
+                                confirmar='Desativar' %}
+                        {% include '_confirmar.html' %}
+                        {% endwith %}
+
+                        <button type="button" class="acao-btn delete" title="Excluir" data-bs-toggle="modal"
+                            data-bs-target="#modalExcluir{{ produto.id }}">
+                            <i class="bi bi-trash3-fill"></i>
+                        </button>
+
+                        <div class="modal fade" id="modalExcluir{{ produto.id }}" tabindex="-1"
+                            aria-labelledby="modalExcluirLabel{{ produto.id }}" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="modalExcluirLabel{{ produto.id }}">Confirmar
+                                            Exclusão</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        Tem certeza que deseja excluir o produto <strong>{{ produto.nome }}</strong>?
+                                        <br>
+                                        <span class="text-danger"><small>Esta ação não poderá ser
+                                                desfeita.</small></span>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Cancelar</button>
+                                        <form method="POST"
+                                            action="{{ url_for('excluir_produto', id=produto.id) }}">
+                                            <button type="submit" class="btn btn-danger">Excluir</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        {% if busca %}
+                        Nenhum produto encontrado para "{{ busca }}".
+                        {% elif galpao %}
+                        Nenhum produto encontrado neste galpão.
+                        {% else %}
+                        Nenhum produto cadastrado.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+</main>
+
+{% endblock %}

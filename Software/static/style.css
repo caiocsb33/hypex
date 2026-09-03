@@ -1,0 +1,1419 @@
+.cards-valors {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.progress-bar {
+    height: 8px;
+    border-radius: 5px;
+    background: linear-gradient(to right, #4A90E2, #7B68EE);
+    width: 100%;
+    margin-top: 15px;
+}
+
+/* =========================================
+   CONFIGURAÇÕES GERAIS
+========================================= */
+
+body {
+    background-color: #f1f1f1;
+    margin: 0;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    padding: 0;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+
+/* =========================================
+   SIDEBAR
+========================================= */
+#menu {
+    width: 250px;
+    min-width: 250px;
+    height: 100vh;
+
+    background-color: #15477F;
+
+    position: fixed;
+    left: 0;
+    top: 0;
+
+    z-index: 1000;
+
+    display: flex;
+    flex-direction: column;
+
+    overflow: hidden;
+
+    transition:
+        width 0.3s ease,
+        min-width 0.3s ease,
+        transform 0.3s ease;
+}
+
+
+/* =========================================
+   BOTÃO DOS TRÊS PONTOS
+========================================= */
+
+.btn-minimizar {
+    position: absolute;
+
+    top: 18px;
+    left: 22px;
+
+    width: 55px;
+    height: 25px;
+
+    display: flex;
+    align-items: center;
+
+    gap: 7px;
+
+    padding: 0;
+
+    border: none;
+    background: transparent;
+
+    cursor: pointer;
+
+    z-index: 10;
+}
+
+
+/* OS TRÊS PONTOS */
+
+.btn-minimizar span {
+    width: 9px;
+    height: 9px;
+
+    border-radius: 50%;
+
+    background-color: #dce9f7;
+
+    transition: opacity 0.2s ease;
+}
+
+.btn-minimizar span:nth-child(3) {
+    opacity: 0.35;
+}
+
+
+/* =========================================
+   SIDEBAR MINIMIZADA
+========================================= */
+
+#menu.minimizada {
+    width: 75px;
+    min-width: 75px;
+}
+
+
+/* =========================================
+   PERFIL
+========================================= */
+
+.perfil img {
+    width: 70px;
+    height: 70px;
+
+    border-radius: 50%;
+
+    margin-right: 10px;
+}
+
+
+.perfil {
+    display: flex;
+    align-items: center;
+
+    color: #EAEFF6;
+
+    padding: 60px 20px 20px 20px;
+
+    margin-bottom: 20px;
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+    transition:
+        opacity 0.2s ease,
+        padding 0.3s ease,
+        margin 0.3s ease;
+}
+
+
+.perfil h3 {
+    font-size: 18px;
+
+    margin: 0;
+
+    font-weight: 500;
+
+    white-space: nowrap;
+}
+
+
+/* PERFIL MINIMIZADO */
+
+#menu.minimizada .perfil {
+    justify-content: center;
+
+    padding: 60px 0 20px 0;
+
+    margin-bottom: 20px;
+}
+
+
+#menu.minimizada .perfil img {
+    width: 42px;
+    height: 42px;
+
+    margin: 0;
+}
+
+
+#menu.minimizada .perfil h3 {
+    display: none;
+}
+
+
+/* =========================================
+   MENU
+========================================= */
+
+nav {
+    flex-grow: 1;
+}
+
+
+nav ul {
+    list-style-type: none;
+
+    padding: 0;
+    margin: 0;
+}
+
+
+.nav-menu {
+    margin: 0;
+}
+
+
+.nav-menu a {
+    display: flex;
+    align-items: center;
+
+    color: #EAE4D7;
+
+    text-decoration: none;
+
+    font-size: 15px;
+
+    padding: 12px 20px;
+
+    transition:
+        background-color 0.2s,
+        padding 0.3s ease;
+
+    text-transform: uppercase;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+}
+
+
+.nav-menu a i {
+    margin-right: 10px;
+
+    font-size: 18px;
+
+    color: #98B4CA;
+
+    min-width: 20px;
+
+    text-align: center;
+
+    transition:
+        margin 0.3s ease,
+        font-size 0.3s ease;
+}
+
+
+/* =========================================
+   MENU MINIMIZADO
+========================================= */
+
+#menu.minimizada .nav-menu a {
+    justify-content: center;
+
+    padding: 15px 0;
+}
+
+
+#menu.minimizada .nav-menu a i {
+    margin-right: 0;
+
+    font-size: 22px;
+}
+
+
+#menu.minimizada .nav-menu a {
+    font-size: 0;
+}
+
+
+/* ITEM SELECIONADO */
+
+.nav-menu {
+    /* Espaço da borda reservado em todos os itens, para o texto ficar parado
+       quando o item passa a selecionado ou recebe o hover. */
+    border-left: 5px solid transparent;
+}
+
+
+.nav-menu.selected {
+    background-color: #2B6BB9;
+
+    border-left: 5px solid white;
+
+    /* Canto direito arredondado: o destaque vira uma faixa com acabamento
+       em vez de um bloco colado nas duas bordas do menu. */
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+
+    margin-right: 12px;
+}
+
+
+.nav-menu.selected a {
+    color: white;
+
+    padding-left: 15px;
+}
+
+
+.nav-menu.selected a i {
+    color: white;
+}
+
+
+/* AJUSTE DO ITEM SELECIONADO MINIMIZADO */
+
+#menu.minimizada .nav-menu:not(.selected):hover {
+    margin-right: 0;
+    border-radius: 0;
+}
+
+
+#menu.minimizada .nav-menu.selected {
+    border-left: 4px solid white;
+
+    /* Minimizado o item é estreito: sem a margem o ícone ficaria descentrado */
+    margin-right: 0;
+    border-radius: 0;
+}
+
+
+#menu.minimizada .nav-menu.selected a {
+    padding-left: 0;
+}
+
+
+/* HOVER */
+
+.nav-menu:not(.selected):hover {
+    background-color: rgba(255, 255, 255, 0.1);
+
+    /* Mesmo recorte do item selecionado, senão o realce do hover fica com
+       largura e cantos diferentes e o menu "pula" ao passar o mouse. */
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+
+    margin-right: 12px;
+
+    /* Compensa a borda esquerda que só o item selecionado tem, para o texto
+       não se deslocar ao passar o mouse. */
+    border-left: 5px solid transparent;
+}
+
+
+.nav-menu:not(.selected):hover a {
+    color: white;
+}
+
+
+.nav-menu:not(.selected):hover a i {
+    color: white;
+}
+
+
+/* =========================================
+   BOTÕES INFERIORES
+========================================= */
+
+.menu-opcoes {
+    padding: 20px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    gap: 10px;
+
+    transition:
+        padding 0.3s ease,
+        gap 0.3s ease;
+}
+
+
+.opcoes-btn {
+    flex: 1;
+
+    height: 40px;
+
+    background-color: #7E9EC4;
+
+    border: none;
+
+    border-radius: 8px;
+
+    color: #15477F;
+
+    font-size: 18px;
+
+    cursor: pointer;
+
+    transition:
+        background-color 0.2s,
+        width 0.3s ease;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    text-decoration: none;
+
+    box-sizing: border-box;
+}
+
+
+.opcoes-btn:hover {
+    opacity: 0.8;
+}
+
+
+.red-opcoes-btn {
+    background-color: #d63031;
+
+    color: white;
+}
+
+
+/* =========================================
+   BOTÕES INFERIORES MINIMIZADOS
+========================================= */
+
+#menu.minimizada .menu-opcoes {
+    padding: 15px 10px;
+
+    flex-direction: column;
+
+    gap: 8px;
+}
+
+
+#menu.minimizada .opcoes-btn {
+    width: 55px;
+
+    min-width: 55px;
+
+    flex: none;
+
+    margin: 0 auto;
+}
+
+
+/* =========================================
+   ÁREA PRINCIPAL
+========================================= */
+
+.conteudo {
+    width: calc(100% - 250px);
+    margin-left: 250px;
+
+    padding: 30px;
+    box-sizing: border-box;
+
+    transition:
+        margin-left 0.3s ease,
+        width 0.3s ease;
+}
+
+
+/* SIDEBAR MINIMIZADA */
+
+body.sidebar-minimizada .conteudo {
+    width: calc(100% - 75px);
+    margin-left: 75px;
+}
+/*=======dashboard.css=======*/
+
+.dashboard-texto {
+    margin-bottom: 30px;
+}
+
+.dashboard-texto .title {
+    font-size: 24px;
+    color: #333;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.dashboard-texto .subtitle {
+    font-size: 14px;
+    color: #666;
+}
+
+.cards-valors,
+.cards-grafico {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.cards-grafico {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.cards-valor {
+    background-color: #FFFFFF;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.cards-valors-valor {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.metric-info {
+    margin-bottom: 15px;
+}
+
+.valor-cards {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.icon-text {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.icon-text i {
+    color: #2B6BB9;
+    /* Medium Blue */
+    margin-right: 5px;
+}
+
+.valor {
+    font-size: 28px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+}
+
+.porcentagem-positiva {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.porcentagem-positiva {
+    color: #38C172;
+}
+
+.negative {
+    color: #E3342F;
+}
+
+.progress-bar {
+    height: 10px;
+    border-radius: 5px;
+    height: 5px;
+    background: linear-gradient(to right, #4A90E2, #7B68EE);
+    width: 100%;
+}
+
+.cards-valor-grafico {
+    display: flex;
+    flex-direction: column;
+}
+
+.grafico-texto {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.grafico-texto .icon-text {
+    font-size: 16px;
+    color: #333;
+    font-weight: bold;
+}
+
+.grafico-texto .tempo {
+    font-size: 12px;
+    color: #999;
+}
+
+.grafico-info {
+    margin-bottom: 15px;
+}
+
+.grafico-valor {
+    font-size: 24px;
+    font-weight: bold;
+    color: #38C172;
+    margin: 0;
+}
+
+.grafico-porcentagem-positiva {
+    font-size: 12px;
+    color: #666;
+}
+
+/* Cada informação do card de lucro ocupa a própria linha */
+.grafico-info .grafico-porcentagem-positiva,
+.grafico-info .tempo {
+    display: block;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* Lucro em queda: o prejuízo não pode aparecer com a mesma cor do ganho */
+.grafico-porcentagem-positiva.negative {
+    color: #E3342F;
+}
+
+.grafico-valor.negative {
+    color: #E3342F;
+}
+
+/*alertas.css*/
+
+.cards-alertas {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 30px;
+}
+
+.cards-valor-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.cards-valor-header .icone-sino {
+    font-size: 20px;
+    color: #999;
+    margin-right: 10px;
+}
+
+.cards-valor-header .alertas-titulo {
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.cards-valor-header .alertas-sub {
+    font-size: 12px;
+    color: #999;
+    margin-top: 5px;
+    display: block;
+}
+
+/* --- ESTILOS DAS LISTAS --- */
+
+.alertas-lista,
+.alertas-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.alertas-item,
+.alertas-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #f9f9f9;
+}
+
+.alertas-item:last-child,
+.alertas-item:last-child {
+    border-bottom: none;
+}
+
+
+.alertas-icon,
+.alertas-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    font-size: 16px;
+    margin-right: 15px;
+    opacity: 0.8;
+}
+
+.alertas-detalhes,
+.alertas-detalhes {
+    flex-grow: 1;
+}
+
+.alertas-texto,
+.alertas-text {
+    font-size: 14px;
+    color: #333;
+    font-weight: 500;
+    margin: 0;
+}
+
+.alertas-tempo,
+.alertas-info {
+    font-size: 12px;
+    color: #999;
+    margin-top: 2px;
+    display: block;
+}
+
+.green-icon {
+    color: #38C172;
+    background-color: rgba(56, 193, 114, 0.1);
+}
+
+.red-icon {
+    color: #E3342F;
+    background-color: rgba(227, 52, 47, 0.1);
+}
+
+.blue-icon {
+    color: #4A90E2;
+    background-color: rgba(74, 144, 226, 0.1);
+}
+
+.yellow-icon {
+    color: #FFC90E;
+    background-color: rgba(255, 201, 14, 0.1);
+}
+
+.dark-red-icon {
+    color: #A00000;
+    background-color: rgba(160, 0, 0, 0.1);
+}
+
+.gray-icon {
+    color: #6c757d;
+    background-color: rgba(108, 117, 125, 0.1);
+}
+
+.ver-atividade {
+    display: block;
+    text-align: center;
+    margin-top: 20px;
+    font-size: 14px;
+    color: #4A90E2;
+    /* Azul padrão */
+    text-decoration: none;
+    font-weight: 600;
+    padding-top: 10px;
+    border-top: 1px solid #f1f1f1;
+}
+
+.red-link {
+    color: #E3342F;
+}
+
+.ver-atividade:hover {
+    text-decoration: underline;
+}
+
+/* =========================================
+   MODO ESCURO
+========================================= */
+
+body.modo-escuro {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+
+/* Área principal */
+
+body.modo-escuro .conteudo {
+    background-color: #121212;
+}
+
+
+/* Sidebar */
+
+body.modo-escuro #menu {
+    /* Cinza escuro em vez de preto: separa o menu do fundo da página
+       sem virar um bloco preto no canto da tela. */
+    background-color: #262626;
+    border-right: 1px solid #333333;
+}
+
+
+/* Perfil e divisórias acompanham o cinza do menu */
+
+body.modo-escuro .perfil {
+    border-bottom-color: #3a3a3a;
+}
+
+body.modo-escuro .perfil h3 {
+    color: #ffffff;
+}
+
+
+/* ITEM SELECIONADO NO MODO ESCURO
+   A faixa branca da versão clara ficava dura sobre o fundo escuro; aqui o
+   destaque é um azul mais suave com uma borda da mesma família de cor. */
+
+body.modo-escuro .nav-menu.selected {
+    background-color: #2B6BB9;
+    border-left-color: #8fc0ff;
+}
+
+body.modo-escuro #menu.minimizada .nav-menu.selected {
+    border-left-color: #8fc0ff;
+}
+
+
+/* Itens não selecionados: texto legível sobre o cinza */
+
+body.modo-escuro .nav-menu a,
+body.modo-escuro .nav-menu a i {
+    color: #cfcfcf;
+}
+
+body.modo-escuro .nav-menu.selected a,
+body.modo-escuro .nav-menu.selected a i {
+    color: #ffffff;
+}
+
+body.modo-escuro .nav-menu:not(.selected):hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+
+/* Botões inferiores do menu */
+
+body.modo-escuro .opcoes-btn {
+    background-color: #333333;
+    color: #e6e6e6;
+}
+
+body.modo-escuro .opcoes-btn:hover {
+    background-color: #3d3d3d;
+}
+
+body.modo-escuro .red-opcoes-btn {
+    background-color: #a12b26;
+    color: #ffffff;
+}
+
+body.modo-escuro .red-opcoes-btn:hover {
+    background-color: #b83530;
+}
+
+
+/* Botão de minimizar */
+
+body.modo-escuro .btn-minimizar span {
+    background-color: #cfcfcf;
+}
+
+
+/* Botão do tema */
+
+body.modo-escuro #btnTema {
+    background-color: #2B6BB9;
+    color: white;
+}
+
+
+/* Cards */
+
+body.modo-escuro .cards-valor {
+    background-color: #1e1e1e;
+    color: white;
+}
+
+
+/* Textos do Dashboard */
+
+body.modo-escuro .dashboard-texto .title {
+    color: white;
+}
+
+
+body.modo-escuro .dashboard-texto .subtitle {
+    color: #aaaaaa;
+}
+
+
+body.modo-escuro .icon-text {
+    color: #bbbbbb;
+}
+
+
+body.modo-escuro .valor {
+    color: white;
+}
+
+
+body.modo-escuro .grafico-texto .icon-text {
+    color: white;
+}
+
+
+body.modo-escuro .grafico-texto .tempo {
+    color: #aaaaaa;
+}
+
+
+body.modo-escuro .grafico-porcentagem-positiva {
+    color: #aaaaaa;
+}
+
+
+/* Alertas */
+
+body.modo-escuro .cards-valor-header {
+    border-bottom-color: #333333;
+}
+
+
+body.modo-escuro .cards-valor-header .alertas-titulo {
+    color: white;
+}
+
+
+body.modo-escuro .cards-valor-header .alertas-sub {
+    color: #aaaaaa;
+}
+
+
+body.modo-escuro .alertas-texto,
+body.modo-escuro .alertas-text {
+    color: #dddddd;
+}
+
+
+body.modo-escuro .alertas-tempo,
+body.modo-escuro .alertas-info {
+    color: #999999;
+}
+
+
+body.modo-escuro .ver-atividade {
+    border-top-color: #333333;
+}
+
+
+/* =========================================
+   RESPONSIVIDADE - LAYOUT PRINCIPAL
+========================================= */
+
+/* =========================================
+   TABLET
+========================================= */
+
+@media (max-width: 992px) {
+
+    .conteudo {
+        width: calc(100% - 250px);
+
+        margin-left: 250px;
+
+        padding: 25px;
+    }
+
+}
+
+
+/* CELULAR */
+@media (max-width: 768px) {
+
+    .conteudo {
+        width: 100%;
+        margin-left: 0;
+        padding: 20px;
+    }
+
+}
+
+
+/* CELULAR PEQUENO */
+@media (max-width: 480px) {
+
+    .conteudo {
+        padding: 15px;
+    }
+
+}
+
+/* =========================================
+   MENU MOBILE
+========================================= */
+
+/* Tema e logout são formulários (POST) envolvendo o botão. `display: contents`
+   faz o próprio botão continuar sendo o item do flex, mantendo o alinhamento. */
+.menu-opcoes form {
+    display: contents;
+}
+
+.btn-menu-mobile {
+    display: none;
+
+    /* Era um <button>; agora é um <label> ligado ao checkbox escondido. */
+    user-select: none;
+
+    position: fixed;
+    top: 15px;
+    left: 15px;
+
+    width: 45px;
+    height: 45px;
+
+    border: none;
+    border-radius: 8px;
+
+    background-color: #15477F;
+    color: white;
+
+    font-size: 24px;
+
+    align-items: center;
+    justify-content: center;
+
+    cursor: pointer;
+
+    z-index: 2000;
+
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+
+/* =========================================
+   SIDEBAR NO CELULAR
+========================================= */
+
+@media (max-width: 768px) {
+
+    #menu {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+
+        box-shadow: 4px 0 15px rgba(0, 0, 0, 0.2);
+    }
+
+    /* O checkbox marcado (label do menu mobile) abre a sidebar. */
+    .menu-mobile-check:checked ~ #menu {
+        transform: translateX(0);
+    }
+
+    .btn-menu-mobile {
+        display: flex;
+    }
+
+}
+
+@media (max-width: 768px) {
+
+    .btn-minimizar {
+        display: none;
+    }
+
+}
+
+/* =========================================
+   MODO ESCURO - COMPONENTES COMPARTILHADOS
+=========================================
+   O modo escuro só tinha regras para os cards do dashboard, mas
+   `body.modo-escuro` deixa TODO o texto branco. Nas demais telas o texto
+   branco caía sobre cards que continuavam brancos e ficava ilegível.
+   Este bloco cobre os componentes usados pelas outras páginas.
+   Vem depois das regras claras (e é mais específico) para vencer no cascata. */
+
+/* --- Cartões e blocos de conteúdo --- */
+
+body.modo-escuro .config-card,
+body.modo-escuro .sensor-conteudo,
+body.modo-escuro .cad-empilhadeira,
+body.modo-escuro .modal-content,
+body.modo-escuro .offcanvas {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border-color: #333333;
+}
+
+body.modo-escuro .config-card h3,
+body.modo-escuro .config-card h5,
+body.modo-escuro .config-card h6 {
+    color: #ffffff;
+    border-color: #333333;
+}
+
+/* --- Cabeçalhos das telas --- */
+
+body.modo-escuro .config-texto h1,
+body.modo-escuro .inventario-texto h1,
+body.modo-escuro .orders-header h1,
+body.modo-escuro .config-info h1,
+body.modo-escuro .header-info h1 {
+    color: #ffffff;
+}
+
+body.modo-escuro .config-texto p,
+body.modo-escuro .inventario-texto p,
+body.modo-escuro .orders-header p,
+body.modo-escuro .config-info p,
+body.modo-escuro .header-info p {
+    color: #aaaaaa;
+}
+
+/* --- Formulários --- */
+
+body.modo-escuro input,
+body.modo-escuro select,
+body.modo-escuro textarea,
+body.modo-escuro .form-control,
+body.modo-escuro .form-select {
+    background-color: #2a2a2a;
+    color: #ffffff;
+    border-color: #3d3d3d;
+}
+
+body.modo-escuro input::placeholder,
+body.modo-escuro textarea::placeholder {
+    color: #888888;
+}
+
+body.modo-escuro input:read-only,
+body.modo-escuro .form-control:read-only {
+    background-color: #232323;
+    color: #cccccc;
+}
+
+body.modo-escuro label,
+body.modo-escuro .input-resp label {
+    color: #bbbbbb;
+}
+
+/* --- Tabelas (estoque, pedidos, movimentações, fornecedores, clientes) --- */
+
+body.modo-escuro table,
+body.modo-escuro .sensor-lista,
+body.modo-escuro .inventario-lista,
+body.modo-escuro .lista-inventario {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+body.modo-escuro th {
+    background-color: #252525;
+    color: #dddddd;
+    border-color: #333333;
+}
+
+body.modo-escuro td {
+    border-color: #2e2e2e;
+    color: #ffffff;
+}
+
+body.modo-escuro tr:hover td {
+    background-color: #262626;
+}
+
+/* --- Barra de pesquisa e filtros --- */
+
+body.modo-escuro .barra-pesquisa,
+body.modo-escuro .caixa-pesquisa {
+    background-color: #1e1e1e;
+    color: #ffffff;
+}
+
+body.modo-escuro .filtro-btn,
+body.modo-escuro .action-btn {
+    background-color: #2a2a2a;
+    color: #ffffff;
+    border-color: #3d3d3d;
+}
+
+/* --- Textos auxiliares --- */
+
+body.modo-escuro .text-muted,
+body.modo-escuro .fornecedor-nome,
+body.modo-escuro small {
+    color: #999999 !important;
+}
+
+/* --- Caixa de total do pedido --- */
+
+body.modo-escuro .total-pedido-box {
+    background-color: #232323;
+    color: #ffffff;
+    border-color: #3d3d3d;
+}
+
+/* --- Mensagens --- */
+
+body.modo-escuro .alert-success {
+    background-color: #14371f;
+    color: #b7f0c8;
+    border-color: #1e5230;
+}
+
+body.modo-escuro .alert-danger {
+    background-color: #3d1a1d;
+    color: #f5b5ba;
+    border-color: #5c272c;
+}
+
+
+/* =========================================
+   CARDS COM MAIS DE UM FORMULÁRIO
+=========================================
+   Alguns cards têm dois formulários em sequência (escolher o produto e depois
+   informar a quantidade). Sem folga, o botão do primeiro encosta no rótulo do
+   segundo. Fica aqui porque style.css é o único CSS carregado em toda tela. */
+
+.config-card form + form {
+    margin-top: 22px;
+}
+
+
+/* =========================================
+   CAMPO DE IMAGEM (produto, fornecedor, galpão, empresa)
+========================================= */
+
+.campo-imagem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    text-align: center;
+}
+
+.campo-imagem h3 {
+    align-self: flex-start;
+}
+
+.campo-imagem .preview-imagem {
+    width: 100%;
+    max-width: 220px;
+    height: 160px;
+
+    object-fit: cover;
+
+    border-radius: 10px;
+    border: 1px solid #e2e2e2;
+
+    background-color: #f7f7f7;
+}
+
+/* O botão é um <label>: precisa se comportar como botão */
+.campo-imagem .alterar-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    padding: 8px 16px;
+
+    background-color: #2B6BB9;
+    color: white;
+
+    border: none;
+    border-radius: 8px;
+
+    cursor: pointer;
+
+    font-size: 14px;
+}
+
+.campo-imagem .alterar-btn:hover {
+    background-color: #24599b;
+}
+
+/* Miniatura usada nas listagens */
+.miniatura {
+    width: 40px;
+    height: 40px;
+
+    object-fit: cover;
+
+    border-radius: 6px;
+    border: 1px solid #e2e2e2;
+
+    vertical-align: middle;
+}
+
+body.modo-escuro .campo-imagem .preview-imagem,
+body.modo-escuro .miniatura {
+    border-color: #3d3d3d;
+    background-color: #232323;
+}
+
+
+
+/* Aviso do campo de imagem (substitui o alert do navegador) */
+
+.aviso-imagem {
+    margin: 6px 0 0;
+    font-size: 13px;
+    color: #E3342F;
+}
+
+body.modo-escuro .aviso-imagem {
+    color: #f87171;
+}
+
+
+/* =========================================
+   BARRA DE FILTROS (movimentações)
+=========================================
+   A tela reaproveitava `.caixa-pesquisa`, que é feita para um campo de busca
+   com ícone; com três selects dentro, o alinhamento quebrava. */
+
+.barra-filtros {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+
+    width: 100%;
+
+    padding: 16px 18px;
+
+    background-color: white;
+    border-radius: 10px;
+
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+.barra-filtros .filtro-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    flex: 1 1 180px;
+    min-width: 150px;
+}
+
+.barra-filtros label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b6b6b;
+
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.barra-filtros select {
+    width: 100%;
+    height: 40px;
+
+    padding: 0 10px;
+
+    border: 1px solid #dcdcdc;
+    border-radius: 8px;
+
+    background-color: #fafafa;
+    font-size: 14px;
+
+    color: #2c3e50;
+}
+
+.barra-filtros select:focus {
+    outline: none;
+    border-color: #2B6BB9;
+}
+
+.barra-filtros .filtro-acoes {
+    display: flex;
+    gap: 8px;
+}
+
+.barra-filtros .filtro-acoes .filtro-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
+    height: 40px;
+    padding: 0 18px;
+
+    border: none;
+    border-radius: 8px;
+
+    background-color: #2B6BB9;
+    color: white;
+
+    font-size: 14px;
+    text-decoration: none;
+
+    cursor: pointer;
+}
+
+.barra-filtros .filtro-acoes .filtro-btn:hover {
+    background-color: #24599b;
+}
+
+.barra-filtros .filtro-acoes .filtro-limpar {
+    background-color: #ececec;
+    color: #2c3e50;
+}
+
+.barra-filtros .filtro-acoes .filtro-limpar:hover {
+    background-color: #dedede;
+}
+
+body.modo-escuro .barra-filtros {
+    background-color: #1e1e1e;
+}
+
+body.modo-escuro .barra-filtros label {
+    color: #a5a5a5;
+}
+
+body.modo-escuro .barra-filtros select {
+    background-color: #2a2a2a;
+    border-color: #3d3d3d;
+    color: #ffffff;
+}
+
+body.modo-escuro .barra-filtros .filtro-acoes .filtro-limpar {
+    background-color: #333333;
+    color: #e6e6e6;
+}

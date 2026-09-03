@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %}
+Software HYPEX - Fornecedores
+{% endblock %}
+
+{% block css %}
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='style_config.css') }}">
+
+{% endblock %}
+
+{% block content %}
+
+    <main id="config-conteudo">
+        <header class="config-texto">
+            <div class="config-info">
+                <h1><i class="bi bi-gear-fill"></i> CONFIGURAÇÕES</h1>
+                <p>Gerencie as preferências da sua conta e do sistema</p>
+            </div>
+        </header>
+
+
+        <section class="config-grid">
+
+            <!-- ===== PERFIL DO USUÁRIO LOGADO ===== -->
+            <div class="config-card">
+                <h3><i class="bi bi-person-fill-gear"></i> Perfil do Administrador</h3>
+
+                <form method="POST" action="{{ url_for('salvar_perfil') }}">
+                    <div class="input-resp">
+                        <label>Nome do Responsável</label>
+                        <input type="text" name="nome" value="{{ usuario.nome or '' }}" required>
+                    </div>
+
+                    <div class="input-resp">
+                        <label>E-mail de Contato</label>
+                        <input type="email" name="email" value="{{ usuario.email or '' }}" required>
+                    </div>
+
+                    <div class="input-resp">
+                        <label>Telefone</label>
+                        <input type="tel" name="telefone" value="{{ usuario.telefone or '' }}"
+                            placeholder="(11) 90000-0000">
+                    </div>
+
+                    <div class="input-resp">
+                        <label>Perfil de Acesso</label>
+                        <input type="text" value="{{ (usuario.tipo or 'operador') | capitalize }}" readonly>
+                    </div>
+
+                    <button type="submit" class="salvar-btn w-100 mt-2">Salvar Perfil</button>
+                </form>
+            </div>
+
+            <!-- ===== TEMA ===== -->
+            <div class="config-card">
+                <h3><i class="bi bi-display"></i> Sistema e Tema</h3>
+
+                <!-- O botão envia um POST para a mesma rota usada pelo atalho da
+                     barra lateral. A preferência fica na sessão, então vale em
+                     todas as telas. -->
+                <form method="POST" action="{{ url_for('alternar_tema') }}" class="modo-escolha">
+                    <input type="hidden" name="voltar_para" value="{{ url_for('config') }}">
+                    <span>Modo Escuro (Dark Mode)</span>
+                    <button type="submit" class="switch switch-botao"
+                        title="{{ 'Desativar modo escuro' if tema == 'escuro' else 'Ativar modo escuro' }}">
+                        <span class="slider round {{ 'ligado' if tema == 'escuro' }}"></span>
+                    </button>
+                </form>
+
+                <!-- Sidebar minimizada: mesma preferência do botão do menu -->
+                <form method="POST" action="{{ url_for('alternar_menu') }}" class="modo-escolha">
+                    <input type="hidden" name="voltar_para" value="{{ url_for('config') }}">
+                    <span>Menu Lateral Minimizado</span>
+                    <button type="submit" class="switch switch-botao"
+                        title="{{ 'Expandir menu' if sidebar_minimizada else 'Minimizar menu' }}">
+                        <span class="slider round {{ 'ligado' if sidebar_minimizada }}"></span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- ===== SENHA ===== -->
+            <div class="config-card">
+                <h3><i class="bi bi-lock-fill"></i> Alterar Senha de Acesso</h3>
+
+                <form method="POST" action="{{ url_for('alterar_senha') }}">
+                    <div class="input-resp">
+                        <label>Senha Atual</label>
+                        <input type="password" name="senha_atual" required>
+                    </div>
+
+                    <div class="input-resp">
+                        <label>Nova Senha</label>
+                        <input type="password" name="nova_senha" minlength="6" required>
+                    </div>
+
+                    <div class="input-resp">
+                        <label>Confirmar Nova Senha</label>
+                        <input type="password" name="confirmar_senha" minlength="6" required>
+                    </div>
+
+                    <button type="submit" class="senha-btn mt-2">
+                        <i class="bi bi-lock-fill"></i>
+                        Alterar Senha
+                    </button>
+                </form>
+            </div>
+
+            <!-- ===== DADOS DA EMPRESA ===== -->
+            <div class="config-card full-width">
+                <h3><i class="bi bi-building-fill"></i> Dados da Empresa</h3>
+
+                <form method="POST" enctype="multipart/form-data"
+                    action="{{ url_for('salvar_empresa') }}">
+
+                    {% with campo_id='imagem-empresa', imagem=empresa.imagem,
+                            padrao='perfil.png', alt=empresa.nome,
+                            titulo='Imagem exibida no menu' %}
+                    {% include '_imagem_upload.html' %}
+                    {% endwith %}
+
+                    <div class="inputs-empresa mt-3">
+                        <div class="input-resp">
+                            <label>Razão Social</label>
+                            <input type="text" name="nome" value="{{ empresa.nome or '' }}"
+                                placeholder="Nome da Empresa" required>
+                        </div>
+
+                        <div class="input-resp">
+                            <label>CNPJ</label>
+                            <input type="text" name="cnpj" value="{{ empresa.cnpj or '' }}"
+                                placeholder="00.000.000/0001-00">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="salvar-btn mt-3">Salvar Empresa</button>
+                </form>
+            </div>
+
+        </section>
+    </main>
+
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}
+Software HYPEX - Movimentações
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='style_estoque_do_galpao.css') }}">
+{% endblock %}
+
+{% block content %}
+<main id="inventario-conteudo">
+
+    <header class="inventario-texto">
+        <div class="inventario-info">
+            <h1><i class="bi bi-arrow-left-right"></i> MOVIMENTAÇÕES</h1>
+            <p>Histórico de entradas, saídas, transferências e ajustes de inventário</p>
+
+            <a href="{{ url_for('nova_movimentacao') }}">
+                <button class="btn btn-primary">
+                    <i class="bi bi-plus-lg"></i> Nova Movimentação
+                </button>
+            </a>
+        </div>
+
+    </header>
+
+    <!-- Filtros resolvidos no servidor: o formulário envia por GET e a rota devolve a lista já filtrada -->
+    <!-- Filtros resolvidos no servidor: o formulário envia por GET e a rota
+         devolve a lista já filtrada. -->
+    <section>
+        <form method="GET" action="{{ url_for('movimentacoes') }}" class="barra-filtros">
+
+            <div class="filtro-campo">
+                <label for="filtro-produto">Produto</label>
+                <select name="produto_id" id="filtro-produto">
+                    <option value="">Todos os produtos</option>
+                    {% for produto in produtos %}
+                    <option value="{{ produto.id }}" {% if filtro_produto_id==produto.id %}selected{% endif %}>
+                        {{ produto.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-campo">
+                <label for="filtro-galpao">Galpão</label>
+                <select name="galpao_id" id="filtro-galpao">
+                    <option value="">Todos os galpões</option>
+                    {% for g in galpoes %}
+                    <option value="{{ g.id }}" {% if filtro_galpao_id==g.id %}selected{% endif %}>
+                        {{ g.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-campo">
+                <label for="filtro-tipo">Tipo</label>
+                <select name="tipo" id="filtro-tipo">
+                    <option value="">Todos os tipos</option>
+                    {% for t in tipos %}
+                    <option value="{{ t }}" {% if filtro_tipo==t %}selected{% endif %}>
+                        {{ t.replace('_', ' ') | capitalize }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="filtro-acoes">
+                <button class="filtro-btn" type="submit">
+                    <i class="bi bi-funnel-fill"></i> Filtrar
+                </button>
+
+                {% if filtro_produto_id or filtro_galpao_id or filtro_tipo %}
+                <a class="filtro-btn filtro-limpar" href="{{ url_for('movimentacoes') }}">
+                    <i class="bi bi-x-lg"></i> Limpar
+                </a>
+                {% endif %}
+            </div>
+
+        </form>
+    </section>
+
+    <section class="inventario-lista">
+        <table>
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Produto</th>
+                    <th>Quantidade</th>
+                    <th>Origem</th>
+                    <th>Destino</th>
+                    <th>Responsável</th>
+                    <th>Observação</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for m in movimentacoes %}
+                <tr>
+                    <td>{{ m.data_movimentacao.strftime('%d/%m/%Y %H:%M') if m.data_movimentacao else '—' }}</td>
+                    <td>
+                        {% if m.tipo == 'entrada' %}
+                        <span class="status-estoque status-disponivel">Entrada</span>
+                        {% elif m.tipo == 'saida' %}
+                        <span class="status-estoque status-zero">Saída</span>
+                        {% else %}
+                        <span class="status-estoque status-low">{{ m.tipo.replace('_', ' ') | capitalize }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <strong>{{ m.produto }}</strong>
+                        <span class="fornecedor-nome">{{ m.produto_sku or '' }}</span>
+                    </td>
+                    <td>{{ m.quantidade | quantidade }}</td>
+                    <td>{{ m.galpao or '—' }}</td>
+                    <td>{{ m.galpao_destino or '—' }}</td>
+                    <td>{{ m.funcionario or '—' }}</td>
+                    <td>{{ m.observacao or '—' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center text-muted py-4">
+                        Nenhuma movimentação registrada.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+</main>
+{% endblock %}
