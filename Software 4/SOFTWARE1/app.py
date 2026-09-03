@@ -548,9 +548,9 @@ def cadastro_emp():
 
             # Cria a empresa
             cursor.execute("""
-                INSERT INTO empresa (nome, cnpj)
+                INSERT INTO empresa (nome, email, telefone, cnpj)
                 VALUES (%s, %s)
-            """, (nome, cnpj))
+            """, (nome, email, telefone, cnpj))
 
             empresa_id = cursor.lastrowid
 
