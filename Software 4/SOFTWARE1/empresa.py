@@ -3,7 +3,7 @@ from werkzeug.security import generate_password_hash
 
 # ===== DADOS DA EMPRESA =====
 nome_empresa = "Imbil"
-cnpj = "00.000.000/0003-00"
+cnpj = "00.000.000/0002-00"
 
 # ===== DADOS DO USUÁRIO =====
 nome_usuario = "Miguel Rodrigues"
