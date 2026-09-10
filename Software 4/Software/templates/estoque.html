@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 
+<<<<<<< Updated upstream:Software 4/Software/templates/estoque.html
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -58,6 +59,16 @@
                 </li>
             </ul>
         </nav>
+=======
+{% block title %}
+Software HYPEX - Estoque
+{% endblock %}
+
+{% block css %}
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='style_estoque_do_galpao.css') }}">
+{% endblock %}
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/templates/estoque.html
 
         <div class="menu-opcoes">
             <a href="/config" class="opcoes-btn">
@@ -72,7 +83,8 @@
         </div>
     </aside>
 
-    <main id="inventario-conteudo">
+
+<main id="inventario-conteudo">
 
         <header class="inventario-texto">
             <div class="inventario-info">
@@ -351,6 +363,7 @@
                 </tbody>
             </table>
         </section>
+<<<<<<< Updated upstream:Software 4/Software/templates/estoque.html
 
     </main>
 
@@ -360,3 +373,7 @@
 </body>
 
 </html>
+=======
+ </main>
+{% endblock %}
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/templates/estoque.html

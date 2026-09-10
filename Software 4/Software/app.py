@@ -116,6 +116,135 @@ def email_valido(email):
     padrao = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
     return re.match(padrao, email) is not None
 
+# ------------ Validação ----------------#
+
+def validar_cnpj(cnpj):
+    # Remove pontos, barras, traços e qualquer outro caractere
+    cnpj = re.sub(r"\D", "", cnpj)
+
+    # CNPJ precisa ter exatamente 14 números
+    if len(cnpj) != 14:
+        return False
+
+    # Não aceita CNPJ com todos os números iguais
+    if len(set(cnpj)) == 1:
+        return False
+
+    # Primeiro dígito verificador
+    pesos_1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+    soma = sum(
+        int(cnpj[i]) * pesos_1[i]
+        for i in range(12)
+    )
+
+    resto = soma % 11
+
+    if resto < 2:
+        digito_1 = 0
+    else:
+        digito_1 = 11 - resto
+
+    if int(cnpj[12]) != digito_1:
+        return False
+
+    # Segundo dígito verificador
+    pesos_2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+    soma = sum(
+        int(cnpj[i]) * pesos_2[i]
+        for i in range(13)
+    )
+
+    resto = soma % 11
+
+    if resto < 2:
+        digito_2 = 0
+    else:
+        digito_2 = 11 - resto
+
+    if int(cnpj[13]) != digito_2:
+        return False
+
+    return True
+
+# --- validação cliente ---#
+import re
+
+
+def somente_numeros(valor):
+    """Remove tudo que não for número."""
+    return re.sub(r"\D", "", valor or "")
+
+
+def validar_cpf(cpf):
+    cpf = somente_numeros(cpf)
+
+    if len(cpf) != 11:
+        return False
+
+    # Impede CPFs como 11111111111, 22222222222 etc.
+    if cpf == cpf[0] * 11:
+        return False
+
+    # Primeiro dígito verificador
+    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+    resto = (soma * 10) % 11
+    digito1 = 0 if resto == 10 else resto
+
+    if digito1 != int(cpf[9]):
+        return False
+
+    # Segundo dígito verificador
+    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+    resto = (soma * 10) % 11
+    digito2 = 0 if resto == 10 else resto
+
+    if digito2 != int(cpf[10]):
+        return False
+
+    return True
+
+
+def validar_cnpj(cnpj):
+    cnpj = somente_numeros(cnpj)
+
+    if len(cnpj) != 14:
+        return False
+
+    # Impede CNPJs como 11111111111111
+    if cnpj == cnpj[0] * 14:
+        return False
+
+    # Primeiro dígito verificador
+    pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+    soma = sum(
+        int(cnpj[i]) * pesos1[i]
+        for i in range(12)
+    )
+
+    resto = soma % 11
+    digito1 = 0 if resto < 2 else 11 - resto
+
+    if digito1 != int(cnpj[12]):
+        return False
+
+    # Segundo dígito verificador
+    pesos2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
+
+    soma = sum(
+        int(cnpj[i]) * pesos2[i]
+        for i in range(13)
+    )
+
+    resto = soma % 11
+    digito2 = 0 if resto < 2 else 11 - resto
+
+    if digito2 != int(cnpj[13]):
+        return False
+
+    return True
 # ------------- LANDINGPAGE ------------- #
 
 @app.route('/')
@@ -455,11 +584,6 @@ def cadastro_emp():
     return render_template("cadastro.html")
 # ---------------- ESTOQUE ---------------- #
 
-@app.route("/estoque")
-@login_obrigatorio
-def estoque():
-    produtos = Estoque.resumo_geral()
-    return render_template("estoque.html", produtos=produtos, galpao=None)
 
 @app.route("/estoque/<int:galpao_id>")
 @login_obrigatorio
@@ -490,19 +614,68 @@ def movimentar_estoque():
     except Exception as e:
         flash(f"Erro: {e}", "erro")
 
-    return redirect(url_for("estoque", galpao_id=galpao_id))
+    return redirect(url_for("estoque_galpao", galpao_id=galpao_id))
 
 # ---------------- INFO GALPAO ---------------- #
 
+<<<<<<< Updated upstream:Software 4/Software/app.py
+=======
+@app.route("/info_galpao/<int:galpao_id>")
+@login_obrigatorio
+def info_galpao(galpao_id):
+    galpao = Galpao.find_by_id(galpao_id)
+
+    if not galpao:
+        flash("Galpão não encontrado.", "erro")
+        return redirect(url_for("galpao"))
+
+    funcionarios = Funcionario.find_by_galpao(galpao_id)
+    empilhadeiras = Empilhadeira.find_by_galpao(galpao_id)
+
+    return render_template(
+        "info_galpao.html",
+        galpao=galpao,
+        funcionarios=funcionarios,
+        empilhadeiras=empilhadeiras
+    )
+
+
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
 @app.route("/galpao/atualizar/<int:galpao_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_galpao(galpao_id):
     try:
 
         telefone = request.form.get("telefone", "").strip()
+
+        if telefone and not telefone.isdigit():
+            flash(
+                "O telefone deve conter apenas números.",
+                "erro"
+            )
+            return redirect(
+                url_for(
+                    "info_galpao",
+                    galpao_id=galpao_id
+                )
+            )
+
+        if telefone and len(telefone) not in [10, 11]:
+            flash(
+                "O telefone deve ter 10 ou 11 números.",
+                "erro"
+            )
+            return redirect(
+                url_for(
+                    "info_galpao",
+                    galpao_id=galpao_id
+                )
+            )
+
         telefone = formatar_telefone(telefone)
 
         cep = request.form.get("cep", "").strip()
+<<<<<<< Updated upstream:Software 4/Software/app.py
 
         # Validação do CEP
         if not cep:
@@ -516,6 +689,45 @@ def atualizar_galpao(galpao_id):
         if len(cep) != 8:
             flash("O CEP deve conter exatamente 8 números.", "erro")
             return redirect(url_for("info_galpao", galpao_id=galpao_id))
+=======
+        cep = cep.replace("-", "").replace(" ", "")
+
+        if not cep:
+            flash(
+                "O CEP é obrigatório.",
+                "erro"
+            )
+            return redirect(
+                url_for(
+                    "info_galpao",
+                    galpao_id=galpao_id
+                )
+            )
+
+        if not cep.isdigit():
+            flash(
+                "O CEP deve conter apenas números.",
+                "erro"
+            )
+            return redirect(
+                url_for(
+                    "info_galpao",
+                    galpao_id=galpao_id
+                )
+            )
+
+        if len(cep) != 8:
+            flash(
+                "O CEP deve conter exatamente 8 números.",
+                "erro"
+            )
+            return redirect(
+                url_for(
+                    "info_galpao",
+                    galpao_id=galpao_id
+                )
+            )
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
 
         caixas_por_nivel = to_int(
             request.form.get("caixas_por_nivel")
@@ -552,6 +764,7 @@ def atualizar_galpao(galpao_id):
             "total_prateleiras": total_prateleiras,
             "capacidade_total": capacidade_total,
         }
+<<<<<<< Updated upstream:Software 4/Software/app.py
 
         Galpao.update(galpao_id, dados)
 
@@ -573,6 +786,50 @@ def atualizar_galpao(galpao_id):
             galpao_id=galpao_id
         )
     )
+=======
+
+        Galpao.update(galpao_id, dados)
+
+        flash(
+            "Galpão atualizado com sucesso!",
+            "sucesso"
+        )
+
+    except Exception as e:
+
+        flash(
+            f"Erro ao atualizar o galpão: {e}",
+            "erro"
+        )
+
+    return redirect(
+        url_for(
+            "info_galpao",
+            galpao_id=galpao_id
+        )
+    )
+
+
+@app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
+@login_obrigatorio
+def deletar_galpao(galpao_id):
+    try:
+        Galpao.delete(galpao_id)
+
+        flash(
+            "Galpão excluído com sucesso!",
+            "sucesso"
+        )
+
+    except Exception as e:
+
+        flash(
+            f"Erro ao excluir o galpão: {e}",
+            "erro"
+        )
+
+    return redirect(url_for("galpao"))
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
     
 
 
@@ -1015,6 +1272,7 @@ def salvar_galpao():
             f"Erro: {e}",
             "erro"
         )
+<<<<<<< Updated upstream:Software 4/Software/app.py
 
     return redirect(url_for("galpao"))
 
@@ -1035,6 +1293,8 @@ def deletar_galpao(galpao_id):
             f"Erro ao excluir o galpão: {e}",
             "erro"
         )
+=======
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
 
     return redirect(url_for("galpao"))
 
@@ -1123,6 +1383,138 @@ def novo_fornecedor():
 @app.route("/fornecedor/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_fornecedor():
+<<<<<<< Updated upstream:Software 4/Software/app.py
+=======
+
+    try:
+        # ==============================
+        # RECEBE OS DADOS
+        # ==============================
+
+        nome = request.form.get("nome", "").strip()
+        cnpj = request.form.get("cnpj", "").strip()
+        nome_ctt = request.form.get("nome_ctt", "").strip()
+        telefone = request.form.get("telefone", "").strip()
+        email = request.form.get("email", "").strip()
+        ativo = request.form.get("ativo", "").strip()
+
+        # ==============================
+        # CAMPOS OBRIGATÓRIOS
+        # ==============================
+
+        if not nome:
+            flash("O nome da empresa é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not cnpj:
+            flash("O CNPJ é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not nome_ctt:
+            flash("O nome do contato é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not telefone:
+            flash("O telefone é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not email:
+            flash("O e-mail é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # NOME DA EMPRESA
+        # ==============================
+
+        if len(nome) < 3:
+            flash("O nome da empresa deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if nome.isdigit():
+            flash("O nome da empresa não pode conter somente números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # NOME DO CONTATO
+        # ==============================
+
+        if len(nome_ctt) < 3:
+            flash("O nome do contato deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if nome_ctt.isdigit():
+            flash("O nome do contato não pode conter somente números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # CNPJ
+        # ==============================
+
+        cnpj_numeros = re.sub(r"\D", "", cnpj)
+
+        if len(cnpj_numeros) != 14:
+            flash("O CNPJ deve possuir exatamente 14 números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not validar_cnpj(cnpj_numeros):
+            flash("O CNPJ informado é inválido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # TELEFONE
+        # ==============================
+
+        telefone_numeros = re.sub(r"\D", "", telefone)
+
+        if len(telefone_numeros) not in [10, 11]:
+            flash("O telefone deve possuir 10 ou 11 números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # Impede números todos iguais
+        if len(set(telefone_numeros)) == 1:
+            flash("Digite um telefone válido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # E-MAIL
+        # ==============================
+
+        email_regex = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
+        if not re.match(email_regex, email):
+            flash("Digite um e-mail válido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # STATUS
+        # ==============================
+
+        if ativo not in ["ativo", "inativo"]:
+            flash("Status do fornecedor inválido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # SALVA NO BANCO
+        # ==============================
+
+        fornecedor = Fornecedor(
+            nome=nome,
+            ativo=ativo,
+            cnpj=cnpj_numeros,
+            nome_ctt=nome_ctt,
+            telefone=telefone_numeros,
+            email=email
+        )
+
+        fornecedor.insert()
+
+        flash("Fornecedor cadastrado com sucesso!", "sucesso")
+
+    except Exception as e:
+        flash(f"Erro ao cadastrar fornecedor: {e}", "erro")
+
+    return redirect(url_for("fornecedores"))
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
 
     try:
         # ==============================
@@ -1407,6 +1799,14 @@ def atualizar_fornecedor(fornecedor_id):
 
         if cursor:
             cursor.close()
+<<<<<<< Updated upstream:Software 4/Software/app.py
+=======
+
+        if conexao:
+            conexao.close()
+
+    return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
 
         if conexao:
             conexao.close()
@@ -1649,6 +2049,7 @@ def novo_cliente():
 @login_obrigatorio
 def salvar_cliente():
     try:
+<<<<<<< Updated upstream:Software 4/Software/app.py
         # =========================
         # RECEBER DADOS DO FORMULÁRIO
         # =========================
@@ -1679,11 +2080,52 @@ def salvar_cliente():
         if len(cpf_cnpj) not in (11, 14):
             flash(
                 "CPF deve possuir exatamente 11 números ou CNPJ deve possuir exatamente 14 números.",
+=======
+        nome = request.form.get("nome", "").strip()
+        empresa = request.form.get("empresa", "").strip()
+        cpf_cnpj = request.form.get("cpf", "").strip()
+        email = request.form.get("email", "").strip()
+        telefone = request.form.get("telefone", "").strip()
+        cidade = request.form.get("cidade", "").strip()
+        cep = request.form.get("cep", "").strip()
+        estado = request.form.get("estado", "").strip()
+        ativo = request.form.get("ativo", "").strip()
+
+        # =========================
+        # CPF / CNPJ
+        # =========================
+
+        cpf_cnpj_numeros = somente_numeros(cpf_cnpj)
+
+        # Verifica se foi digitado somente número
+        if not cpf_cnpj.isdigit():
+            flash("CPF/CNPJ deve conter somente números.", "erro")
+            return redirect(url_for("cliente"))
+
+        # CPF
+        if len(cpf_cnpj_numeros) == 11:
+
+            if not validar_cpf(cpf_cnpj_numeros):
+                flash("CPF inválido. Digite um CPF válido.", "erro")
+                return redirect(url_for("cliente"))
+
+        # CNPJ
+        elif len(cpf_cnpj_numeros) == 14:
+
+            if not validar_cnpj(cpf_cnpj_numeros):
+                flash("CNPJ inválido. Digite um CNPJ válido.", "erro")
+                return redirect(url_for("cliente"))
+
+        else:
+            flash(
+                "CPF deve ter 11 números ou CNPJ deve ter 14 números.",
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
                 "erro"
             )
             return redirect(url_for("cliente"))
 
         # =========================
+<<<<<<< Updated upstream:Software 4/Software/app.py
         # VALIDAÇÃO TELEFONE
         # =========================
 
@@ -1707,6 +2149,40 @@ def salvar_cliente():
 
         # =========================
         # CRIAR CLIENTE
+=======
+        # TELEFONE
+        # =========================
+
+        if telefone:
+
+            if not telefone.isdigit():
+                flash("Telefone deve conter somente números.", "erro")
+                return redirect(url_for("cliente"))
+
+            if len(telefone) not in [10, 11]:
+                flash(
+                    "Telefone deve ter 10 ou 11 números.",
+                    "erro"
+                )
+                return redirect(url_for("cliente"))
+
+        # =========================
+        # CEP
+        # =========================
+
+        if cep:
+
+            if not cep.isdigit():
+                flash("CEP deve conter somente números.", "erro")
+                return redirect(url_for("cliente"))
+
+            if len(cep) != 8:
+                flash("CEP deve ter exatamente 8 números.", "erro")
+                return redirect(url_for("cliente"))
+
+        # =========================
+        # CADASTRO
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
         # =========================
 
         c = Cliente(
@@ -1716,11 +2192,17 @@ def salvar_cliente():
             empresa=empresa,
             cep=cep,
             estado=estado,
+<<<<<<< Updated upstream:Software 4/Software/app.py
             cpf_cnpj=cpf_cnpj,
+=======
+            cpf_cnpj=cpf_cnpj_numeros,
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
             email=email,
             telefone=telefone
         )
+
         c.insert()
+<<<<<<< Updated upstream:Software 4/Software/app.py
         flash(
             "Cliente cadastrado!",
             "sucesso"
@@ -1731,6 +2213,14 @@ def salvar_cliente():
             f"Erro: {e}",
             "erro"
         )
+=======
+
+        flash("Cliente cadastrado!", "sucesso")
+
+    except Exception as e:
+        flash(f"Erro: {e}", "erro")
+
+>>>>>>> Stashed changes:Software 4/SOFTWARE1/app.py
     return redirect(url_for("cliente"))
 
 # ---------------- FUNCIONÁRIOS ---------------- #
