@@ -81,6 +81,7 @@ MODULOS = {
         "excluir_produto", "ajustar_estoque_produto",
         "movimentacoes", "nova_movimentacao", "salvar_movimentacao",
         "salvar_empilhadeira", "atualizar_empilhadeira", "deletar_empilhadeira",
+        "api_produtos_do_galpao", "api_todos_produtos", "api_produtos_do_fornecedor",
         "salvar_funcionario", "atualizar_funcionario", "deletar_funcionario",
     },
 
@@ -187,6 +188,30 @@ def nome_valido(nome):
 def email_valido(email):
     padrao = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
     return re.match(padrao, email) is not None
+
+
+def somente_numeros(valor):
+    """Remove tudo que não for número."""
+    return re.sub(r"\D", "", valor or "")
+
+
+def validar_cpf(cpf):
+    cpf = somente_numeros(cpf)
+
+    if len(cpf) != 11 or cpf == cpf[0] * 11:
+        return False
+
+    soma = sum(int(cpf[i]) * (10 - i) for i in range(9))
+    resto = (soma * 10) % 11
+    digito1 = 0 if resto == 10 else resto
+    if digito1 != int(cpf[9]):
+        return False
+
+    soma = sum(int(cpf[i]) * (11 - i) for i in range(10))
+    resto = (soma * 10) % 11
+    digito2 = 0 if resto == 10 else resto
+
+    return digito2 == int(cpf[10])
 
 # ------------ VERIFICAÇÃO DO BANCO ----------#
 
@@ -2738,6 +2763,86 @@ def produtos_do_galpao(galpao_id):
         conn.close()
 
 
+
+# ------------------------------------------------------------------ #
+# API — produtos disponíveis por galpão
+# ------------------------------------------------------------------ #
+
+@app.route("/api/produtos_do_galpao/<int:galpao_id>")
+@login_obrigatorio
+def api_produtos_do_galpao(galpao_id):
+    from flask import jsonify
+
+    conn = Database.connect()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT p.id, p.sku, p.nome, p.preco_venda,
+                   e.quantidade AS estoque_disponivel
+            FROM estoque e
+            JOIN produto p ON e.produto_id = p.id
+            WHERE e.galpao_id = %s AND e.quantidade > 0
+            ORDER BY p.nome ASC
+        """, (galpao_id,))
+        return jsonify(cursor.fetchall())
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/todos_produtos")
+@login_obrigatorio
+def api_todos_produtos():
+    from flask import jsonify
+
+    conn = Database.connect()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT id, sku, nome, preco_custo
+            FROM produto
+            WHERE ativo = TRUE
+            ORDER BY nome ASC
+        """)
+        return jsonify(cursor.fetchall())
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@app.route("/api/produtos_do_fornecedor/<int:fornecedor_id>")
+@login_obrigatorio
+def api_produtos_do_fornecedor(fornecedor_id):
+    from flask import jsonify
+
+    conn = Database.connect()
+    cursor = conn.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT
+                p.id,
+                p.sku,
+                p.nome,
+                fp.preco_custo,
+                COALESCE(e_total.estoque_disponivel, 0) AS estoque_disponivel
+            FROM fornecedor_produto fp
+            JOIN produto p ON fp.produto_id = p.id
+            LEFT JOIN (
+                SELECT produto_id, SUM(quantidade) AS estoque_disponivel
+                FROM estoque
+                GROUP BY produto_id
+            ) e_total ON e_total.produto_id = p.id
+            WHERE fp.fornecedor_id = %s
+              AND fp.ativo = 1
+              AND p.ativo = TRUE
+            ORDER BY p.nome ASC
+        """, (fornecedor_id,))
+        return jsonify(cursor.fetchall())
+    finally:
+        cursor.close()
+        conn.close()
+
+
 # ------------------------------------------------------------------ #
 # PEDIDOS DE ENTRADA  (usa tabela: pedido_fornecedor)                 #
 # ------------------------------------------------------------------ #
@@ -3469,6 +3574,26 @@ def pedidos():
         pedidos=buscar_pedidos_entrada(busca),
         busca=busca
     )
+
+
+@app.route("/pedido/salvar", methods=["POST"])
+@login_obrigatorio
+def salvar_pedido():
+    dados = {
+        "produto_id": to_int(request.form.get("produto_id")),
+        "tipo": (request.form.get("tipo") or "").upper(),
+        "quantidade": to_int(request.form.get("quantidade")),
+        "observacao": request.form.get("observacao")
+    }
+
+    try:
+        PedidoCliente.create(dados)
+        flash("Pedido criado com sucesso!", "sucesso")
+        return redirect(url_for("pedidos"))
+    except Exception as e:
+        flash(f"Erro ao criar pedido: {mensagem_erro(e)}", "erro")
+        return redirect(url_for("produtos"))
+
 
 @app.route("/pedido/processar/<int:id>", methods=["POST"])
 @login_obrigatorio
