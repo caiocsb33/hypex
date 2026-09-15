@@ -98,9 +98,21 @@ Software HYPEX - Fornecedores
 
                                     <div class="row mt-3">
                                         <div class="col">
-                                            <h6>Cep</h6>
-                                            <input type="text" name="cep" class="form-control">
-                                        </div>
+
+    <h6>CEP</h6>
+
+    <input
+        type="text"
+        name="cep"
+        class="form-control"
+        placeholder="00000-000"
+        inputmode="numeric"
+        maxlength="8"
+        pattern="[0-9]{8}"
+        oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)"
+        required>
+
+</div>
 
                                         <div class="col">
                                             <h6>Área Total (m²)</h6>
@@ -160,7 +172,7 @@ Software HYPEX - Fornecedores
         <section class="cards-galpao">
             {% if galpoes %}
             {% for galpao in galpoes %}
-            <a href="/estoque/{{galpao.id}}" class="link-estoque">
+            <a href="{{ url_for('info_galpao', galpao_id=galpao.id) }}" class="link-estoque">
                 <div class="galpao-card">
                     <div class="galpao-texto">
                         <span class="galpao-icone green-bg-icon"><i class="bi-solid bi-buildings-fill"></i></span>
