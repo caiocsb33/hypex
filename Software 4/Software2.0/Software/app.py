@@ -158,8 +158,6 @@ def to_float(value, default=0.0):
 
 # ------------VALIDAÇÕES----------#
 
-# ------------VALIDAÇÕES----------#
-
 def telefone_valido(telefone):
     numeros = re.sub(r'\D', '', telefone)
     return len(numeros) in (10, 11)
@@ -2191,57 +2189,294 @@ def novo_fornecedor():
 @app.route("/fornecedor/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_fornecedor():
+
     try:
+        # ==============================
+        # RECEBE OS DADOS
+        # ==============================
+
+        nome = request.form.get("nome", "").strip()
+        cnpj = request.form.get("cnpj", "").strip()
+        nome_ctt = request.form.get("nome_ctt", "").strip()
+        telefone = request.form.get("telefone", "").strip()
+        email = request.form.get("email", "").strip()
+        ativo = request.form.get("ativo", "").strip()
+
+        # ==============================
+        # CAMPOS OBRIGATÓRIOS
+        # ==============================
+
+        if not nome:
+            flash("O nome da empresa é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not cnpj:
+            flash("O CNPJ é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not nome_ctt:
+            flash("O nome do contato é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not telefone:
+            flash("O telefone é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not email:
+            flash("O e-mail é obrigatório.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # NOME DA EMPRESA
+        # ==============================
+
+        if len(nome) < 3:
+            flash("O nome da empresa deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if nome.isdigit():
+            flash("O nome da empresa não pode conter somente números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # NOME DO CONTATO
+        # ==============================
+
+        if len(nome_ctt) < 3:
+            flash("O nome do contato deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if nome_ctt.isdigit():
+            flash("O nome do contato não pode conter somente números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # CNPJ
+        # ==============================
+
+        cnpj_numeros = re.sub(r"\D", "", cnpj)
+
+        if len(cnpj_numeros) != 14:
+            flash("O CNPJ deve possuir exatamente 14 números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        if not validar_cnpj(cnpj_numeros):
+            flash("O CNPJ informado é inválido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # TELEFONE
+        # ==============================
+
+        telefone_numeros = re.sub(r"\D", "", telefone)
+
+        if len(telefone_numeros) not in [10, 11]:
+            flash("O telefone deve possuir 10 ou 11 números.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # Impede números todos iguais
+        if len(set(telefone_numeros)) == 1:
+            flash("Digite um telefone válido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # E-MAIL
+        # ==============================
+
+        email_regex = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
+        if not re.match(email_regex, email):
+            flash("Digite um e-mail válido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # STATUS
+        # ==============================
+
+        if ativo not in ["ativo", "inativo"]:
+            flash("Status do fornecedor inválido.", "erro")
+            return redirect(url_for("fornecedores"))
+
+        # ==============================
+        # SALVA NO BANCO
+        # ==============================
+
         fornecedor = Fornecedor(
-            nome=request.form.get("nome"),
-            ativo=request.form.get("ativo"),
-            cnpj=request.form.get("cnpj"),
-            nome_ctt=request.form.get("nome_ctt"),
-            telefone=request.form.get("telefone"),
-            email=request.form.get("email")
+            nome=nome,
+            ativo=ativo,
+            cnpj=cnpj_numeros,
+            nome_ctt=nome_ctt,
+            telefone=telefone_numeros,
+            email=email
         )
+
         fornecedor.insert()
-        flash("Fornecedor cadastrado!", "sucesso")
+
+        flash("Fornecedor cadastrado com sucesso!", "sucesso")
+
     except Exception as e:
-        flash(f"Erro: {mensagem_erro(e)}", "erro")
+        flash(f"Erro ao cadastrar fornecedor: {e}", "erro")
+
     return redirect(url_for("fornecedores"))
 
 
 @app.route("/fornecedor/atualizar/<int:fornecedor_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_fornecedor(fornecedor_id):
+
+    conexao = None
+    cursor = None
+
     try:
+        # ==============================
+        # RECEBE OS DADOS
+        # ==============================
+
+        nome = request.form.get("nome", "").strip()
+        cnpj = request.form.get("cnpj", "").strip()
+        nome_ctt = request.form.get("nome_ctt", "").strip()
+        email = request.form.get("email", "").strip()
+        telefone = request.form.get("telefone", "").strip()
+        ativo = request.form.get("ativo", "").strip()
+
+        # ==============================
+        # CAMPOS OBRIGATÓRIOS
+        # ==============================
+
+        if not nome:
+            flash("O nome da empresa é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not cnpj:
+            flash("O CNPJ é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not nome_ctt:
+            flash("O nome do contato é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not telefone:
+            flash("O telefone é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not email:
+            flash("O e-mail é obrigatório.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # NOME
+        # ==============================
+
+        if len(nome) < 3:
+            flash("O nome da empresa deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if nome.isdigit():
+            flash("O nome da empresa não pode conter somente números.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # CONTATO
+        # ==============================
+
+        if len(nome_ctt) < 3:
+            flash("O nome do contato deve possuir pelo menos 3 caracteres.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if nome_ctt.isdigit():
+            flash("O nome do contato não pode conter somente números.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # CNPJ
+        # ==============================
+
+        cnpj_numeros = re.sub(r"\D", "", cnpj)
+
+        if len(cnpj_numeros) != 14:
+            flash("O CNPJ deve possuir exatamente 14 números.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if not validar_cnpj(cnpj_numeros):
+            flash("O CNPJ informado é inválido.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # TELEFONE
+        # ==============================
+
+        telefone_numeros = re.sub(r"\D", "", telefone)
+
+        if len(telefone_numeros) not in [10, 11]:
+            flash("O telefone deve possuir 10 ou 11 números.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        if len(set(telefone_numeros)) == 1:
+            flash("Digite um telefone válido.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # E-MAIL
+        # ==============================
+
+        email_regex = r"^[^\s@]+@[^\s@]+\.[^\s@]+$"
+
+        if not re.match(email_regex, email):
+            flash("Digite um e-mail válido.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # STATUS
+        # ==============================
+
+        if ativo not in ["ativo", "inativo"]:
+            flash("Status do fornecedor inválido.", "erro")
+            return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+        # ==============================
+        # ATUALIZA NO BANCO
+        # ==============================
+
         conexao = Database.connect()
         cursor = conexao.cursor()
 
         cursor.execute("""
             UPDATE fornecedor
-            SET nome=%s, cnpj=%s, nome_ctt=%s, email=%s, telefone=%s, ativo=%s
+            SET nome=%s,
+                cnpj=%s,
+                nome_ctt=%s,
+                email=%s,
+                telefone=%s,
+                ativo=%s
             WHERE id=%s
         """, (
-            request.form.get("nome"),
-            request.form.get("cnpj"),
-            request.form.get("nome_ctt"),
-            request.form.get("email"),
-            request.form.get("telefone"),
-            request.form.get("ativo"),
+            nome,
+            cnpj_numeros,
+            nome_ctt,
+            email,
+            telefone_numeros,
+            ativo,
             fornecedor_id
         ))
 
         conexao.commit()
 
-        # Troca da imagem do fornecedor, quando enviada
-        atualizar_imagem("fornecedor", fornecedor_id,
-                         request.files.get("imagem"), "fornecedor")
-
         flash("Fornecedor atualizado com sucesso!", "sucesso")
 
     except Exception as e:
-        flash(f"Erro: {mensagem_erro(e)}", "erro")
+
+        if conexao:
+            conexao.rollback()
+
+        flash(f"Erro ao atualizar fornecedor: {e}", "erro")
 
     finally:
-        cursor.close()
-        conexao.close()
+
+        if cursor:
+            cursor.close()
+
+        if conexao:
+            conexao.close()
 
     return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
