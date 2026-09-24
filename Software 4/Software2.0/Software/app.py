@@ -1,3 +1,4 @@
+
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -21,6 +22,7 @@ import os
 app = Flask(__name__)
 
 app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
+
 
 @app.context_processor
 def dados_globais():
@@ -958,8 +960,6 @@ def esqueci_senha():
                     expira_em
                 ))
 
-                conexao.commit()
-
                 # Link para redefinir a senha
                 link = url_for(
                     "redefinir_senha",
@@ -967,10 +967,13 @@ def esqueci_senha():
                     _external=True
                 )
 
+                conexao.commit()
+
                 print("======================================")
                 print("RECUPERAÇÃO DE SENHA")
                 print("Usuário:", usuario["email"])
-                print("Link:", link)
+                print("LINK PARA REDEFINIR:")
+                print(link)
                 print("Expira em:", expira_em)
                 print("======================================")
 
