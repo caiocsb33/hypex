@@ -31,7 +31,8 @@
                 </div>
             </div>
             <form method="POST" action="/cadastro">
-            <!--  <input type="hidden" name="empresa_id" value="{{ empresa_id }}">-->
+            <!-- Campo de empresa removido: o cadastro cria a empresa junto
+                 com o usuário, então não existe um id para enviar aqui. -->
                 <div class="forms mb-2 text-start">
                     <label class="form-label text-gray">Nome Da Empresa</label>
                     <div class="input-group w-50">
@@ -69,7 +70,7 @@
                                     <span class=" input-group-text bg-dark border-secondary">
                                         <i class="bi bi-person-circle text-white"></i>
                                     </span>
-                                    <input type="text" class="form-control" name="cnpj" placeholder="000.000.000-00"
+                                    <input type="text" class="form-control" name="cnpj" placeholder="CPF ou CNPJ (só números ou com pontuação)"
                                         required>
                                 </div>
  
@@ -79,7 +80,7 @@
                                         <span class=" input-group-text bg-dark border-secondary">
                                             <i class="bi bi-lock text-white"></i>
                                         </span>
-                                        <input type="password" class="form-control" name="senha"
+                                        <input type="password" class="form-control" name="senha" minlength="6"
                                             placeholder="Digite sua senha" required>
                                     </div>
                                 </div>

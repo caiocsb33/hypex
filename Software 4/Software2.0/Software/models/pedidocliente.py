@@ -1,6 +1,7 @@
 from datetime import datetime
 from core.crud_base import CrudBase
 from core.database import Database
+from core.empresa import empresa_atual
 
 
 class PedidoCliente(CrudBase):
@@ -50,9 +51,10 @@ class PedidoCliente(CrudBase):
             # 1. Insere o cabeçalho do pedido
             cursor.execute("""
                 INSERT INTO pedido_cliente
-                    (cliente_id, galpao_id, valor_total, status_pedido)
-                VALUES (%s, %s, %s, 'pendente')
+                    (empresa_id, cliente_id, galpao_id, valor_total, status_pedido)
+                VALUES (%s, %s, %s, %s, 'pendente')
             """, (
+                empresa_atual(),
                 dados["cliente_id"],
                 dados["galpao_id"],
                 valor_total,
@@ -128,9 +130,9 @@ class PedidoCliente(CrudBase):
                     c.email AS cliente_email
                 FROM pedido_cliente pc
                 JOIN cliente c ON pc.cliente_id = c.id
-                WHERE pc.cliente_id = %s
+                WHERE pc.cliente_id = %s AND pc.empresa_id = %s
                 ORDER BY pc.data_pedido DESC
-            """, (cliente_id,))
+            """, (cliente_id, empresa_atual()))
 
             return cursor.fetchall()
 
@@ -161,8 +163,9 @@ class PedidoCliente(CrudBase):
                 JOIN cliente c              ON pc.cliente_id = c.id
                 JOIN item_pedido_cliente ip ON pc.id = ip.pedido_cliente_id
                 JOIN produto p              ON ip.produto_id = p.id
+                WHERE pc.empresa_id = %s
                 ORDER BY pc.data_pedido DESC
-            """)
+            """, (empresa_atual(),))
 
             return cursor.fetchall()
 
@@ -180,7 +183,8 @@ class PedidoCliente(CrudBase):
 
         try:
             cursor.execute(
-                "SELECT * FROM pedido_cliente WHERE id = %s", (pedido_id,)
+                "SELECT * FROM pedido_cliente WHERE id = %s AND empresa_id = %s",
+                (pedido_id, empresa_atual())
             )
             pedido = cursor.fetchone()
 

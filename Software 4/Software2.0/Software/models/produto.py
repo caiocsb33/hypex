@@ -1,5 +1,6 @@
 from core.crud_base import CrudBase
 from core.database import Database
+from core.empresa import empresa_atual
 from core.validator import Validator
 
 
@@ -67,6 +68,7 @@ class Produto(CrudBase):
                 """
                 INSERT INTO produto
                     (
+                        empresa_id,
                         sku,
                         nome,
                         descricao,
@@ -93,10 +95,12 @@ class Produto(CrudBase):
                         %s,
                         %s,
                         %s,
+                        %s,
                         %s
                     )
                 """,
                 (
+                    empresa_atual(),
                     self.sku,
                     self.nome,
                     self.descricao,
@@ -306,10 +310,11 @@ class Produto(CrudBase):
                         ON fp.fornecedor_id = f.id
 
                     WHERE p.ativo = TRUE
+                      AND p.empresa_id = %s
 
                     ORDER BY p.nome
                     """,
-                    (galpao_id,)
+                    (galpao_id, empresa_atual())
                 )
 
             else:
@@ -344,13 +349,15 @@ class Produto(CrudBase):
                         ON fp.fornecedor_id = f.id
 
                     WHERE p.ativo = TRUE
+                      AND p.empresa_id = %s
 
                     GROUP BY
                         p.id,
                         f.nome
 
                     ORDER BY p.nome
-                    """
+                    """,
+                    (empresa_atual(),)
                 )
 
             return cursor.fetchall()
@@ -388,11 +395,12 @@ class Produto(CrudBase):
                     ON p.id = e.produto_id
 
                 WHERE e.quantidade <= e.estoque_minimo
+                  AND p.empresa_id = %s
 
                 ORDER BY p.nome
             """
 
-            cursor.execute(sql)
+            cursor.execute(sql, (empresa_atual(),))
 
             return cursor.fetchall()
 
@@ -636,8 +644,10 @@ class Produto(CrudBase):
                 SELECT *
                 FROM produto
                 WHERE ativo = FALSE
+                  AND empresa_id = %s
                 ORDER BY nome
-                """
+                """,
+                (empresa_atual(),)
             )
 
             return cursor.fetchall()
@@ -663,9 +673,12 @@ class Produto(CrudBase):
 
             cursor.execute(
                 """
-                SELECT SUM(quantidade)
-                FROM estoque
-                """
+                SELECT SUM(e.quantidade)
+                FROM estoque e
+                JOIN produto p ON p.id = e.produto_id
+                WHERE p.empresa_id = %s
+                """,
+                (empresa_atual(),)
             )
 
             resultado = cursor.fetchone()[0]

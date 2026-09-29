@@ -23,38 +23,17 @@ Software HYPEX - Fornecedores
 
             <div class="grupo-botoes">
                 <!-- FIX: botão de exclusão ligado ao form de exclusão abaixo -->
-                <button type="button" class="excluir-btn" data-bs-toggle="modal"
-                    data-bs-target="#modalDeletarFornecedor{{ fornecedor.id }}">
-                    Excluir Fornecedor
-                </button>
-                <div class="modal fade" id="modalDeletarFornecedor{{ fornecedor.id }}" tabindex="-1"
-                    aria-labelledby="modalFornecedorLabel{{ fornecedor.id }}" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="modalFornecedorLabel{{ fornecedor.id }}">Confirmar Exclusão</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                    aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body text-start">
-                                Tem certeza que deseja excluir o fornecedor <strong>{{ fornecedor.nome }}</strong>?
-                                <br>
-                                <small class="text-danger">Atenção: Isso pode excluir também os itens vinculados a
-                                    ele.</small>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary"
-                                    data-bs-dismiss="modal">Cancelar</button>
-
-                                <!-- O formulário de exclusão do fornecedor -->
-                                <form id="form-excluir" method="POST"
-                                    action="{{ url_for('deletar_fornecedor', fornecedor_id=fornecedor.id) }}">
-                                    <button type="submit" class="btn btn-danger">Excluir Fornecedor</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                {% if pode_gerenciar %}
+                <form method="POST" id="excluir-fornecedor" action="{{ url_for('deletar_fornecedor', fornecedor_id=fornecedor.id) }}"></form>
+                {% with id='excluir-fornecedor', form_id='excluir-fornecedor',
+                        titulo='Excluir fornecedor',
+                        texto='Excluir o fornecedor ' ~ fornecedor.nome ~ '? Os itens vinculados a ele também saem do catálogo.',
+                        icone='bi-trash3-fill', rotulo='Excluir Fornecedor',
+                        classe='excluir-btn',
+                        confirmar='Excluir', perigo=True %}
+                {% include '_confirmar.html' %}
+                {% endwith %}
+                {% endif %}
                 <!-- FIX: botão de salvar ligado ao form principal -->
                 <button type="submit" form="form-fornecedor" class="salvar-btn">
                     Salvar Alterações
@@ -100,7 +79,7 @@ Software HYPEX - Fornecedores
                     <div class="input-resp">
                         <label>Telefone/WhatsApp</label>
                         <!-- FIX: adicionado name="telefone" -->
-                        <input type="tel" name="telefone" value="{{ fornecedor.telefone }}">
+                        <input type="tel" name="telefone" value="{{ fornecedor.telefone | telefone if fornecedor.telefone else '' }}">
                     </div>
                     <div class="input-resp">
                         <label>Status da Conta</label>
@@ -125,7 +104,7 @@ Software HYPEX - Fornecedores
                         <div class="input-resp">
                             <label>CNPJ</label>
                             <!-- FIX: adicionado name="cnpj" -->
-                            <input type="text" name="cnpj" value="{{ fornecedor.cnpj }}"
+                            <input type="text" name="cnpj" value="{{ fornecedor.cnpj | documento if fornecedor.cnpj else '' }}"
                                 placeholder="00.000.000/0001-00">
                         </div>
                     </div>

@@ -35,9 +35,9 @@ Software HYPEX - Pedidos
             </div>
 
             <div class="pesquias-botao">
-                <button class="action-btn filter-btn" type="submit">
-                    <i class="bi bi-funnel-fill"></i> Filtros
-                </button>
+                {% with limpar_url=url_for('pedidos') %}
+                {% include '_filtros.html' %}
+                {% endwith %}
                 {% if busca %}
                 <a class="action-btn" href="{{ url_for('pedidos') }}">
                     <i class="bi bi-x-lg"></i> Limpar
@@ -97,45 +97,26 @@ Software HYPEX - Pedidos
                         </td>
 
                         <td class="acao-estoque">
+                            <div class="acoes-linha">
                             <a href="{{ url_for('visualizar_pedido_entrada', pedido_id=pedido.id) }}"
                                 class="acao-btn btn-visualizar" title="Visualizar">
                                 <i class="bi bi-eye-fill"></i>
                             </a>
 
-                            <button type="button" class="acao-btn delete" title="Excluir" data-bs-toggle="modal"
-                                data-bs-target="#modalExcluir{{ pedido.id }}">
-                                <i class="bi bi-trash3-fill"></i>
-                            </button>
+                            {% if pode_gerenciar %}
+                            <form method="POST" id="excluir-entrada-{{ pedido.id }}"
+                                action="{{ url_for('deletar_pedido', id=pedido.id) }}"></form>
 
-                            <!-- Modal de confirmação de exclusão -->
-                            <div class="modal fade" id="modalExcluir{{ pedido.id }}" tabindex="-1"
-                                aria-labelledby="modalExcluirLabel{{ pedido.id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="modalExcluirLabel{{ pedido.id }}">
-                                                Confirmar Exclusão
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            Tem certeza que deseja excluir o pedido <strong>#{{ pedido.id
-                                                }}</strong>?<br>
-                                            <span class="text-danger">
-                                                <small>Esta ação não poderá ser desfeita.</small>
-                                            </span>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">Cancelar</button>
-                                            <form method="POST"
-                                                action="{{ url_for('deletar_pedido', id=pedido.id) }}">
-                                                <button type="submit" class="btn btn-danger">Excluir</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
+                            {% with id='excluir-entrada-' ~ pedido.id,
+                                    form_id='excluir-entrada-' ~ pedido.id,
+                                    titulo='Excluir pedido',
+                                    texto='Excluir o pedido #' ~ pedido.id ~ '? Esta ação não poderá ser desfeita.',
+                                    icone='bi-trash3-fill',
+                                    classe='acao-btn delete',
+                                    confirmar='Excluir', perigo=True %}
+                            {% include '_confirmar.html' %}
+                            {% endwith %}
+                            {% endif %}
                             </div>
                         </td>
                     </tr>

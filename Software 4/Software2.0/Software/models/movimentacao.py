@@ -1,6 +1,7 @@
 from datetime import datetime
 from core.crud_base import CrudBase
 from core.database import Database
+from core.empresa import empresa_atual
 
 
 # Classe responsável por representar e manipular movimentações de estoque
@@ -55,8 +56,16 @@ class Movimentacao(CrudBase):
             erros.append("Tipo de movimentação inválido.")
 
         try:
-            if float(self.quantidade) <= 0:
+            quantidade = float(self.quantidade)
+            # O ajuste de inventário define o saldo e pode zerá-lo;
+            # os outros tipos movimentam pelo menos uma unidade.
+            if self.tipo == "ajuste_inventario":
+                if quantidade < 0:
+                    erros.append("O saldo do ajuste não pode ser negativo.")
+            elif quantidade <= 0:
                 erros.append("A quantidade deve ser maior que zero.")
+            if quantidade != int(quantidade):
+                erros.append("Informe a quantidade em unidades inteiras.")
         except (TypeError, ValueError):
             erros.append("A quantidade deve ser numérica.")
 
@@ -92,9 +101,9 @@ class Movimentacao(CrudBase):
             LEFT  JOIN galpao g   ON m.galpao_id         = g.id
             LEFT  JOIN galpao gd  ON m.galpao_destino_id = gd.id
             LEFT  JOIN funcionario fu ON m.funcionario_id = fu.id
-            WHERE 1 = 1
+            WHERE m.empresa_id = %s
             """
-            valores = []
+            valores = [empresa_atual()]
 
             if produto_id:
                 sql += " AND m.produto_id = %s"

@@ -20,12 +20,10 @@ Software HYPEX - Fornecedores
                 <h1><i class="bi bi-box-seam-fill"></i> Itens por Fornecedor</h1>
                 <p>Gerencie o catálogo de produtos oferecidos pelos fornecedores parceiros</p>
 
-                <a href="/info_fornecedor/{{ fornecedor.id }}">
-                    <button class="btn btn-voltar">
+                <a href="/info_fornecedor/{{ fornecedor.id }}" class="btn btn-voltar">
                         <i class="bi bi-eye-fill"></i>
                         Visualizar Fornecedor
-                    </button>
-                </a>
+                    </a>
             </div>
 
 
@@ -149,16 +147,20 @@ Software HYPEX - Fornecedores
             </div><!-- /add-produto -->
         </header>
 
-        <section class="barra-pesquisa">
+        <form method="GET" class="barra-pesquisa" action="{{ url_for('itens_fornecedor', fornecedor_id=fornecedor.id) }}">
             <div class="caixa-pesquisa">
                 <i class="bi bi-search"></i>
-                <input type="text" id="campoBusca" placeholder="Buscar por produto...">
+                <input type="text" name="busca" value="{{ busca }}" placeholder="Buscar por produto ou SKU...">
             </div>
             <div class="pesquias-botao">
-                <button class="filtro-btn filter-btn"><i class="bi bi-funnel-fill"></i> Filtros</button>
-                <button class="filtro-btn export-btn"><i class="bi bi-cloud-arrow-down-fill"></i> Exportar</button>
+                {% with limpar_url=url_for('itens_fornecedor', fornecedor_id=fornecedor.id) %}
+                {% include '_filtros.html' %}
+                {% endwith %}
+                <a class="action-btn" href="{{ url_for('exportar_itens_fornecedor', fornecedor_id=fornecedor.id) }}">
+                    <i class="bi bi-cloud-arrow-down-fill"></i> Exportar
+                </a>
             </div>
-        </section>
+        </form>
 
         <section class="inventario-lista">
             <table id="tabelaProdutos">
@@ -177,32 +179,43 @@ Software HYPEX - Fornecedores
                 <tbody>
                     {% if fornecedores_produtos %}
                     {% for item in fornecedores_produtos %}
-                    <tr>
+                    <tr class="{{ 'linha-inativa' if not item.ativo }}">
                         <td class="produto-info">
-                            <strong>{{ item.produto_nome }}</strong>
-                            <span class="fornecedor-nome">Fornecedor: {{ item.fornecedor_nome }}</span>
+                            <a href="{{ url_for('info_produtos', id=item.produto_id) }}" class="produto-celula">
+                                <img class="miniatura-produto"
+                                    src="{{ url_for('static', filename='imagem/' + (item.imagem | imagem_ou('imagemproduto.png'))) }}"
+                                    alt="" loading="lazy">
+                                <span>
+                                    <strong>{{ item.produto_nome }}</strong>
+                                    <span class="fornecedor-nome">Fornecedor: {{ item.fornecedor_nome }}</span>
+                                </span>
+                            </a>
                         </td>
                         <td><span class="badge bg-light text-dark">{{ item.sku }}</span></td>
                         <td>R$ {{ item.preco_custo | moeda }}</td>
-                        <td>{{ item.desconto }}%</td>
+                        <td>{{ (item.desconto or 0) | moeda }}%</td>
                         <td>{{ item.quantidade_minima | quantidade }} un</td>
                         <td>{{ item.prazo_entrega_dias }} dias</td>
                         <td>
                             {% if item.ativo %}
-                            <span class="status-estoque status-disponivel">Ativo</span>
+                            <span class="selo-situacao ativo"><i class="bi bi-circle-fill"></i> Ativo</span>
                             {% else %}
-                            <span class="status-estoque status-indisponivel">Inativo</span>
+                            <span class="selo-situacao inativo"><i class="bi bi-circle-fill"></i> Inativo</span>
                             {% endif %}
                         </td>
                         <!-- FIX: substituído produto.id (inexistente) por item.produto_id -->
                         <td class="acao-estoque">
+                            <div class="acoes-linha">
                             <a href="{{ url_for('editar_produto', id=item.produto_id) }}" class="acao-btn btn-editar"
                                 title="Editar">
                                 <i class="bi bi-pen-fill"></i>
                             </a>
                             <form method="POST" id="desativar-item-{{ item.produto_id }}"
                                 action="{{ url_for('desativar_produto', id=item.produto_id) }}"
-                                class="d-inline"></form>
+                                class="d-inline">
+                                <input type="hidden" name="voltar_para"
+                                value="{{ request.full_path if request.query_string else request.path }}">
+                                </form>
 
                             {% with id='desativar-item-' ~ item.produto_id,
                                     form_id='desativar-item-' ~ item.produto_id,
@@ -213,35 +226,23 @@ Software HYPEX - Fornecedores
                                     confirmar='Desativar' %}
                             {% include '_confirmar.html' %}
                             {% endwith %}
-                            <button type="button" class="acao-btn delete" title="Excluir" data-bs-toggle="modal"
-                                data-bs-target="#modalExcluir{{ item.produto_id }}">
-                                <i class="bi bi-trash3-fill"></i>
-                            </button>
-                            <div class="modal fade" id="modalExcluir{{ item.produto_id }}" tabindex="-1"
-                                aria-labelledby="modalExcluirLabel{{ item.produto_id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="modalExcluirLabel{{ item.produto_id }}">Confirmar
-                                                Exclusão</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            Tem certeza que deseja excluir o produto <strong>{{ item.produto_nome }}</strong>? <br>
-                                            <span class="text-danger"><small>Esta ação não poderá ser
-                                                    desfeita.</small></span>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">Cancelar</button>
-                                            <form method="POST"
-                                                action="{{ url_for('excluir_produto', id=item.produto_id) }}">
-                                                <button type="submit" class="btn btn-danger">Excluir</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
+                            {% if pode_gerenciar %}
+                            <form method="POST" id="excluir-item-{{ item.produto_id }}"
+                                action="{{ url_for('excluir_produto', id=item.produto_id) }}">
+                                <input type="hidden" name="voltar_para"
+                                    value="{{ request.full_path if request.query_string else request.path }}">
+                            </form>
+
+                            {% with id='excluir-item-' ~ item.produto_id,
+                                    form_id='excluir-item-' ~ item.produto_id,
+                                    titulo='Excluir produto',
+                                    texto='Excluir o produto ' ~ item.produto_nome ~ '? Esta ação não poderá ser desfeita.',
+                                    icone='bi-trash3-fill',
+                                    classe='acao-btn delete',
+                                    confirmar='Excluir', perigo=True %}
+                            {% include '_confirmar.html' %}
+                            {% endwith %}
+                            {% endif %}
                             </div>
                         </td>
                     </tr>

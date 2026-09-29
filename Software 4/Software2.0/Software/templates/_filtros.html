@@ -1,0 +1,63 @@
+{# ---------------------------------------------------------------
+   Botão "Filtros" com menu de ordenação e situação.
+
+   Fica DENTRO do <form method="GET"> da barra de pesquisa: os rádios
+   viram ?ordem=...&situacao=... e a busca digitada vai junto.
+   Abre e fecha com <details>, sem JavaScript.
+
+   Parâmetros:
+     menu_filtros - dicionário montado por ordenar_e_filtrar() no app.py
+     limpar_url   - endereço da tela sem filtros
+--------------------------------------------------------------- #}
+{% if menu_filtros is not defined %}
+{# Rota que ainda não monta o menu: mantém um botão simples de busca #}
+<button class="action-btn filter-btn" type="submit"><i class="bi bi-funnel-fill"></i> Filtros</button>
+{% else %}
+{% set ativos = (1 if menu_filtros.ordem else 0) + (1 if menu_filtros.situacao else 0) %}
+
+<details class="filtro-menu">
+    <summary class="action-btn filter-btn {{ 'filtro-ligado' if ativos }}">
+        <i class="bi bi-funnel-fill"></i> Filtros
+        {% if ativos %}<span class="filtro-contador">{{ ativos }}</span>{% endif %}
+        <i class="bi bi-chevron-down filtro-seta"></i>
+    </summary>
+
+    <div class="filtro-painel">
+
+        <p class="filtro-titulo">Ordenar por</p>
+        <div class="filtro-opcoes">
+            <label class="filtro-opcao">
+                <input type="radio" name="ordem" value="" {{ 'checked' if not menu_filtros.ordem }}>
+                <span><i class="bi bi-list"></i> Padrão</span>
+            </label>
+            {% for valor, rotulo, icone in menu_filtros.ordens %}
+            <label class="filtro-opcao">
+                <input type="radio" name="ordem" value="{{ valor }}" {{ 'checked' if menu_filtros.ordem == valor }}>
+                <span><i class="bi {{ icone }}"></i> {{ rotulo }}</span>
+            </label>
+            {% endfor %}
+        </div>
+
+        {% if menu_filtros.situacoes %}
+        <p class="filtro-titulo">Mostrar</p>
+        <div class="filtro-chips">
+            <label class="filtro-chip">
+                <input type="radio" name="situacao" value="" {{ 'checked' if not menu_filtros.situacao }}>
+                <span>Todos</span>
+            </label>
+            {% for valor, rotulo in menu_filtros.situacoes %}
+            <label class="filtro-chip">
+                <input type="radio" name="situacao" value="{{ valor }}" {{ 'checked' if menu_filtros.situacao == valor }}>
+                <span>{{ rotulo }}</span>
+            </label>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="filtro-rodape">
+            <a href="{{ limpar_url }}" class="filtro-limpar">Limpar tudo</a>
+            <button type="submit" class="filtro-aplicar"><i class="bi bi-check-lg"></i> Aplicar</button>
+        </div>
+    </div>
+</details>
+{% endif %}

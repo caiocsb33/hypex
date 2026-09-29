@@ -32,6 +32,7 @@ Software HYPEX - Produto
         <div class="grupo-botoes">
 
             <!-- BOTÃO EXCLUIR -->
+            {% if pode_gerenciar %}
             {% with id='excluir-produto',
                     form_id='form-excluir',
                     titulo='Excluir produto',
@@ -41,6 +42,7 @@ Software HYPEX - Produto
                     confirmar='Excluir', perigo=True %}
             {% include '_confirmar.html' %}
             {% endwith %}
+            {% endif %}
 
 
             <!-- BOTÃO SALVAR -->

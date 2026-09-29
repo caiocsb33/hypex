@@ -16,9 +16,7 @@ Software HYPEX - Pedido de Saída #{{ pedido.id }}
             <h1><i class="bi bi-basket2-fill"></i> PEDIDO DE SAÍDA #{{ pedido.id }}</h1>
             <p>Nota {{ pedido.numero_documento or '—' }} — cliente {{ pedido.cliente_nome or '—' }}</p>
 
-            <a href="{{ url_for('listar_pedidos_saida') }}">
-                <button class="btn btn-voltar"><i class="bi bi-arrow-left"></i> Voltar</button>
-            </a>
+            <a href="{{ url_for('listar_pedidos_saida') }}" class="btn btn-voltar"><i class="bi bi-arrow-left"></i> Voltar</a>
         </div>
 
     </header>

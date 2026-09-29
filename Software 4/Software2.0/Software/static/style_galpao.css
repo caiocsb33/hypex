@@ -314,166 +314,41 @@
 
 .total-spent {
     color: #38C172;
-}
-
-/* =========================================
-   MODO ESCURO - GALPÃO
-========================================= */
-
-body.modo-escuro #galpao-conteudo {
-    background-color: #121212;
-}
-
-/* Título e descrição */
-
-body.modo-escuro .galpao h1 {
-    color: #ffffff;
-}
-
-body.modo-escuro .galpao p {
-    color: #aaaaaa;
-}
-
-/* Cards */
-
-body.modo-escuro .galpao-card {
-    background-color: #1e1e1e;
-    border-color: #333333;
-    color: #ffffff;
-}
-
-body.modo-escuro .galpao-card:hover {
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.4);
-}
-
-/* Nome do galpão */
-
-body.modo-escuro .nome-galpao {
-    color: #ffffff;
-}
-
-body.modo-escuro .galpao-resp {
-    color: #aaaaaa;
-}
-
-/* Separadores dos cards */
-
-body.modo-escuro .galpao-card .galpao-texto {
-    border-bottom-color: #333333;
-}
-
-body.modo-escuro .galpao-card .cards-detalhe-galpao {
-    border-top-color: #333333;
-}
-
-/* Informações */
-
-body.modo-escuro .detalhe-galpao {
-    color: #bbbbbb;
-}
-
-body.modo-escuro .detalhe-galpao i {
-    color: #888888;
-}
-
-/* Estatísticas */
-
-body.modo-escuro .stats-ocupa,
-body.modo-escuro .stats-area {
-    color: #999999;
-}
-
-body.modo-escuro .stats-espaco {
-    color: #ffffff;
-}
-
-body.modo-escuro .stats-galpao:first-child {
-    border-right-color: #333333;
-}
-
-/* Barra de pesquisa */
-
-body.modo-escuro .barra-pesquisa {
-    background-color: #1e1e1e;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-}
-
-body.modo-escuro .caixa-pesquisa {
-    border-color: #444444;
-    background-color: #1e1e1e;
-}
-
-body.modo-escuro .caixa-pesquisa i {
-    color: #888888;
-}
-
-body.modo-escuro .caixa-pesquisa input {
-    background-color: transparent;
-    color: #ffffff;
-}
-
-body.modo-escuro .caixa-pesquisa input::placeholder {
-    color: #888888;
-}
-
-/* Botão de filtro */
-
-body.modo-escuro .filtro-botao {
-    border-color: #444444;
-    color: #dddddd;
-}
-
-body.modo-escuro .filtro-botao:hover {
-    background-color: #2a2a2a;
-}
-
-/* Ícones dos cards */
-
-body.modo-escuro .gray-bg-icon {
-    background-color: #2a2a2a;
-    color: #999999;
-}
-
-/* Status */
-
-body.modo-escuro .status-ativo {
-    background-color: rgba(56, 193, 114, 0.15);
-    color: #38C172;
-}
-
-body.modo-escuro .status-inativo {
-    background-color: rgba(227, 52, 47, 0.15);
-    color: #E3342F;
-}
-
-body.modo-escuro .status-manutencao {
-    background-color: rgba(230, 126, 34, 0.15);
-    color: #E67E22;
-}
-
-/* Botão estoque */
-
-body.modo-escuro .btn-estoque {
-    background-color: #2B6BB9;
-}
-
-body.modo-escuro .btn-estoque:hover {
-    background-color: #387bd8;
-}
-
-/* Total */
-
-body.modo-escuro .total-spent {
-    color: #38C172;
-}
-
-body.modo-escuro .total-spent {
-    color: #38C172;
-}
-
-
-/* AJUSTE EXCLUSIVO DA PÁGINA DE GALPÕES */
+}/* AJUSTE EXCLUSIVO DA PÁGINA DE GALPÕES */
 
 .conteudo:has(#galpao-conteudo) {
     padding: 0;
+    /* sem padding, o header não precisa da margem negativa que o encosta
+       nas bordas; mantém só o espaçamento interno dele */
+    --pad-conteudo: 0px;
 }
+
+.conteudo:has(#galpao-conteudo) .topo {
+    padding-left: 30px;
+    padding-right: 30px;
+}
+
+@media (max-width: 768px) {
+    .conteudo:has(#galpao-conteudo) .topo { padding-left: 64px; padding-right: 16px; }
+}
+/* =========================================================
+   LISTA NO MESMO FORMATO DE FORNECEDORES
+   Um card por linha, na largura toda, com as mesmas seções empilhadas
+   (topo, contatos, rodapé).
+========================================================= */
+.cards-galpao {
+    /* igual a fornecedores: 1 card = linha inteira; 2 = metade; no máximo 3 */
+    grid-template-columns: repeat(auto-fit, minmax(max(280px, calc((100% - 40px) / 3)), 1fr));
+    gap: 20px;
+}
+
+.galpao-foto {
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid #e3e8ef;
+}
+
+.galpao-card .cards-detalhe-galpao { justify-content: flex-start; gap: 48px; }

@@ -157,25 +157,38 @@ Software HYPEX - Fornecedores
                 </form>
         </header>
 
-        <section class="barra-pesquisa">
+        <!-- Pesquisa resolvida no servidor: o formulário envia ?busca=... por GET
+             e a rota devolve a lista já filtrada. Os botões "Filtros" e "Exportar"
+             foram retirados: não tinham nenhuma ação por trás. -->
+        <form method="GET" class="barra-pesquisa" action="{{ url_for('galpao') }}">
             <div class="caixa-pesquisa">
-                <i class="bi-solid bi-search"></i>
-                <input type="text" placeholder="Buscar Galpões por nome ou cidade...">
+                <i class="bi bi-search"></i>
+                <input type="text" name="busca" value="{{ busca }}"
+                    placeholder="Buscar por nome, cidade, estado ou responsável...">
             </div>
             <div class="pesquias-botao">
-                <button class="filtro-botao filter-btn"><i class="bi-solid bi-funnel-fill"></i> Filtros</button>
-                <button class="filtro-botao export-btn"><i class="bi-solid bi-cloud-arrow-down-fill"></i>
-                    Exportar</button>
+                {% with limpar_url=url_for('galpao') %}
+                {% include '_filtros.html' %}
+                {% endwith %}
+                {% if busca %}
+                <a class="action-btn" href="{{ url_for('galpao') }}">
+                    <i class="bi bi-x-lg"></i> Limpar
+                </a>
+                {% endif %}
             </div>
-        </section>
+        </form>
 
         <section class="cards-galpao">
             {% if galpoes %}
             {% for galpao in galpoes %}
-            <a href="{{ url_for('info_galpao', galpao_id=galpao.id) }}" class="link-estoque">
+            <a href="{{ url_for('estoque_galpao', galpao_id=galpao.id) }}" class="link-estoque">
                 <div class="galpao-card">
                     <div class="galpao-texto">
+                        {% if galpao.imagem %}
+                        <img class="galpao-foto" src="{{ url_for('static', filename='imagem/' + galpao.imagem) }}" alt="" loading="lazy">
+                        {% else %}
                         <span class="galpao-icone green-bg-icon"><i class="bi-solid bi-buildings-fill"></i></span>
+                        {% endif %}
                         <div class="galpao-titulo">
                             <h2 class="nome-galpao">{{ galpao.nome }}</h2>
                             <p class="galpao-resp">Responsável: {{ galpao.nome_resp }}</p>
@@ -199,8 +212,8 @@ Software HYPEX - Fornecedores
                     </div>
 
                     <div class="cards-info-galpao">
-                        <p class="detalhe-galpao"><i class="bi bi-upc"></i> {{ galpao.total_produtos }} Itens </p>
-                        <p class="detalhe-galpao"><i class="bi bi-telephone-fill"></i> {{ galpao.telefone }}</p>
+                        <p class="detalhe-galpao"><i class="bi bi-upc"></i> {{ galpao.total_produtos | quantidade }} itens</p>
+                        <p class="detalhe-galpao"><i class="bi bi-telephone-fill"></i> {{ galpao.telefone | telefone if galpao.telefone else '—' }}</p>
                         <p class="detalhe-galpao"><i class="bi bi-geo-alt-fill"></i> {{ galpao.cidade }} - {{
                             galpao.estado }}</p>
                     </div>

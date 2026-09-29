@@ -21,6 +21,9 @@
     {% block css %}
     {% endblock %}
 
+    <!-- Modo escuro: depois do CSS da página para sobrescrever as cores -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='modo-escuro.css') }}">
+
 </head>
 
 {% set classes_body = [] %}
@@ -44,7 +47,7 @@
 
         <!-- Minimizar é uma preferência que precisa durar entre as páginas,
              então vai para a sessão por POST. -->
-        <form method="POST" action="{{ url_for('alternar_menu') }}">
+        <form method="POST" action="{{ url_for('alternar_menu') }}" id="form-menu">
             <input type="hidden" name="voltar_para" value="{{ request.full_path if request.query_string else request.path }}">
             <button id="btn-minimizar" class="btn-minimizar" type="submit"
                 title="{{ 'Expandir menu' if sidebar_minimizada else 'Minimizar menu' }}">
@@ -137,53 +140,14 @@
         </nav>
 
 
-        <!-- ========================= -->
-        <!-- BOTÕES INFERIORES -->
-        <!-- ========================= -->
-
-        <div class="menu-opcoes">
-
-            <a href="/config" class="opcoes-btn" aria-label="Configurações" title="Configurações">
-
-                <i class="bi bi-gear-fill"></i>
-
+        <!-- Configuração fica sozinha no rodapé do menu; tema, voz e sair
+             foram para o header. -->
+        <div class="menu-rodape">
+            <a href="/config" class="menu-config {% if modulo_atual == 'config' %}selected{% endif %}"
+                aria-label="Configuração" title="Configuração">
+                <i class="bi bi-gear-fill" aria-hidden="true"></i>
+                <span>Configuração</span>
             </a>
-
-
-            <!-- LEITURA POR VOZ -->
-            <button id="btnVoz" class="opcoes-btn" type="button" aria-label="Ativar leitura por voz"
-                aria-pressed="false" title="Ativar leitura por voz">
-                <i id="iconeVoz" class="bi bi-volume-mute-fill" aria-hidden="true"></i>
-            </button>
-
-
-            <form method="POST" action="{{ url_for('alternar_tema') }}">
-
-                <input type="hidden" name="voltar_para" value="{{ request.full_path if request.query_string else request.path }}">
-
-                <button id="btnTema" class="opcoes-btn" type="submit"
-                    title="{{ 'Usar tema claro' if tema == 'escuro' else 'Usar tema escuro' }}">
-
-                    <i id="iconeTema"
-                        class="bi {{ 'bi-sun-fill' if tema == 'escuro' else 'bi-circle-half' }}"></i>
-
-                </button>
-
-            </form>
-
-
-            <form method="POST" id="form-logout" action="{{ url_for('logout') }}"></form>
-
-            {% with id='logout',
-                    form_id='form-logout',
-                    titulo='Sair da conta',
-                    texto='Deseja sair da sua conta?',
-                    icone='bi-door-open-fill',
-                    classe='opcoes-btn red-opcoes-btn',
-                    confirmar='Sair', perigo=True %}
-            {% include '_confirmar.html' %}
-            {% endwith %}
-
         </div>
 
     </aside>
@@ -194,6 +158,102 @@
     <!-- ========================= -->
 
     <div class="conteudo">
+
+        <!-- ========================= -->
+        <!-- HEADER -->
+        <!-- Os menus suspensos usam <details>: abrem sem JavaScript. -->
+        <!-- ========================= -->
+        <header class="topo">
+
+            <!-- Busca geral: produtos, clientes, fornecedores e galpões -->
+            <form method="GET" action="{{ url_for('buscar') }}" class="topo-busca" role="search">
+                <input type="search" name="q" value="{{ request.args.get('q', '') if request.endpoint == 'buscar' else '' }}"
+                    placeholder="Pesquisar..." aria-label="Pesquisar no sistema">
+                <button type="submit" title="Pesquisar" aria-label="Pesquisar">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                </button>
+            </form>
+
+            <form method="POST" action="{{ url_for('alternar_tema') }}" class="tema-toggle"
+                aria-label="Tema">
+                <input type="hidden" name="voltar_para" value="{{ request.full_path if request.query_string else request.path }}">
+                <button type="submit" name="tema" value="escuro" title="Tema escuro"
+                    class="{{ 'ativo' if tema == 'escuro' }}" aria-pressed="{{ 'true' if tema == 'escuro' else 'false' }}">
+                    <i class="bi bi-moon-fill" aria-hidden="true"></i>
+                </button>
+                <button type="submit" name="tema" value="claro" title="Tema claro"
+                    class="{{ 'ativo' if tema != 'escuro' }}" aria-pressed="{{ 'true' if tema != 'escuro' else 'false' }}">
+                    <i class="bi bi-sun-fill" aria-hidden="true"></i>
+                </button>
+            </form>
+
+            <!-- LEITURA POR VOZ -->
+            <button id="btnVoz" class="topo-icone" type="button" aria-label="Ativar leitura por voz"
+                aria-pressed="false" title="Ativar leitura por voz">
+                <i id="iconeVoz" class="bi bi-volume-mute-fill" aria-hidden="true"></i>
+            </button>
+
+            <details class="topo-menu notificacoes-menu">
+                <summary class="topo-icone" title="Notificações" aria-label="Notificações">
+                    <i class="bi bi-bell-fill" aria-hidden="true"></i>
+                    {% if total_notificacoes %}
+                    <span class="sino-contador">{{ total_notificacoes if total_notificacoes < 100 else '99+' }}</span>
+                    {% endif %}
+                </summary>
+                <div class="topo-dropdown">
+                    <div class="notif-topo">
+                        <h6>Notificações</h6>
+                        <a href="{{ url_for('config') }}#notificacoes" title="Preferências de notificação">
+                            <i class="bi bi-sliders" aria-hidden="true"></i>
+                        </a>
+                    </div>
+                    {% for n in notificacoes_estoque %}
+                    <a href="{{ n.link }}" class="notif-item notif-{{ n.cor }}">
+                        <i class="bi {{ n.icone }}" aria-hidden="true"></i>
+                        <span>
+                            <strong>{{ n.titulo }}</strong> {{ n.texto }}
+                            <small>{{ n.detalhe }}</small>
+                        </span>
+                    </a>
+                    {% else %}
+                    <p class="notif-vazio">Nenhuma notificação.
+                        <a href="{{ url_for('config') }}#notificacoes">Ajustar preferências</a></p>
+                    {% endfor %}
+                    {% if total_notificacoes > notificacoes_estoque | length %}
+                    <a href="/dashboard" class="notif-todas">Ver todas ({{ total_notificacoes }})</a>
+                    {% endif %}
+                </div>
+            </details>
+
+            <details class="topo-menu usuario-menu">
+                <summary class="usuario-resumo">
+                    <img src="{{ url_for('static', filename='imagem/' + (empresa_imagem | imagem_ou('perfil.png'))) }}" alt="">
+                    <span class="usuario-texto">
+                        <strong>Olá, {{ usuario_primeiro_nome or 'usuário' }}</strong>
+                        <small>{{ usuario_tipo }}</small>
+                    </span>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                </summary>
+                <div class="topo-dropdown">
+                    <a href="/config"><i class="bi bi-gear-fill" aria-hidden="true"></i> Configuração</a>
+                    {% if perfil == 'admin' %}
+                    <a href="{{ url_for('usuarios') }}"><i class="bi bi-people-fill" aria-hidden="true"></i> Usuários</a>
+                    {% endif %}
+                    <form method="POST" id="form-logout" action="{{ url_for('logout') }}"></form>
+                    {% with id='logout',
+                            form_id='form-logout',
+                            titulo='Sair da conta',
+                            texto='Deseja sair da sua conta?',
+                            icone='bi-box-arrow-right',
+                            rotulo='Sair',
+                            classe='topo-sair',
+                            confirmar='Sair', perigo=True %}
+                    {% include '_confirmar.html' %}
+                    {% endwith %}
+                </div>
+            </details>
+
+        </header>
 
         {% block content %}
         {% endblock %}
@@ -214,6 +274,9 @@
 
     <!-- Recursos de acessibilidade: leitura dos controles e navegação por teclado -->
     <script src="{{ url_for('static', filename='js/acessibilidade.js') }}"></script>
+
+    <!-- Tema e menu trocam na hora, com transição, sem recarregar a página -->
+    <script src="{{ url_for('static', filename='js/tema.js') }}"></script>
 
     {% block javascript %}
     {% endblock %}

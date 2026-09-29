@@ -19,12 +19,10 @@ Software HYPEX - Fornecedores
                 <h1><i class="bi bi-basket2-fill"></i> GESTÃO DE PEDIDOS</h1>
                 <p>Pedidos de saída de <strong>{{ cliente.nome }}</strong></p>
 
-                <a href="/info_cliente/{{ cliente.id }}">
-                    <button class="btn btn-voltar">
+                <a href="/info_cliente/{{ cliente.id }}" class="btn btn-voltar">
                         <i class="bi bi-eye-fill"></i>
                         Visualizar Detalhes do Cliente
-                    </button>
-                </a>
+                    </a>
             </div>
 
 
@@ -43,9 +41,9 @@ Software HYPEX - Fornecedores
             </div>
 
             <div class="pesquias-botao">
-                <button class="action-btn filter-btn" type="submit">
-                    <i class="bi bi-funnel-fill"></i> Filtros
-                </button>
+                {% with limpar_url=url_for('pedidos_clientes', cliente_id=cliente.id) %}
+                {% include '_filtros.html' %}
+                {% endwith %}
                 {% if busca %}
                 <a class="action-btn"
                     href="{{ url_for('pedidos_clientes', cliente_id=cliente.id) }}">
@@ -88,50 +86,52 @@ Software HYPEX - Fornecedores
                                 {% elif pedido.status_pedido == 'enviado' %}status-enviado
                                 {% elif pedido.status_pedido == 'concluido' %}status-concluido
                                 {% else %}status-cancelado{% endif %}">
-                                {{ pedido.status_pedido.capitalize() }}
+                                {{ (pedido.status_pedido or 'pendente').capitalize() }}
                             </span>
                         </td>
                         <td class="acao-estoque">
+                            <div class="acoes-linha">
                             <a  href="{{ url_for('info_pedido_cliente', pedido_id=pedido.id) }}"
                                 class="acao-btn btn-visualizar" title="Visualizar">
                                 <i class="bi bi-eye-fill"></i>
                             </a>
 
-                            <button href="{{ url_for('editar_pedido', id=pedido.id) }}" class="acao-btn btn-editar"
-                                title="Editar">
+                            <!-- Era <button href=...>, que não navega, e apontava para
+                                 editar_pedido — rota de pedido de FORNECEDOR. -->
+                            <a href="{{ url_for('editar_pedido_cliente', pedido_id=pedido.id) }}"
+                                class="acao-btn btn-editar" title="Editar">
                                 <i class="bi bi-pen-fill"></i>
-                            </button>
+                            </a>
 
-                            <button type="button" class="acao-btn delete" title="Excluir" data-bs-toggle="modal"
-                                data-bs-target="#modalExcluir{{ pedido.id }}">
-                                <i class="bi bi-trash3-fill"></i>
-                            </button>
-                            <div class="modal fade" id="modalExcluir{{ pedido.id }}" tabindex="-1"
-                                aria-labelledby="modalExcluirLabel{{ pedido.id }}" aria-hidden="true">
-                                <div class="modal-dialog modal-dialog-centered">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="modalExcluirLabel{{ pedido.id }}">Confirmar
-                                                Exclusão</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            Tem certeza que deseja excluir o pedido <strong>#{{ pedido.id }}</strong>?
-                                            <br>
-                                            <span class="text-danger"><small>Esta ação não poderá ser
-                                                    desfeita.</small></span>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary"
-                                                data-bs-dismiss="modal">Cancelar</button>
-                                            <form method="POST"
-                                                action="{{ url_for('deletar_pedido_saida', id=pedido.id) }}">
-                                                <button type="submit" class="btn btn-danger">Excluir</button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
+                            {% if pedido.status_pedido not in ('cancelado', 'concluido') %}
+                            <form method="POST" id="cancelar-pedido-{{ pedido.id }}"
+                                action="{{ url_for('cancelar_pedido', id=pedido.id) }}"></form>
+
+                            {% with id='cancelar-pedido-' ~ pedido.id,
+                                    form_id='cancelar-pedido-' ~ pedido.id,
+                                    titulo='Cancelar pedido',
+                                    texto='Cancelar o pedido #' ~ pedido.id ~ '? O estoque volta para o galpão.',
+                                    icone='bi-x-circle-fill',
+                                    classe='acao-btn btn-desativar',
+                                    confirmar='Cancelar pedido' %}
+                            {% include '_confirmar.html' %}
+                            {% endwith %}
+                            {% endif %}
+
+                            {% if pode_gerenciar %}
+                            <form method="POST" id="excluir-pedido-{{ pedido.id }}"
+                                action="{{ url_for('deletar_pedido_saida', id=pedido.id) }}"></form>
+
+                            {% with id='excluir-pedido-' ~ pedido.id,
+                                    form_id='excluir-pedido-' ~ pedido.id,
+                                    titulo='Excluir pedido',
+                                    texto='Excluir o pedido #' ~ pedido.id ~ '? Esta ação não poderá ser desfeita.',
+                                    icone='bi-trash3-fill',
+                                    classe='acao-btn delete',
+                                    confirmar='Excluir', perigo=True %}
+                            {% include '_confirmar.html' %}
+                            {% endwith %}
+                            {% endif %}
                             </div>
                         </td>
 

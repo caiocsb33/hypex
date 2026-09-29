@@ -94,17 +94,26 @@ Software HYPEX - Fornecedores
 
         </header>
 
-        <section class="barra-pesquisa">
+        <!-- Pesquisa resolvida no servidor: o formulário envia ?busca=... por GET
+             e a rota devolve a lista já filtrada. Os botões "Filtros" e "Exportar"
+             foram retirados: não tinham nenhuma ação por trás. -->
+        <form method="GET" class="barra-pesquisa" action="{{ url_for('fornecedores') }}">
             <div class="caixa-pesquisa">
-                <i class="bi-solid bi-search"></i>
-                <input type="text" placeholder="Buscar Fornecedores...">
+                <i class="bi bi-search"></i>
+                <input type="text" name="busca" value="{{ busca }}"
+                    placeholder="Buscar por nome, contato, e-mail, CNPJ ou telefone...">
             </div>
             <div class="pesquias-botao">
-                <button class="action-btn filter-btn"><i class="bi-solid bi-funnel-fill"></i> Filtros</button>
-                <button class="action-btn export-btn"><i class="bi-solid bi-cloud-arrow-down-fill"></i>
-                    Exportar</button>
+                {% with limpar_url=url_for('fornecedores') %}
+                {% include '_filtros.html' %}
+                {% endwith %}
+                {% if busca %}
+                <a class="action-btn" href="{{ url_for('fornecedores') }}">
+                    <i class="bi bi-x-lg"></i> Limpar
+                </a>
+                {% endif %}
             </div>
-        </section>
+        </form>
 
         <section class="fornecedores-cards">
             {% if fornecedores %}
@@ -128,7 +137,7 @@ Software HYPEX - Fornecedores
 
                     <div class="card-detalhe">
                         <p class="contato-detalhe"><i class="bi-solid bi-envelope-fill"></i> {{ fornecedor.email }}</p>
-                        <p class="contato-detalhe"><i class="bi-solid bi-phone-fill"></i> {{ fornecedor.telefone }}</p>
+                        <p class="contato-detalhe"><i class="bi-solid bi-phone-fill"></i> {{ fornecedor.telefone | telefone if fornecedor.telefone else "—" }}</p>
                     </div>
 
                     <div class="card-produtos">

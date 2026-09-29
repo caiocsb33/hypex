@@ -94,7 +94,7 @@ Software HYPEX - Pedido de Entrada
                             data-preco="{{ '%.2f' | format(produto.preco_custo) }}"
                             {% if produto_id==produto.id %}selected{% endif %}>
                             {% if produto.sku %}{{ produto.sku }} - {% endif %}{{ produto.nome }}
-                            (custo R$ {{ produto.preco_custo | moeda }})
+                            (custo R$ {{ produto.preco_custo | moeda }}){% if not produto.ativo %} — inativo{% endif %}
                         </option>
                         {% endfor %}
                     </select>

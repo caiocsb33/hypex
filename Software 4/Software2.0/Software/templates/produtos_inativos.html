@@ -16,11 +16,9 @@ Software HYPEX - Produtos Inativos
             <h1><i class="bi bi-slash-circle-fill"></i> PRODUTOS INATIVOS</h1>
             <p>Produtos desativados — reative para voltar a movimentá-los no estoque</p>
 
-            <a href="{{ url_for('produtos') }}">
-                <button class="btn btn-voltar">
+            <a href="{{ url_for('produtos') }}" class="btn btn-voltar">
                     <i class="bi bi-arrow-left"></i> Voltar ao Estoque
-                </button>
-            </a>
+                </a>
         </div>
 
     </header>
@@ -48,6 +46,7 @@ Software HYPEX - Produtos Inativos
                     <td>{{ produto.categoria or '—' }}</td>
                     <td>R$ {{ produto.preco_venda | moeda }}</td>
                     <td class="acao-estoque">
+                        <div class="acoes-linha">
                         <a href="{{ url_for('info_produtos', id=produto.id) }}" class="acao-btn btn-visualizar"
                             title="Visualizar">
                             <i class="bi bi-eye-fill"></i>
@@ -55,7 +54,10 @@ Software HYPEX - Produtos Inativos
 
                         <form method="POST" id="reativar-{{ produto.id }}"
                             action="{{ url_for('reativar_produto', id=produto.id) }}"
-                            class="d-inline"></form>
+                            class="d-inline">
+                            <input type="hidden" name="voltar_para"
+                            value="{{ request.full_path if request.query_string else request.path }}">
+                            </form>
 
                         {% with id='reativar-' ~ produto.id,
                                 form_id='reativar-' ~ produto.id,
@@ -67,9 +69,13 @@ Software HYPEX - Produtos Inativos
                         {% include '_confirmar.html' %}
                         {% endwith %}
 
+                        {% if pode_gerenciar %}
                         <form method="POST" id="excluir-{{ produto.id }}"
                             action="{{ url_for('excluir_produto', id=produto.id) }}"
-                            class="d-inline"></form>
+                            class="d-inline">
+                            <input type="hidden" name="voltar_para"
+                            value="{{ request.full_path if request.query_string else request.path }}">
+                            </form>
 
                         {% with id='excluir-' ~ produto.id,
                                 form_id='excluir-' ~ produto.id,
@@ -80,6 +86,8 @@ Software HYPEX - Produtos Inativos
                                 confirmar='Excluir', perigo=True %}
                         {% include '_confirmar.html' %}
                         {% endwith %}
+                        {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% else %}

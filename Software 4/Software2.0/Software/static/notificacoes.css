@@ -157,8 +157,13 @@
     padding: 20px;
 }
 
-/* O checkbox marcado abre a janela que vem logo depois dele */
-.confirmacao-gatilho:checked ~ .confirmacao {
+/* O checkbox marcado abre a janela que vem logo depois dele.
+
+   Usa irmão ADJACENTE (+) em vez de irmão geral (~): com dois botões de
+   confirmação no mesmo lugar (desativar e excluir na mesma linha da tabela),
+   o `~` abria os dois de uma vez e o segundo cobria o primeiro, deixando o
+   botão do primeiro sem resposta ao clique. */
+.confirmacao-gatilho:checked + label + .confirmacao {
     display: flex;
 }
 
@@ -231,20 +236,7 @@
 .confirmacao-acoes label {
     cursor: pointer;
     margin: 0;
-}
-
-body.modo-escuro .confirmacao-caixa {
-    background-color: #1e1e1e;
-    color: #f1f1f1;
-}
-
-body.modo-escuro .confirmacao-topo,
-body.modo-escuro .confirmacao-acoes {
-    border-color: #333333;
-}
-
-
-/* Estilo próprio dos botões da confirmação.
+}/* Estilo próprio dos botões da confirmação.
    As classes .btn vêm do Bootstrap; estas regras garantem que a janela
    continue apresentável mesmo se o CDN não carregar. */
 
@@ -288,9 +280,4 @@ body.modo-escuro .confirmacao-acoes {
 
 .confirmacao-acoes .btn-danger:hover {
     background-color: #c62d28;
-}
-
-body.modo-escuro .confirmacao-acoes .btn-secondary {
-    background-color: #333333;
-    color: #e6e6e6;
 }

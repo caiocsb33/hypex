@@ -1,6 +1,6 @@
 
 from functools import wraps
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
 from werkzeug.security import generate_password_hash, check_password_hash
 from core.database import Database
 import json
@@ -18,16 +18,242 @@ import re
 import secrets
 from datetime import datetime, timedelta
 import os
+import io
 
 app = Flask(__name__)
 
-app.secret_key = os.environ.get("FLASK_SECRET_KEY") or secrets.token_hex(32)
+def carregar_chave_secreta():
+    """Chave que assina a sessão.
+
+    Uma chave aleatória a cada inicialização derrubava o login de todo mundo
+    sempre que o servidor reiniciava (e não funciona com mais de um processo).
+    Sem FLASK_SECRET_KEY no ambiente, a chave é gerada uma vez e guardada em
+    instance/secret_key, fora do versionamento.
+    """
+    chave = os.environ.get("FLASK_SECRET_KEY")
+    if chave:
+        return chave
+
+    pasta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance")
+    arquivo = os.path.join(pasta, "secret_key")
+    try:
+        with open(arquivo) as f:
+            chave = f.read().strip()
+    except FileNotFoundError:
+        chave = ""
+    if not chave:
+        os.makedirs(pasta, exist_ok=True)
+        chave = secrets.token_hex(32)
+        with open(arquivo, "w") as f:
+            f.write(chave)
+    return chave
+
+
+app.secret_key = carregar_chave_secreta()
+
+# O cookie de sessão não vai junto em POSTs vindos de outros sites e não é
+# acessível por JavaScript.
+app.config.update(
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_HTTPONLY=True,
+)
+
+
+@app.before_request
+def bloquear_post_de_outro_site():
+    """Proteção contra CSRF.
+
+    Sem isso, uma página de outro site podia enviar um formulário escondido
+    para /produto/desativar/1, /cliente/deletar/1... usando a sessão de
+    quem estivesse logado. Todo POST precisa vir do próprio sistema:
+    o navegador informa a origem no cabeçalho Origin (ou Referer).
+    """
+    if request.method != "POST":
+        return None
+
+    origem = request.headers.get("Origin") or request.headers.get("Referer")
+    if not origem:
+        # Clientes sem navegador (testes, scripts internos) não mandam origem
+        return None
+
+    from urllib.parse import urlparse
+    if urlparse(origem).netloc != request.host:
+        abort(403)
+    return None
+
+
+@app.after_request
+def cabecalhos_de_seguranca(resposta):
+    # Não deixa outro site abrir o sistema dentro de um iframe (clickjacking)
+    resposta.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
+    # O navegador respeita o tipo do arquivo (imagens enviadas não viram script)
+    resposta.headers.setdefault("X-Content-Type-Options", "nosniff")
+    resposta.headers.setdefault("Referrer-Policy", "same-origin")
+    return resposta
+
+
+# ------------ LIMITE DE TENTATIVAS DE LOGIN ----------#
+# Em memória: suficiente para um processo. Com vários servidores, trocar por
+# uma tabela ou Redis.
+TENTATIVAS_LOGIN = {}
+LIMITE_TENTATIVAS = 5
+JANELA_BLOQUEIO = timedelta(minutes=15)
+
+
+def _chave_login(email):
+    return (email or "").lower(), request.remote_addr
+
+
+def login_bloqueado(email):
+    """Minutos restantes de bloqueio, ou 0."""
+    falhas = [t for t in TENTATIVAS_LOGIN.get(_chave_login(email), [])
+              if datetime.now() - t < JANELA_BLOQUEIO]
+    TENTATIVAS_LOGIN[_chave_login(email)] = falhas
+    if len(falhas) >= LIMITE_TENTATIVAS:
+        restante = JANELA_BLOQUEIO - (datetime.now() - falhas[0])
+        return max(1, int(restante.total_seconds() // 60) + 1)
+    return 0
+
+
+def registrar_falha_login(email):
+    TENTATIVAS_LOGIN.setdefault(_chave_login(email), []).append(datetime.now())
+
+
+def limpar_falhas_login(email):
+    TENTATIVAS_LOGIN.pop(_chave_login(email), None)
+
+
+# ---------------- NOTIFICAÇÕES ---------------- #
+
+# Preferências guardadas na tabela empresa (valem para toda a equipe).
+# coluna -> (valor padrão, rótulo, explicação)
+PREFERENCIAS_NOTIFICACAO = {
+    "notif_estoque_baixo": (1, "Estoque baixo",
+                            "Avisar quando o saldo chegar no mínimo ou abaixo dele"),
+    "notif_sem_estoque": (1, "Sem estoque",
+                          "Avisar quando o saldo zerar"),
+    "notif_incluir_inativos": (1, "Incluir produtos inativos",
+                               "Também avisar sobre produtos desativados que ainda têm saldo cadastrado"),
+    "notif_pedidos_pendentes": (1, "Pedidos pendentes",
+                                "Avisar sobre pedidos de saída aguardando andamento"),
+}
+# Aviso antecipado: avisa quando o saldo estiver até X% acima do mínimo
+MARGEM_PADRAO = 0
+
+
+def preferencias_notificacao(cursor, empresa_id):
+    colunas = ", ".join(list(PREFERENCIAS_NOTIFICACAO) + ["notif_margem"])
+    try:
+        cursor.execute(f"SELECT {colunas} FROM empresa WHERE id = %s", (empresa_id,))
+        linha = cursor.fetchone() or {}
+    except Exception:
+        linha = {}
+    prefs = {c: bool(linha.get(c, p[0]) if linha.get(c) is not None else p[0])
+             for c, p in PREFERENCIAS_NOTIFICACAO.items()}
+    prefs["notif_margem"] = int(linha.get("notif_margem") or MARGEM_PADRAO)
+    return prefs
+
+
+def alertas_estoque(cursor, empresa_id, prefs=None, limite=None):
+    """Saldos que precisam de atenção, por galpão.
+
+    É a regra única usada pelo sininho e pelo dashboard. Antes os dois só
+    olhavam produtos com ativo = TRUE, e um produto desativado (ou com a
+    situação em branco) sumia dos alertas mesmo aparecendo abaixo do mínimo
+    na tela de estoque.
+    """
+    prefs = prefs or preferencias_notificacao(cursor, empresa_id)
+    condicoes = []
+    if prefs["notif_estoque_baixo"]:
+        condicoes.append(
+            "(e.quantidade > 0 AND e.estoque_minimo > 0 "
+            "AND e.quantidade <= e.estoque_minimo * (1 + %s / 100))"
+        )
+    if prefs["notif_sem_estoque"]:
+        condicoes.append("(e.quantidade <= 0)")
+    if not condicoes:
+        return []
+
+    sql = f"""
+        SELECT p.id AS produto_id, p.nome, p.sku,
+               COALESCE(p.ativo, 1) AS ativo,
+               g.nome AS galpao, e.quantidade, e.estoque_minimo
+        FROM estoque e
+        JOIN produto p     ON p.id = e.produto_id
+        LEFT JOIN galpao g ON g.id = e.galpao_id
+        WHERE p.empresa_id = %s
+          AND ({' OR '.join(condicoes)})
+    """
+    valores = [empresa_id]
+    if prefs["notif_estoque_baixo"]:
+        valores.append(prefs["notif_margem"])
+    if not prefs["notif_incluir_inativos"]:
+        sql += " AND COALESCE(p.ativo, 1) = 1"
+    sql += " ORDER BY (e.quantidade - e.estoque_minimo), p.nome"
+    if limite:
+        sql += f" LIMIT {int(limite)}"
+
+    cursor.execute(sql, tuple(valores))
+    return cursor.fetchall()
+
+
+def montar_notificacoes(cursor, empresa_id):
+    """Lista pronta para o sininho: estoque e pedidos pendentes."""
+    prefs = preferencias_notificacao(cursor, empresa_id)
+    itens = []
+
+    for a in alertas_estoque(cursor, empresa_id, prefs):
+        zerado = to_float(a["quantidade"]) <= 0
+        abaixo = to_float(a["quantidade"]) <= to_float(a["estoque_minimo"])
+        itens.append({
+            "icone": "bi-x-octagon-fill" if zerado else "bi-exclamation-triangle-fill",
+            "cor": "perigo" if zerado else ("alerta" if abaixo else "aviso"),
+            "titulo": a["nome"],
+            "texto": "sem estoque" if zerado else ("com estoque baixo" if abaixo else "perto do mínimo"),
+            "detalhe": f'{fmt_quantidade(a["quantidade"])} de mínimo {fmt_quantidade(a["estoque_minimo"])}'
+                       + (f' · {a["galpao"]}' if a["galpao"] else "")
+                       + ("" if a["ativo"] else " · inativo"),
+            "link": url_for("info_produtos", id=a["produto_id"]),
+        })
+
+    if prefs["notif_pedidos_pendentes"]:
+        cursor.execute("""
+            SELECT pc.id, pc.cliente_id, pc.valor_total, c.nome AS cliente
+            FROM pedido_cliente pc
+            LEFT JOIN cliente c ON c.id = pc.cliente_id
+            WHERE pc.empresa_id = %s AND pc.status_pedido = 'pendente'
+            ORDER BY pc.data_pedido
+        """, (empresa_id,))
+        for p in cursor.fetchall():
+            itens.append({
+                "icone": "bi-hourglass-split",
+                "cor": "info",
+                "titulo": f'Pedido #{p["id"]}',
+                "texto": "pendente",
+                "detalhe": f'{p["cliente"] or "Cliente"} · R$ {fmt_moeda(p["valor_total"])}',
+                "link": url_for("info_pedido_cliente", pedido_id=p["id"]),
+            })
+
+    return itens
+
+
+def fmt_quantidade(valor):
+    numero = to_float(valor)
+    return str(int(numero)) if numero == int(numero) else f"{numero:.3f}".rstrip("0").replace(".", ",")
+
+
+def fmt_moeda(valor):
+    return f"{to_float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 @app.context_processor
 def dados_globais():
     empresa_nome = ""
     empresa_imagem = None
+    usuario_nome = ""
+    usuario_tipo = ""
+    notificacoes_estoque = []
+    total_notificacoes = 0
 
     if "empresa_id" in session:
         conexao = Database.connect()
@@ -46,6 +272,20 @@ def dados_globais():
                 empresa_nome = empresa["nome"]
                 empresa_imagem = empresa["imagem"]
 
+            if "usuario_id" in session:
+                cursor.execute("SELECT nome, tipo FROM usuario WHERE id = %s",
+                               (session["usuario_id"],))
+                usuario = cursor.fetchone()
+                if usuario:
+                    usuario_nome = usuario["nome"] or ""
+                    usuario_tipo = usuario["tipo"] or ""
+
+            # Sininho do header: mesma regra do dashboard, com as
+            # preferências de notificação da empresa (Configuração)
+            notificacoes_estoque = montar_notificacoes(cursor, session["empresa_id"])
+            total_notificacoes = len(notificacoes_estoque)
+            notificacoes_estoque = notificacoes_estoque[:8]
+
         finally:
             cursor.close()
             conexao.close()
@@ -54,6 +294,15 @@ def dados_globais():
         "empresa_nome": empresa_nome,
         # Foto que aparece no topo do menu lateral
         "empresa_imagem": empresa_imagem,
+        # Usuário logado e notificações, mostrados no header
+        "usuario_nome": usuario_nome,
+        "usuario_primeiro_nome": usuario_nome.split()[0] if usuario_nome.strip() else "",
+        "usuario_tipo": {"admin": "Administrador", "gerente": "Gerente",
+                         "operador": "Operador"}.get(usuario_tipo, usuario_tipo.capitalize()),
+        "notificacoes_estoque": notificacoes_estoque,
+        "perfil": perfil_atual(),
+        "pode_gerenciar": pode_gerenciar(),
+        "total_notificacoes": total_notificacoes,
         # Preferências de interface guardadas na sessão. Antes ficavam no
         # localStorage e eram aplicadas por JavaScript depois que a página
         # carregava; agora chegam prontas no HTML.
@@ -71,6 +320,8 @@ def dados_globais():
 # /pedidos_cliente/1 nenhum item aparecia selecionado.
 MODULOS = {
     "dashboard": {"dashboard"},
+
+    "config": {"config", "usuarios"},
 
     "estoque": {
         "galpao", "novo_galpao", "salvar_galpao", "info_galpao",
@@ -133,9 +384,25 @@ def voltar_para(padrao="dashboard"):
     return redirect(url_for(padrao))
 
 
+def voltar_galpao(galpao_id):
+    """Volta para a tela do galpão; sem galpão válido, para a lista.
+
+    Os formulários de funcionário e empilhadeira mandam o galpão num campo
+    escondido. Sem ele o url_for estourava com erro 500.
+    """
+    if str(galpao_id or "").strip().isdigit():
+        return redirect(url_for("info_galpao", galpao_id=int(galpao_id)))
+    return redirect(url_for("galpao"))
+
+
 @app.route("/tema/alternar", methods=["POST"])
 def alternar_tema():
-    session["tema"] = "claro" if session.get("tema") == "escuro" else "escuro"
+    # O header manda o tema escolhido (lua ou sol); sem valor, alterna.
+    escolhido = request.form.get("tema")
+    if escolhido in ("claro", "escuro"):
+        session["tema"] = escolhido
+    else:
+        session["tema"] = "claro" if session.get("tema") == "escuro" else "escuro"
     return voltar_para()
 
 
@@ -146,19 +413,37 @@ def alternar_menu():
 
 # ---------------- FUNÇÕES AUXILIARES ---------------- #
 
-def to_int(value, default=0):
-    try:
-        return int(value)
-    except:
-        return default
-
 def to_float(value, default=0.0):
-    try:
+    """Converte número digitado no padrão brasileiro ou americano.
+
+    float("12,50") dava erro e o valor virava 0 sem aviso: um preço digitado
+    com vírgula era gravado como zero. Aceita "12,50", "1.234,56", "R$ 9,90"
+    e "12.5".
+    """
+    if value is None:
+        return default
+    if isinstance(value, (int, float)):
         return float(value)
-    except:
+
+    texto = str(value).strip().replace("R$", "").replace(" ", "")
+    if not texto:
         return default
 
-# ------------VALIDAÇÕES----------#
+    if "," in texto:
+        # vírgula é o decimal; pontos são separador de milhar
+        texto = texto.replace(".", "").replace(",", ".")
+
+    try:
+        return float(texto)
+    except (TypeError, ValueError):
+        return default
+
+
+def to_int(value, default=0):
+    numero = to_float(value, None)
+    if numero is None:
+        return default
+    return int(round(numero))
 
 # ------------VALIDAÇÕES----------#
 
@@ -199,6 +484,130 @@ def email_valido(email):
 def somente_numeros(valor):
     """Remove tudo que não for número."""
     return re.sub(r"\D", "", valor or "")
+
+
+def formatar_documento(valor):
+    """Aplica a máscara de CPF ou CNPJ, a partir dos números."""
+    numeros = somente_numeros(valor)
+
+    if len(numeros) == 11:
+        return (f"{numeros[:3]}.{numeros[3:6]}.{numeros[6:9]}-{numeros[9:]}")
+
+    if len(numeros) == 14:
+        return (f"{numeros[:2]}.{numeros[2:5]}.{numeros[5:8]}"
+                f"/{numeros[8:12]}-{numeros[12:]}")
+
+    return valor or ""
+
+
+def formatar_cep(valor):
+    numeros = somente_numeros(valor)
+    return f"{numeros[:5]}-{numeros[5:]}" if len(numeros) == 8 else (valor or "")
+
+
+def validar_documento(valor, obrigatorio=True):
+    """Confere um CPF ou CNPJ e devolve (numeros, erro).
+
+    Aceita o documento como a pessoa costuma digitar, com ponto, barra e
+    traço: a pontuação é removida antes de conferir. Antes a checagem era
+    feita no texto cru com isdigit(), então "12.345.678/0001-95" era
+    recusado mesmo sendo válido — e a máscara aparecia no próprio campo.
+
+    O valor devolvido é sempre só números, para o banco não guardar o mesmo
+    documento em dois formatos diferentes.
+    """
+    numeros = somente_numeros(valor)
+
+    if not numeros:
+        if obrigatorio:
+            return "", "Informe o CPF ou o CNPJ."
+        return None, None
+
+    if len(numeros) == 11:
+        if not validar_cpf(numeros):
+            return numeros, "CPF inválido. Confira os números digitados."
+        return numeros, None
+
+    if len(numeros) == 14:
+        if not validar_cnpj(numeros):
+            return numeros, "CNPJ inválido. Confira os números digitados."
+        return numeros, None
+
+    return numeros, "O CPF deve ter 11 números e o CNPJ, 14."
+
+
+def validar_telefone_campo(valor, obrigatorio=False):
+    """Confere o telefone aceitando parênteses, espaço e traço."""
+    numeros = somente_numeros(valor)
+
+    if not numeros:
+        if obrigatorio:
+            return "", "Informe o telefone."
+        return None, None
+
+    if len(numeros) not in (10, 11):
+        return numeros, "O telefone deve ter 10 ou 11 números, com DDD."
+
+    return numeros, None
+
+
+def validar_cep_campo(valor, obrigatorio=False):
+    """Confere o CEP aceitando o traço."""
+    numeros = somente_numeros(valor)
+
+    if not numeros:
+        if obrigatorio:
+            return "", "Informe o CEP."
+        return None, None
+
+    if len(numeros) != 8:
+        return numeros, "O CEP deve ter 8 números."
+
+    return numeros, None
+
+
+def documento_ja_usado(tabela, numeros, ignorar_id=None):
+    """Diz se o CPF/CNPJ já pertence a outro registro da tabela.
+
+    Compara sem a pontuação, para não deixar passar o mesmo documento salvo
+    em formatos diferentes por versões anteriores do sistema.
+    """
+    if not numeros:
+        return False
+
+    coluna = "cpf_cnpj" if tabela == "cliente" else "cnpj"
+
+    conexao = Database.connect()
+    cursor = conexao.cursor()
+    try:
+        sql = f"""
+            SELECT id FROM {tabela}
+            WHERE REGEXP_REPLACE(COALESCE({coluna}, ''), '[^0-9]', '') = %s
+              AND empresa_id = %s
+        """
+        valores = [numeros, session.get("empresa_id")]
+
+        if ignorar_id:
+            sql += " AND id <> %s"
+            valores.append(ignorar_id)
+
+        cursor.execute(sql + " LIMIT 1", tuple(valores))
+        return cursor.fetchone() is not None
+
+    finally:
+        cursor.close()
+        conexao.close()
+
+
+@app.template_filter("documento")
+def filtro_documento(valor):
+    """Mostra o CPF/CNPJ com máscara, esteja ele salvo como estiver."""
+    return formatar_documento(valor) or "—"
+
+
+@app.template_filter("cep")
+def filtro_cep(valor):
+    return formatar_cep(valor) or "—"
 
 
 def validar_cpf(cpf):
@@ -265,8 +674,277 @@ ESTRUTURAS_NECESSARIAS = [
     ("coluna", "fornecedor", "imagem"),
     ("coluna", "galpao", "imagem"),
     ("coluna", "empresa", "imagem"),
+    ("coluna", "cliente", "imagem"),
     ("tabela", "recuperacao_senha", None),
 ]
+
+# ------------ MULTIEMPRESA (SaaS) ----------#
+
+# Cada empresa cliente do sistema só pode ver os próprios dados. As tabelas
+# principais guardam o dono em empresa_id; as tabelas filhas (estoque, itens
+# de pedido, vínculo fornecedor-produto...) herdam o dono pelo registro pai.
+TABELAS_DA_EMPRESA = [
+    "fornecedor", "cliente", "galpao", "funcionario", "empilhadeira",
+    "produto", "movimentacao", "pedido_fornecedor", "pedido_cliente",
+]
+
+# Documentos e códigos que antes eram únicos no banco inteiro. Num SaaS duas
+# empresas podem ter o mesmo cliente ou o mesmo SKU, então a unicidade passa
+# a ser por empresa.
+UNICOS_POR_EMPRESA = {
+    "fornecedor": ["cnpj"],
+    "cliente": ["cpf_cnpj"],
+    "funcionario": ["cpf"],
+    "produto": ["sku", "codigo_barras"],
+}
+
+
+def migrar_multiempresa():
+    """Atualiza bancos criados antes da separação por empresa.
+
+    Idempotente: pode rodar a cada inicialização. Os registros antigos ficam
+    com a primeira empresa cadastrada, que era a única dona na prática.
+    """
+    try:
+        conexao = Database.connect()
+    except Exception:
+        return
+
+    cursor = conexao.cursor()
+    try:
+        cursor.execute("SELECT MIN(id) FROM empresa")
+        primeira = cursor.fetchone()[0]
+
+        for tabela in TABELAS_DA_EMPRESA:
+            cursor.execute("SHOW TABLES LIKE %s", (tabela,))
+            if not cursor.fetchone():
+                continue
+
+            cursor.execute(f"SHOW COLUMNS FROM {tabela} LIKE 'empresa_id'")
+            if not cursor.fetchone():
+                cursor.execute(f"ALTER TABLE {tabela} ADD COLUMN empresa_id INT NULL AFTER id")
+                if primeira is not None:
+                    cursor.execute(f"UPDATE {tabela} SET empresa_id = %s", (primeira,))
+                    cursor.execute(f"ALTER TABLE {tabela} MODIFY empresa_id INT NOT NULL")
+                cursor.execute(
+                    f"ALTER TABLE {tabela} ADD CONSTRAINT fk_{tabela}_empresa "
+                    f"FOREIGN KEY (empresa_id) REFERENCES empresa(id) ON DELETE CASCADE"
+                )
+
+            for coluna in UNICOS_POR_EMPRESA.get(tabela, []):
+                # Índices únicos que tenham só a coluna (o formato antigo)
+                cursor.execute(f"SHOW INDEX FROM {tabela} WHERE Non_unique = 0")
+                indices = {}
+                for linha in cursor.fetchall():
+                    indices.setdefault(linha[2], []).append(linha[4])
+                for nome, colunas in indices.items():
+                    if nome != "PRIMARY" and colunas == [coluna]:
+                        cursor.execute(f"ALTER TABLE {tabela} DROP INDEX `{nome}`")
+                if ["empresa_id", coluna] not in indices.values():
+                    cursor.execute(
+                        f"ALTER TABLE {tabela} ADD UNIQUE KEY uq_{tabela}_empresa_{coluna} "
+                        f"(empresa_id, {coluna})"
+                    )
+
+        # Clientes que perderam a situação ao serem editados (bug antigo:
+        # o formulário não enviava o campo e gravava NULL/"None")
+        cursor.execute("""
+            UPDATE cliente SET ativo = 'ativo'
+            WHERE ativo IS NULL OR ativo IN ('', 'None')
+        """)
+
+        # Foto do cliente (adicionada depois da primeira versão)
+        cursor.execute("SHOW COLUMNS FROM cliente LIKE 'imagem'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE cliente ADD COLUMN imagem VARCHAR(255) NULL")
+
+        # Preferências de notificação da empresa (tela Configuração)
+        novas = dict((c, f"TINYINT(1) NOT NULL DEFAULT {p[0]}")
+                     for c, p in PREFERENCIAS_NOTIFICACAO.items())
+        novas["notif_margem"] = f"INT NOT NULL DEFAULT {MARGEM_PADRAO}"
+        for coluna, definicao in novas.items():
+            cursor.execute(f"SHOW COLUMNS FROM empresa LIKE '{coluna}'")
+            if not cursor.fetchone():
+                cursor.execute(f"ALTER TABLE empresa ADD COLUMN {coluna} {definicao}")
+
+        conexao.commit()
+    except Exception as erro:
+        conexao.rollback()
+        app.logger.error("Falha ao migrar para multiempresa: %s", erro)
+    finally:
+        cursor.close()
+        conexao.close()
+
+
+ESTRUTURAS_NECESSARIAS += [("coluna", t, "empresa_id") for t in TABELAS_DA_EMPRESA]
+
+migrar_multiempresa()
+
+
+def empresa_atual():
+    """Empresa da sessão; toda consulta de dados filtra por ela."""
+    return session.get("empresa_id")
+
+
+# Para cada nome de parâmetro (na URL ou no formulário), a tabela dona do id.
+# Parâmetros genéricos como "id" dependem da rota e ficam em IDS_POR_ENDPOINT.
+IDS_POR_PARAMETRO = {
+    "galpao_id": "galpao",
+    "galpao_destino_id": "galpao",
+    "produto_id": "produto",
+    "fornecedor_id": "fornecedor",
+    "cliente_id": "cliente",
+    "funcionario_id": "funcionario",
+    "empilhadeira_id": "empilhadeira",
+    "usuario_id": "usuario",
+}
+
+IDS_POR_ENDPOINT = {
+    "editar_produto": ("id", "produto"),
+    "atualizar_produto": ("id", "produto"),
+    "ajustar_estoque_produto": ("id", "produto"),
+    "desativar_produto": ("id", "produto"),
+    "reativar_produto": ("id", "produto"),
+    "excluir_produto": ("id", "produto"),
+    "info_produtos": ("id", "produto"),
+    "visualizar_pedido_entrada": ("pedido_id", "pedido_fornecedor"),
+    "editar_pedido": ("id", "pedido_fornecedor"),
+    "deletar_pedido": ("id", "pedido_fornecedor"),
+    "visualizar_pedido_saida": ("pedido_id", "pedido_cliente"),
+    "editar_pedido_cliente": ("pedido_id", "pedido_cliente"),
+    "atualizar_pedido_cliente": ("pedido_id", "pedido_cliente"),
+    "deletar_pedido_saida": ("id", "pedido_cliente"),
+    "info_pedido_cliente": ("pedido_id", "pedido_cliente"),
+    "processar_pedido": ("id", "pedido_cliente"),
+    "cancelar_pedido": ("id", "pedido_cliente"),
+}
+
+
+# ------------ PERFIS DE ACESSO ----------#
+
+PERFIS = {"admin": "Administrador", "gerente": "Gerente", "operador": "Operador"}
+
+# Ações que não têm volta (excluir) ou mexem na conta da empresa ficam com
+# administradores e gerentes. O operador cadastra, edita, desativa e cancela.
+ENDPOINTS_GERENCIA = {
+    "deletar_galpao", "deletar_empilhadeira", "excluir_produto",
+    "deletar_fornecedor", "deletar_funcionario", "deletar_cliente",
+    "deletar_pedido", "deletar_pedido_saida", "salvar_empresa", "salvar_notificacoes",
+}
+
+# Gestão da equipe: só o administrador
+ENDPOINTS_ADMIN = {
+    "usuarios", "salvar_usuario", "alternar_usuario_ativo", "alterar_perfil_usuario",
+}
+
+
+def perfil_atual():
+    return session.get("tipo") or "operador"
+
+
+def pode_gerenciar():
+    return perfil_atual() in ("admin", "gerente")
+
+
+@app.before_request
+def verificar_perfil():
+    if "usuario_id" not in session or request.endpoint in (None, "static"):
+        return None
+
+    # Relê o usuário: um perfil trocado ou uma conta desativada pelo
+    # administrador vale na hora, não só no próximo login.
+    conexao = Database.connect()
+    cursor = conexao.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT tipo, ativo FROM usuario WHERE id = %s AND empresa_id = %s",
+            (session["usuario_id"], session.get("empresa_id")),
+        )
+        usuario = cursor.fetchone()
+    finally:
+        cursor.close()
+        conexao.close()
+
+    if not usuario or not usuario["ativo"]:
+        session.clear()
+        flash("Sua conta foi desativada. Fale com o administrador.", "erro")
+        return redirect(url_for("login"))
+
+    session["tipo"] = usuario["tipo"]
+
+    if request.endpoint in ENDPOINTS_ADMIN and perfil_atual() != "admin":
+        flash("Somente o administrador da conta pode gerenciar usuários.", "erro")
+        return redirect(url_for("dashboard"))
+
+    if request.endpoint in ENDPOINTS_GERENCIA and not pode_gerenciar():
+        flash("Seu perfil (Operador) não pode fazer essa ação. Fale com um gerente.", "erro")
+        destino = request.referrer or ""
+        if destino.startswith(request.host_url):
+            return redirect(destino)
+        return redirect(url_for("dashboard"))
+
+    return None
+
+
+# Rotas que recebem o id do registro num campo "id" do formulário
+IDS_NO_FORMULARIO = {
+    "atualizar_funcionario": "funcionario",
+}
+
+
+def registro_da_empresa(tabela, registro_id):
+    conexao = Database.connect()
+    cursor = conexao.cursor()
+    try:
+        cursor.execute(
+            f"SELECT 1 FROM {tabela} WHERE id = %s AND empresa_id = %s",
+            (registro_id, empresa_atual()),
+        )
+        return cursor.fetchone() is not None
+    finally:
+        cursor.close()
+        conexao.close()
+
+
+@app.before_request
+def proteger_dados_da_empresa():
+    """Barra qualquer id de outra empresa, venha da URL ou do formulário.
+
+    Sem isso bastava trocar o número na barra de endereço (/info_cliente/7)
+    para abrir, editar ou excluir dados de outro cliente do SaaS.
+    """
+    if not empresa_atual() or request.endpoint in (None, "static"):
+        return None
+
+    verificar = []
+
+    for nome, tabela in IDS_POR_PARAMETRO.items():
+        valores = []
+        if request.view_args and nome in request.view_args:
+            valores.append(request.view_args[nome])
+        valores += request.args.getlist(nome) + request.form.getlist(nome)
+        for valor in valores:
+            if str(valor).strip():
+                verificar.append((tabela, valor))
+
+    if request.endpoint in IDS_POR_ENDPOINT and request.view_args:
+        nome, tabela = IDS_POR_ENDPOINT[request.endpoint]
+        if nome in request.view_args:
+            verificar.append((tabela, request.view_args[nome]))
+
+    if request.endpoint in IDS_NO_FORMULARIO and request.form.get("id"):
+        verificar.append((IDS_NO_FORMULARIO[request.endpoint], request.form.get("id")))
+
+    for tabela, valor in verificar:
+        try:
+            registro_id = int(valor)
+        except (TypeError, ValueError):
+            abort(404)
+        if not registro_da_empresa(tabela, registro_id):
+            abort(404)
+
+    return None
+
 
 # Resultado guardado após a primeira checagem, para não consultar a cada request
 _estruturas_faltando = None
@@ -477,7 +1155,9 @@ def mensagem_erro(e):
 
     if "Duplicate entry" in texto:
         for coluna, rotulo in CAMPOS_UNICOS.items():
-            if f"key '{coluna}'" in texto or f"key '{coluna}_" in texto:
+            # "key 'cnpj'" (antigo) ou "key 'uq_cliente_empresa_cpf_cnpj'" (por empresa)
+            if (f"key '{coluna}'" in texto or f"key '{coluna}_" in texto
+                    or re.search(rf"key '(\w+\.)?uq_\w+_empresa_{coluna}'", texto)):
                 return f"Já existe um registro cadastrado com este {rotulo}."
         return "Já existe um registro cadastrado com estes dados."
 
@@ -492,6 +1172,157 @@ def mensagem_erro(e):
 
 
 # ------------ LISTAGENS (filtro e agrupamento feitos no servidor) ----------#
+
+# ---------------- ORDENAÇÃO E FILTROS DAS LISTAGENS ---------------- #
+#
+# O botão "Filtros" abre um menu (sem JavaScript) com opções de ordem e de
+# situação. As opções ficam aqui, junto da regra de ordenação, para cada tela
+# declarar só a lista que usa.
+
+def _texto(valor):
+    return str(valor or "").strip().lower()
+
+
+def _num(valor):
+    return to_float(valor)
+
+
+def _data(valor):
+    return valor or datetime.min
+
+
+ORDENS = {
+    "produtos": [
+        ("vendidos", "Mais vendidos", "bi-fire", lambda p: _num(p.get("vendidos")), True),
+        ("az", "Nome A–Z", "bi-sort-alpha-down", lambda p: _texto(p.get("nome")), False),
+        ("za", "Nome Z–A", "bi-sort-alpha-up", lambda p: _texto(p.get("nome")), True),
+        ("mais_estoque", "Mais estoque", "bi-box-seam", lambda p: _num(p.get("quantidade")), True),
+        ("menos_estoque", "Menos estoque", "bi-box", lambda p: _num(p.get("quantidade")), False),
+        ("mais_caro", "Mais caro", "bi-currency-dollar", lambda p: _num(p.get("preco_venda")), True),
+        ("mais_barato", "Mais barato", "bi-tag", lambda p: _num(p.get("preco_venda")), False),
+        ("recentes", "Cadastrados recentemente", "bi-clock-history", lambda p: _data(p.get("created_at")), True),
+    ],
+    "clientes": [
+        ("az", "Nome A–Z", "bi-sort-alpha-down", lambda c: _texto(c.get("nome")), False),
+        ("za", "Nome Z–A", "bi-sort-alpha-up", lambda c: _texto(c.get("nome")), True),
+        ("mais_pedidos", "Mais pedidos", "bi-bag-check", lambda c: _num(c.get("total_pedidos")), True),
+        ("maior_gasto", "Maior valor gasto", "bi-cash-stack", lambda c: _num(c.get("total_gasto")), True),
+        ("recentes", "Cadastrados recentemente", "bi-clock-history", lambda c: _data(c.get("created_at")), True),
+    ],
+    "fornecedores": [
+        ("az", "Nome A–Z", "bi-sort-alpha-down", lambda f: _texto(f.get("nome")), False),
+        ("za", "Nome Z–A", "bi-sort-alpha-up", lambda f: _texto(f.get("nome")), True),
+        ("mais_produtos", "Mais produtos", "bi-boxes", lambda f: _num(f.get("total_produtos")), True),
+        ("menos_produtos", "Menos produtos", "bi-box", lambda f: _num(f.get("total_produtos")), False),
+    ],
+    "galpoes": [
+        ("az", "Nome A–Z", "bi-sort-alpha-down", lambda g: _texto(g.get("nome")), False),
+        ("za", "Nome Z–A", "bi-sort-alpha-up", lambda g: _texto(g.get("nome")), True),
+        ("mais_ocupado", "Mais ocupado", "bi-graph-up-arrow", lambda g: _num(g.get("ocupacao")), True),
+        ("menos_ocupado", "Menos ocupado", "bi-graph-down-arrow", lambda g: _num(g.get("ocupacao")), False),
+        ("mais_itens", "Mais itens", "bi-boxes", lambda g: _num(g.get("total_produtos")), True),
+        ("maior_area", "Maior área", "bi-aspect-ratio", lambda g: _num(g.get("area_total")), True),
+    ],
+    "pedidos": [
+        ("recentes", "Mais recentes", "bi-clock-history", lambda p: (_data(p.get("data_pedido")), p.get("id") or 0), True),
+        ("antigos", "Mais antigos", "bi-clock", lambda p: (_data(p.get("data_pedido")), p.get("id") or 0), False),
+        ("maior_valor", "Maior valor", "bi-cash-stack", lambda p: _num(p.get("valor_total")), True),
+        ("menor_valor", "Menor valor", "bi-cash", lambda p: _num(p.get("valor_total")), False),
+    ],
+    "itens_fornecedor": [
+        ("az", "Nome A–Z", "bi-sort-alpha-down", lambda i: _texto(i.get("produto_nome")), False),
+        ("za", "Nome Z–A", "bi-sort-alpha-up", lambda i: _texto(i.get("produto_nome")), True),
+        ("mais_caro", "Maior custo", "bi-currency-dollar", lambda i: _num(i.get("preco_custo")), True),
+        ("mais_barato", "Menor custo", "bi-tag", lambda i: _num(i.get("preco_custo")), False),
+        ("menor_prazo", "Menor prazo de entrega", "bi-truck", lambda i: _num(i.get("prazo_entrega_dias")), False),
+    ],
+}
+
+# Filtros de situação por tela: valor -> (rótulo, função que decide se entra)
+SITUACOES = {
+    "produtos": [
+        ("ativos", "Ativos", lambda p: bool(p.get("ativo"))),
+        ("inativos", "Inativos", lambda p: not p.get("ativo")),
+        ("baixo", "Estoque baixo", lambda p: 0 < _num(p.get("quantidade")) <= _num(p.get("quantidade_minimo"))),
+        ("zerado", "Sem estoque", lambda p: _num(p.get("quantidade")) <= 0),
+    ],
+    "clientes": [
+        ("ativos", "Ativos", lambda c: _texto(c.get("ativo")) in ("ativo", "1", "true")),
+        ("inativos", "Inativos", lambda c: _texto(c.get("ativo")) not in ("ativo", "1", "true")),
+        ("com_pedidos", "Com pedidos", lambda c: _num(c.get("total_pedidos")) > 0),
+    ],
+    "fornecedores": [
+        ("ativos", "Ativos", lambda f: _texto(f.get("ativo")) in ("ativo", "1", "true")),
+        ("inativos", "Inativos", lambda f: _texto(f.get("ativo")) not in ("ativo", "1", "true")),
+    ],
+    "pedidos": [
+        ("pendente", "Pendentes", lambda p: _texto(p.get("status_pedido") or p.get("status")) == "pendente"),
+        ("concluidos", "Concluídos/recebidos", lambda p: _texto(p.get("status_pedido") or p.get("status")) in ("concluido", "recebido", "pago", "enviado")),
+        ("cancelado", "Cancelados", lambda p: _texto(p.get("status_pedido") or p.get("status")) == "cancelado"),
+    ],
+    "itens_fornecedor": [
+        ("ativos", "Ativos", lambda i: bool(i.get("ativo"))),
+        ("inativos", "Inativos", lambda i: not i.get("ativo")),
+    ],
+}
+
+
+def ordenar_e_filtrar(itens, tela):
+    """Aplica ?ordem= e ?situacao= da URL à lista e devolve o contexto do menu.
+
+    Valores desconhecidos são ignorados (voltam para a ordem padrão), então
+    uma URL editada à mão nunca quebra a tela.
+    """
+    ordens = ORDENS.get(tela, [])
+    situacoes = SITUACOES.get(tela, [])
+
+    situacao = request.args.get("situacao", "")
+    regra_situacao = next((s for s in situacoes if s[0] == situacao), None)
+    if regra_situacao:
+        itens = [item for item in itens if regra_situacao[2](item)]
+    else:
+        situacao = ""
+
+    ordem = request.args.get("ordem", "")
+    regra = next((o for o in ordens if o[0] == ordem), None)
+    if regra:
+        itens = sorted(itens, key=regra[3], reverse=regra[4])
+    else:
+        ordem = ""
+
+    menu = {
+        "ordens": [(o[0], o[1], o[2]) for o in ordens],
+        "situacoes": [(s[0], s[1]) for s in situacoes],
+        "ordem": ordem,
+        "situacao": situacao,
+    }
+    return list(itens), menu
+
+
+def vendas_por_produto():
+    """Quantidade vendida de cada produto da empresa (pedidos não cancelados)."""
+    conexao = Database.connect()
+    cursor = conexao.cursor()
+    try:
+        cursor.execute("""
+            SELECT ipc.produto_id, COALESCE(SUM(ipc.quantidade), 0)
+            FROM item_pedido_cliente ipc
+            JOIN pedido_cliente pc ON pc.id = ipc.pedido_cliente_id
+            WHERE pc.empresa_id = %s AND pc.status_pedido <> 'cancelado'
+            GROUP BY ipc.produto_id
+        """, (session["empresa_id"],))
+        return {linha[0]: float(linha[1]) for linha in cursor.fetchall()}
+    finally:
+        cursor.close()
+        conexao.close()
+
+
+def com_vendas(produtos):
+    vendas = vendas_por_produto()
+    for produto in produtos:
+        produto["vendidos"] = vendas.get(produto.get("id"), 0)
+    return produtos
+
 
 def filtrar_produtos(produtos, busca):
     """Filtra a listagem de produtos pelo texto digitado na barra de pesquisa.
@@ -580,54 +1411,103 @@ def dashboard():
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
+    # Todos os números são só da empresa logada
+    emp = session["empresa_id"]
+
     try:
         # ---- Contagens gerais ----
-        cursor.execute("SELECT COUNT(*) AS total FROM fornecedor")
+        cursor.execute("SELECT COUNT(*) AS total FROM fornecedor WHERE empresa_id = %s", (emp,))
         total_fornecedores = cursor.fetchone()["total"]
 
-        cursor.execute("SELECT COUNT(*) AS total FROM cliente")
+        cursor.execute("SELECT COUNT(*) AS total FROM cliente WHERE empresa_id = %s", (emp,))
         total_clientes = cursor.fetchone()["total"]
 
-        cursor.execute("SELECT COUNT(*) AS total FROM galpao")
+        cursor.execute("SELECT COUNT(*) AS total FROM galpao WHERE empresa_id = %s", (emp,))
         total_galpoes = cursor.fetchone()["total"]
 
-        cursor.execute("SELECT COUNT(*) AS total FROM produto WHERE ativo = TRUE")
+        cursor.execute("SELECT COUNT(*) AS total FROM produto WHERE ativo = TRUE AND empresa_id = %s", (emp,))
         total_produtos = cursor.fetchone()["total"]
 
         # ---- Ganhos: pedidos de saída que não foram cancelados ----
         cursor.execute("""
             SELECT COALESCE(SUM(valor_total), 0) AS total
             FROM pedido_cliente
-            WHERE status_pedido <> 'cancelado'
-        """)
+            WHERE empresa_id = %s
+              AND status_pedido <> 'cancelado'
+        """, (emp,))
         ganhos = to_float(cursor.fetchone()["total"])
 
         # ---- Gastos: pedidos de entrada que não foram cancelados ----
         cursor.execute("""
             SELECT COALESCE(SUM(valor_total), 0) AS total
             FROM pedido_fornecedor
-            WHERE status <> 'cancelado'
-        """)
+            WHERE empresa_id = %s
+              AND status <> 'cancelado'
+        """, (emp,))
         gastos = to_float(cursor.fetchone()["total"])
 
         lucro = ganhos - gastos
+
+        # ---- Gráfico: ganhos, gastos e lucro dos últimos 6 meses ----
+        cursor.execute("""
+            SELECT DATE_FORMAT(data_pedido, '%Y-%m') AS mes, SUM(valor_total) AS total
+            FROM pedido_cliente
+            WHERE empresa_id = %s
+              AND status_pedido <> 'cancelado'
+              AND data_pedido >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 5 MONTH)
+            GROUP BY mes
+        """, (emp,))
+        ganhos_por_mes = {l["mes"]: to_float(l["total"]) for l in cursor.fetchall()}
+
+        cursor.execute("""
+            SELECT DATE_FORMAT(data_pedido, '%Y-%m') AS mes, SUM(valor_total) AS total
+            FROM pedido_fornecedor
+            WHERE empresa_id = %s
+              AND status <> 'cancelado'
+              AND data_pedido >= DATE_SUB(DATE_FORMAT(CURDATE(), '%Y-%m-01'), INTERVAL 5 MONTH)
+            GROUP BY mes
+        """, (emp,))
+        gastos_por_mes = {l["mes"]: to_float(l["total"]) for l in cursor.fetchall()}
+
+        nomes_meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+                       "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+        hoje_data = datetime.now()
+        grafico_lucro = []
+        for atras in range(5, -1, -1):
+            ano, mes = hoje_data.year, hoje_data.month - atras
+            while mes < 1:
+                mes += 12
+                ano -= 1
+            chave = f"{ano}-{mes:02d}"
+            g = ganhos_por_mes.get(chave, 0.0)
+            c = gastos_por_mes.get(chave, 0.0)
+            grafico_lucro.append({"rotulo": nomes_meses[mes - 1], "ganhos": g,
+                                  "gastos": c, "lucro": g - c})
+
+        # Altura de cada barra em % da maior, calculada aqui para o
+        # template só desenhar (sem biblioteca de gráfico nem JS)
+        maior = max([abs(m["lucro"]) for m in grafico_lucro] + [1])
+        for m in grafico_lucro:
+            m["altura"] = round(abs(m["lucro"]) / maior * 100, 1)
 
         # ---- Comparação com o mês anterior, para a variação percentual ----
         cursor.execute("""
             SELECT COALESCE(SUM(valor_total), 0) AS total
             FROM pedido_cliente
-            WHERE status_pedido <> 'cancelado'
+            WHERE empresa_id = %s
+              AND status_pedido <> 'cancelado'
               AND data_pedido >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
-        """)
+        """, (emp,))
         ganhos_mes = to_float(cursor.fetchone()["total"])
 
         cursor.execute("""
             SELECT COALESCE(SUM(valor_total), 0) AS total
             FROM pedido_cliente
-            WHERE status_pedido <> 'cancelado'
+            WHERE empresa_id = %s
+              AND status_pedido <> 'cancelado'
               AND data_pedido >= DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01')
               AND data_pedido <  DATE_FORMAT(CURDATE(), '%Y-%m-01')
-        """)
+        """, (emp,))
         ganhos_mes_anterior = to_float(cursor.fetchone()["total"])
 
         if ganhos_mes_anterior > 0:
@@ -641,8 +1521,9 @@ def dashboard():
             SELECT COALESCE(SUM(e.quantidade * p.preco_custo), 0) AS total
             FROM estoque e
             JOIN produto p ON p.id = e.produto_id
-            WHERE p.ativo = TRUE
-        """)
+            WHERE p.empresa_id = %s
+              AND p.ativo = TRUE
+        """, (emp,))
         valor_estoque = to_float(cursor.fetchone()["total"])
 
         # ---- Produtos mais vendidos ----
@@ -653,11 +1534,12 @@ def dashboard():
             FROM item_pedido_cliente ipc
             JOIN produto p        ON p.id = ipc.produto_id
             JOIN pedido_cliente pc ON pc.id = ipc.pedido_cliente_id
-            WHERE pc.status_pedido <> 'cancelado'
+            WHERE pc.empresa_id = %s
+              AND pc.status_pedido <> 'cancelado'
             GROUP BY p.id
             ORDER BY quantidade DESC
             LIMIT 5
-        """)
+        """, (emp,))
         mais_vendidos = cursor.fetchall()
 
         # ---- Últimas movimentações ----
@@ -667,33 +1549,17 @@ def dashboard():
             FROM movimentacao m
             JOIN produto p      ON p.id = m.produto_id
             LEFT JOIN galpao g  ON g.id = m.galpao_id
+            WHERE m.empresa_id = %s
             ORDER BY m.data_movimentacao DESC, m.id DESC
             LIMIT 5
-        """)
+        """, (emp,))
         atividades = cursor.fetchall()
 
         # ---- Alertas de estoque baixo ----
-        cursor.execute("""
-            SELECT p.nome, p.sku, g.nome AS galpao,
-                   e.quantidade, e.estoque_minimo
-            FROM estoque e
-            JOIN produto p     ON p.id = e.produto_id
-            LEFT JOIN galpao g ON g.id = e.galpao_id
-            WHERE p.ativo = TRUE
-              AND e.quantidade <= e.estoque_minimo
-            ORDER BY (e.quantidade - e.estoque_minimo), p.nome
-            LIMIT 5
-        """)
-        alertas = cursor.fetchall()
-
-        cursor.execute("""
-            SELECT COUNT(*) AS total
-            FROM estoque e
-            JOIN produto p ON p.id = e.produto_id
-            WHERE p.ativo = TRUE
-              AND e.quantidade <= e.estoque_minimo
-        """)
-        total_alertas = cursor.fetchone()["total"]
+        # Mesma regra do sininho (preferências em Configuração > Notificações)
+        todos_alertas = alertas_estoque(cursor, emp)
+        alertas = todos_alertas[:5]
+        total_alertas = len(todos_alertas)
 
         cursor.execute("SELECT nome FROM empresa WHERE id = %s", (session["empresa_id"],))
         empresa = cursor.fetchone()
@@ -713,6 +1579,7 @@ def dashboard():
         ganhos=ganhos,
         gastos=gastos,
         lucro=lucro,
+        grafico_lucro=grafico_lucro,
         variacao=variacao,
         valor_estoque=valor_estoque,
         mais_vendidos=mais_vendidos,
@@ -734,35 +1601,36 @@ def login():
             flash("Informe o e-mail e a senha.", "erro")
             return render_template("login.html")
 
+        espera = login_bloqueado(email)
+        if espera:
+            flash(f"Muitas tentativas erradas. Tente de novo em {espera} minuto(s).", "erro")
+            return render_template("login.html"), 429
+
         conexao = Database.connect()
         cursor = conexao.cursor(dictionary=True)
 
         try:
+            # O mesmo e-mail pode existir em mais de uma empresa do SaaS
+            # (usuario tem UNIQUE(email, empresa_id)); entra na conta cuja
+            # senha confere.
             cursor.execute("""
                 SELECT id, nome, email, senha, empresa_id, tipo, ativo
                 FROM usuario
                 WHERE email = %s
+                ORDER BY ativo DESC, id
             """, (email,))
 
-            usuario = cursor.fetchone()
-
-            print("USUARIO ENCONTRADO:", usuario)
-            print("SENHA DIGITADA:", senha)
+            usuario = next(
+                (u for u in cursor.fetchall() if check_password_hash(u["senha"], senha)),
+                None,
+            )
 
             if not usuario:
+                registrar_falha_login(email)
                 flash("Email ou senha inválidos!", "erro")
                 return render_template("login.html")
 
-            # Verifica a senha digitada contra o hash salvo no banco
-            senha_correta = check_password_hash(usuario["senha"], senha)
-
-            print("SENHA DO BANCO:", repr(usuario["senha"]))
-            print("SENHA DIGITADA:", repr(senha))
-            print("SENHA CORRETA:", senha_correta)
-
-            if not senha_correta:
-                flash("Email ou senha inválidos!", "erro")
-                return render_template("login.html")
+            limpar_falhas_login(email)
 
             if not usuario["ativo"]:
                 flash("Usuário inativo.", "erro")
@@ -783,7 +1651,7 @@ def login():
 
             app.logger.exception("Falha ao autenticar usuário")
 
-            flash(f"Erro ao realizar login: {e}", "erro")
+            flash("Não foi possível entrar agora. Tente novamente em instantes.", "erro")
 
             return render_template("login.html")
 
@@ -903,7 +1771,7 @@ def redefinir_senha(token):
         app.logger.exception("Falha ao redefinir senha")
 
         flash(
-            f"Erro ao redefinir senha: {e}",
+            f"Erro ao redefinir senha: {mensagem_erro(e)}",
             "erro"
         )
 
@@ -1025,17 +1893,48 @@ def config():
         usuario = cursor.fetchone()
 
         cursor.execute("""
-            SELECT id, nome, cnpj
+            SELECT id, nome, cnpj, imagem
             FROM empresa
             WHERE id = %s
         """, (session["empresa_id"],))
         empresa = cursor.fetchone()
 
+        notificacoes = preferencias_notificacao(cursor, session["empresa_id"])
+
     finally:
         cursor.close()
         conexao.close()
 
-    return render_template("config.html", usuario=usuario, empresa=empresa)
+    return render_template("config.html", usuario=usuario, empresa=empresa,
+                           notificacoes=notificacoes,
+                           opcoes_notificacao=PREFERENCIAS_NOTIFICACAO)
+
+
+@app.route('/config/notificacoes', methods=["POST"])
+@login_obrigatorio
+def salvar_notificacoes():
+    """Preferências de notificação da empresa (sininho e dashboard)."""
+    valores = [1 if request.form.get(coluna) else 0 for coluna in PREFERENCIAS_NOTIFICACAO]
+    margem = max(0, min(to_int(request.form.get("notif_margem")), 200))
+
+    atribuicoes = ", ".join(f"{coluna} = %s" for coluna in PREFERENCIAS_NOTIFICACAO)
+    conexao = Database.connect()
+    cursor = conexao.cursor()
+    try:
+        cursor.execute(
+            f"UPDATE empresa SET {atribuicoes}, notif_margem = %s WHERE id = %s",
+            tuple(valores) + (margem, session["empresa_id"]),
+        )
+        conexao.commit()
+        flash("Preferências de notificação salvas.", "sucesso")
+    except Exception as e:
+        conexao.rollback()
+        flash(f"Erro ao salvar notificações: {mensagem_erro(e)}", "erro")
+    finally:
+        cursor.close()
+        conexao.close()
+
+    return redirect(url_for("config") + "#notificacoes")
 
 
 @app.route('/config/perfil', methods=["POST"])
@@ -1135,7 +2034,11 @@ def alterar_senha():
 @login_obrigatorio
 def salvar_empresa():
     nome = (request.form.get("nome") or "").strip()
-    cnpj = (request.form.get("cnpj") or "").strip() or None
+
+    cnpj, erro = validar_documento(request.form.get("cnpj"), obrigatorio=False)
+    if erro:
+        flash(erro, "erro")
+        return redirect(url_for("config"))
 
     if not nome:
         flash("Informe a razão social da empresa.", "erro")
@@ -1169,6 +2072,120 @@ def salvar_empresa():
 
 # ---------------- LOGOUT ---------------- #
 
+# ---------------- USUÁRIOS DA EMPRESA (equipe) ---------------- #
+
+@app.route("/usuarios")
+@login_obrigatorio
+def usuarios():
+    conexao = Database.connect()
+    cursor = conexao.cursor(dictionary=True)
+    try:
+        cursor.execute("""
+            SELECT id, nome, email, telefone, tipo, ativo, created_at
+            FROM usuario
+            WHERE empresa_id = %s
+            ORDER BY ativo DESC, nome
+        """, (session["empresa_id"],))
+        lista = cursor.fetchall()
+    finally:
+        cursor.close()
+        conexao.close()
+
+    return render_template("usuarios.html", usuarios_empresa=lista, perfis=PERFIS)
+
+
+@app.route("/usuarios/salvar", methods=["POST"])
+@login_obrigatorio
+def salvar_usuario():
+    nome = (request.form.get("nome") or "").strip()
+    email = (request.form.get("email") or "").strip().lower()
+    senha = request.form.get("senha") or ""
+    tipo = request.form.get("tipo") or "operador"
+
+    erros = []
+    if not nome:
+        erros.append("Informe o nome.")
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        erros.append("Informe um e-mail válido.")
+    if len(senha) < 6:
+        erros.append("A senha provisória precisa ter pelo menos 6 caracteres.")
+    if tipo not in PERFIS:
+        erros.append("Perfil inválido.")
+
+    if erros:
+        for erro in erros:
+            flash(erro, "erro")
+        return redirect(url_for("usuarios"))
+
+    conexao = Database.connect()
+    cursor = conexao.cursor()
+    try:
+        cursor.execute(
+            "SELECT 1 FROM usuario WHERE email = %s AND empresa_id = %s",
+            (email, session["empresa_id"]),
+        )
+        if cursor.fetchone():
+            flash("Já existe um usuário com este e-mail na sua empresa.", "erro")
+            return redirect(url_for("usuarios"))
+
+        cursor.execute("""
+            INSERT INTO usuario (nome, email, senha, empresa_id, tipo, ativo)
+            VALUES (%s, %s, %s, %s, %s, 1)
+        """, (nome, email, generate_password_hash(senha), session["empresa_id"], tipo))
+        conexao.commit()
+        flash(f"Usuário {nome} criado. Passe a senha provisória para a pessoa entrar.", "sucesso")
+    except Exception as e:
+        conexao.rollback()
+        flash(f"Erro ao criar usuário: {mensagem_erro(e)}", "erro")
+    finally:
+        cursor.close()
+        conexao.close()
+
+    return redirect(url_for("usuarios"))
+
+
+def _alterar_usuario(usuario_id, campo, valor, mensagem):
+    """Troca perfil/ativo de alguém da equipe (nunca de si mesmo)."""
+    if usuario_id == session.get("usuario_id"):
+        flash("Você não pode alterar o próprio perfil ou desativar a própria conta.", "erro")
+        return redirect(url_for("usuarios"))
+
+    conexao = Database.connect()
+    cursor = conexao.cursor()
+    try:
+        cursor.execute(
+            f"UPDATE usuario SET {campo} = %s WHERE id = %s AND empresa_id = %s",
+            (valor, usuario_id, session["empresa_id"]),
+        )
+        conexao.commit()
+        flash(mensagem, "sucesso")
+    finally:
+        cursor.close()
+        conexao.close()
+
+    return redirect(url_for("usuarios"))
+
+
+@app.route("/usuarios/<int:usuario_id>/ativo", methods=["POST"])
+@login_obrigatorio
+def alternar_usuario_ativo(usuario_id):
+    ativar = request.form.get("ativo") == "1"
+    return _alterar_usuario(
+        usuario_id, "ativo", 1 if ativar else 0,
+        "Usuário reativado." if ativar else "Usuário desativado. A pessoa não consegue mais entrar.",
+    )
+
+
+@app.route("/usuarios/<int:usuario_id>/perfil", methods=["POST"])
+@login_obrigatorio
+def alterar_perfil_usuario(usuario_id):
+    tipo = request.form.get("tipo")
+    if tipo not in PERFIS:
+        flash("Perfil inválido.", "erro")
+        return redirect(url_for("usuarios"))
+    return _alterar_usuario(usuario_id, "tipo", tipo, f"Perfil alterado para {PERFIS[tipo]}.")
+
+
 # Sair é uma mudança de estado, então exige POST: um link GET podia ser
 # disparado por pré-carregamento do navegador e derrubar a sessão sozinho.
 @app.route('/logout', methods=["POST"])
@@ -1194,16 +2211,30 @@ def cadastro_emp():
             flash("Informe o nome da empresa.", "erro")
             return render_template("cadastro.html")
 
-        if not cnpj:
-            flash("Informe o CNPJ.", "erro")
+        # O CNPJ só era testado como "preenchido": entrava qualquer número.
+        # Agora os dígitos verificadores são conferidos, e a pontuação é
+        # aceita e removida antes de gravar.
+        cnpj, erro = validar_documento(cnpj)
+        if erro:
+            flash(erro, "erro")
+            return render_template("cadastro.html")
+
+        # CPF (11) também vale: MEI e profissionais autônomos usam o sistema
+        if len(cnpj) not in (11, 14):
+            flash("Informe um CPF (11 números) ou CNPJ (14 números).", "erro")
             return render_template("cadastro.html")
 
         if not email_valido(email):
             flash("Informe um e-mail válido.", "erro")
             return render_template("cadastro.html")
 
-        if not senha:
-            flash("Informe uma senha.", "erro")
+        telefone, erro = validar_telefone_campo(telefone)
+        if erro:
+            flash(erro, "erro")
+            return render_template("cadastro.html")
+
+        if len(senha) < 6:
+            flash("A senha precisa ter pelo menos 6 caracteres.", "erro")
             return render_template("cadastro.html")
 
         senha_hash = generate_password_hash(senha)
@@ -1214,15 +2245,17 @@ def cadastro_emp():
         try:
 
             # Verifica se o CNPJ já existe
+            # Compara sem a pontuação: empresas cadastradas por versões
+            # anteriores podem ter o CNPJ salvo com ponto e barra.
             cursor.execute("""
                 SELECT id
                 FROM empresa
-                WHERE cnpj = %s
+                WHERE REGEXP_REPLACE(COALESCE(cnpj, ''), '[^0-9]', '') = %s
                 LIMIT 1
             """, (cnpj,))
 
             if cursor.fetchone():
-                flash("Este CNPJ já está cadastrado.", "erro")
+                flash("Este CPF/CNPJ já está cadastrado.", "erro")
                 return render_template("cadastro.html")
 
             # Verifica se o e-mail já existe
@@ -1258,11 +2291,20 @@ def cadastro_emp():
                 empresa_id
             ))
 
+            usuario_id = cursor.lastrowid
             conexao.commit()
 
-            flash("Cadastro realizado com sucesso!", "sucesso")
+            # Já entra na conta nova: quem acabou de criar a empresa não
+            # precisa digitar tudo de novo na tela de login.
+            session.clear()
+            session["usuario_logado"] = email
+            session["usuario_id"] = usuario_id
+            session["empresa_id"] = empresa_id
+            session["tipo"] = "admin"
 
-            return redirect(url_for("login"))
+            flash(f"Bem-vindo! A conta da {nome} está pronta. Comece cadastrando um galpão.", "sucesso")
+
+            return redirect(url_for("dashboard"))
 
         except Exception as e:
 
@@ -1271,7 +2313,7 @@ def cadastro_emp():
             app.logger.exception("Falha ao cadastrar empresa")
 
             flash(
-                f"Erro ao cadastrar empresa: {e}",
+                f"Erro ao cadastrar empresa: {mensagem_erro(e)}",
                 "erro"
             )
 
@@ -1290,9 +2332,13 @@ def estoque():
     # Visão consolidada: soma o estoque do produto em todos os galpões.
     busca = (request.args.get("busca") or "").strip()
 
+    produtos, menu = ordenar_e_filtrar(
+        com_vendas(filtrar_produtos(Estoque.find_all_consolidado(), busca)), "produtos")
+
     return render_template(
         "estoque.html",
-        produtos=filtrar_produtos(Estoque.find_all_consolidado(), busca),
+        produtos=produtos,
+        menu_filtros=menu,
         fornecedores=Fornecedor.find_all(),
         galpao=None,
         galpoes=Galpao.find_all(),
@@ -1316,9 +2362,12 @@ def estoque_galpao(galpao_id):
     # mesmo galpão aparece em uma única linha com a quantidade somada.
     produtos = agrupar_produtos_por_id(Estoque.find_by_galpao(galpao_id))
 
+    produtos, menu = ordenar_e_filtrar(com_vendas(filtrar_produtos(produtos, busca)), "produtos")
+
     return render_template(
         "estoque.html",
-        produtos=filtrar_produtos(produtos, busca),
+        produtos=produtos,
+        menu_filtros=menu,
         fornecedores=Fornecedor.find_all(),
         galpao=galpao,
         galpoes=Galpao.find_all(),
@@ -1374,35 +2423,12 @@ def atualizar_galpao(galpao_id):
         # TELEFONE
         # =========================
 
-        telefone = request.form.get("telefone", "").strip()
+        # Aceita "(15) 99999-9999" ou só números, como as outras telas
+        telefone, erro = validar_telefone_campo(request.form.get("telefone"))
 
-        if telefone and not telefone.isdigit():
-            flash(
-                "O telefone deve conter apenas números.",
-                "erro"
-            )
-
-            return redirect(
-                url_for(
-                    "info_galpao",
-                    galpao_id=galpao_id
-                )
-            )
-
-        if telefone and len(telefone) not in [10, 11]:
-            flash(
-                "O telefone deve ter 10 ou 11 números.",
-                "erro"
-            )
-
-            return redirect(
-                url_for(
-                    "info_galpao",
-                    galpao_id=galpao_id
-                )
-            )
-
-        telefone = formatar_telefone(telefone)
+        if erro:
+            flash(erro, "erro")
+            return redirect(url_for("info_galpao", galpao_id=galpao_id))
 
 
         # =========================
@@ -1512,7 +2538,7 @@ def atualizar_galpao(galpao_id):
     except Exception as e:
 
         flash(
-            f"Erro ao atualizar o galpão: {e}",
+            f"Erro ao atualizar o galpão: {mensagem_erro(e)}",
             "erro"
         )
 
@@ -1537,11 +2563,13 @@ def deletar_galpao(galpao_id):
         )
 
     except Exception as e:
-
-        flash(
-            f"Erro ao excluir o galpão: {e}",
-            "erro"
-        )
+        if "foreign key" in str(e).lower() or "1451" in str(e):
+            flash("Este galpão tem movimentações ou pedidos registrados e não pode ser "
+                  "excluído, para não apagar o histórico. Você pode mudar o status "
+                  "dele para Inativo.", "erro")
+        else:
+            flash(f"Erro ao excluir o galpão: {mensagem_erro(e)}", "erro")
+        return redirect(url_for("info_galpao", galpao_id=galpao_id))
 
     return redirect(
         url_for("galpao")
@@ -1571,7 +2599,7 @@ def salvar_empilhadeira():
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
 
-    return redirect(url_for("info_galpao", galpao_id=request.form.get("galpao_id")))
+    return voltar_galpao(request.form.get("galpao_id"))
 
 @app.route("/empilhadeira/atualizar/<int:empilhadeira_id>", methods=["POST"])
 @login_obrigatorio
@@ -1595,7 +2623,7 @@ def atualizar_empilhadeira(empilhadeira_id):
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
 
-    return redirect(url_for("info_galpao", galpao_id=galpao_id))
+    return voltar_galpao(galpao_id)
 
 
 @app.route("/empilhadeira/deletar/<int:empilhadeira_id>", methods=["POST"])
@@ -1611,7 +2639,7 @@ def deletar_empilhadeira(empilhadeira_id):
         flash("Empilhadeira removida com sucesso!", "sucesso")
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
-    return redirect(url_for("info_galpao", galpao_id=galpao_id))
+    return voltar_galpao(galpao_id)
 
 # ---------------- PRODUTOS ---------------- #
 
@@ -1622,9 +2650,13 @@ def produtos():
     # porque vários redirecionamentos apontam para "produtos".
     busca = (request.args.get("busca") or "").strip()
 
+    lista, menu = ordenar_e_filtrar(
+        com_vendas(filtrar_produtos(Estoque.find_all_consolidado(), busca)), "produtos")
+
     return render_template(
         "estoque.html",
-        produtos=filtrar_produtos(Estoque.find_all_consolidado(), busca),
+        produtos=lista,
+        menu_filtros=menu,
         fornecedores=Fornecedor.find_all(),
         galpao=None,
         galpoes=Galpao.find_all(),
@@ -1649,7 +2681,8 @@ def salvar_produto():
 
     try:
         # 1. Verifica se o produto já existe pelo SKU
-        cursor.execute("SELECT id FROM produto WHERE sku = %s LIMIT 1", (sku,))
+        cursor.execute("SELECT id FROM produto WHERE sku = %s AND empresa_id = %s LIMIT 1",
+                       (sku, session["empresa_id"]))
         produto_existente = cursor.fetchone()
 
         if produto_existente:
@@ -1672,25 +2705,16 @@ def salvar_produto():
             
             cursor.execute("""
                 INSERT INTO produto 
-                (sku, nome, descricao, categoria, preco_custo, preco_venda, peso, volume, tipo, codigo_barras, item_por_caixa, ativo)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
-            """, dados_produto)
+                (empresa_id, sku, nome, descricao, categoria, preco_custo, preco_venda, peso, volume, tipo, codigo_barras, item_por_caixa, ativo)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 1)
+            """, (session["empresa_id"],) + dados_produto)
             
             produto_id = cursor.lastrowid
 
-        # 3. Trata o upload da imagem (se enviada)
-        imagem = request.files.get("imagem")
-        if imagem and imagem.filename:
-            extensaovalida = {"png", "jpg", "jpeg", "webp"}
-            extensao = imagem.filename.rsplit(".", 1)[-1].lower() if "." in imagem.filename else ""
-            
-            if extensao in extensaovalida:
-                nome_imagem = f"produto_{produto_id}.{extensao}"
-                pasta_imagem = os.path.join(app.root_path, "static", "imagem")
-                os.makedirs(pasta_imagem, exist_ok=True)
-                imagem.save(os.path.join(pasta_imagem, nome_imagem))
-                
-                cursor.execute("UPDATE produto SET imagem = %s WHERE id = %s", (nome_imagem, produto_id))
+        # 3. Imagem: mesma validação de tipo e tamanho das outras telas
+        nome_imagem = salvar_imagem(request.files.get("imagem"), "produto", produto_id)
+        if nome_imagem:
+            cursor.execute("UPDATE produto SET imagem = %s WHERE id = %s", (nome_imagem, produto_id))
 
         # 4. Atualiza ou insere a quantidade no estoque do galpão (evita duplicar linhas)
         if galpao_id:
@@ -1831,9 +2855,9 @@ def ajustar_estoque_produto(id):
 
         cursor.execute("""
             INSERT INTO movimentacao
-                (produto_id, galpao_id, tipo, quantidade, observacao)
-            VALUES (%s, %s, 'ajuste_inventario', %s, %s)
-        """, (id, galpao_id, quantidade, observacao))
+                (empresa_id, produto_id, galpao_id, tipo, quantidade, observacao)
+            VALUES (%s, %s, %s, 'ajuste_inventario', %s, %s)
+        """, (session["empresa_id"], id, galpao_id, quantidade, observacao))
 
         conn.commit()
         flash("Saldo ajustado e movimentação registrada.", "sucesso")
@@ -1848,6 +2872,26 @@ def ajustar_estoque_produto(id):
 
     return redirect(url_for("info_produtos", id=id))
 
+def voltar_para_produto(produto_id, padrao="info_produtos"):
+    """Devolve o usuário à tela de onde a ação partiu.
+
+    Ativar, desativar ou excluir um produto pode ser feito de vários lugares
+    (estoque, itens do fornecedor, inativos, ficha do produto). O formulário
+    manda em `voltar_para` a página de origem; sem ela, cai no destino padrão.
+    Só caminhos internos são aceitos, para o campo não virar redirecionamento
+    para fora do site.
+    """
+    destino = (request.form.get("voltar_para") or "").strip()
+
+    if destino.startswith("/") and not destino.startswith("//"):
+        return redirect(destino)
+
+    if padrao == "info_produtos":
+        return redirect(url_for("info_produtos", id=produto_id))
+
+    return redirect(url_for(padrao))
+
+
 @app.route("/produto/desativar/<int:id>", methods=["POST"])
 @login_obrigatorio
 def desativar_produto(id):
@@ -1856,7 +2900,11 @@ def desativar_produto(id):
         flash("Produto desativado com sucesso!", "sucesso")
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
-    return redirect(url_for("info_produtos", id=id))
+
+    # Volta para a tela de origem (itens do fornecedor, estoque, ficha do
+    # produto). Antes caía sempre na ficha do produto, tirando o usuário da
+    # lista em que ele estava trabalhando.
+    return voltar_para_produto(id)
 
 @app.route("/produto/reativar/<int:id>", methods=["POST"])
 @login_obrigatorio
@@ -1866,7 +2914,8 @@ def reativar_produto(id):
         flash("Produto reativado com sucesso!", "sucesso")
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
-    return redirect(url_for("produtos_inativos"))
+
+    return voltar_para_produto(id, padrao="produtos_inativos")
 
 @app.route("/produtos/inativos")
 @login_obrigatorio
@@ -1881,13 +2930,16 @@ def excluir_produto(id):
         Produto.safe_delete(id)
         flash("Produto excluído com sucesso!", "sucesso")
     except ValueError as e:
+        # Produto com histórico: a mensagem já explica, e a ficha continua existindo
         flash(str(e), "erro")
         return redirect(url_for("info_produtos", id=id))
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
         return redirect(url_for("info_produtos", id=id))
 
-    return redirect(url_for("produtos"))
+    # Excluído de vez: a ficha não existe mais, então volta para a lista de
+    # origem (itens do fornecedor, inativos, estoque).
+    return voltar_para_produto(id, padrao="produtos")
 
 # ---------------- INFO PRODUTO ---------------- #
 
@@ -1941,20 +2993,93 @@ def info_produtos(id):
         produto=produto,
         produtos=produtos,
         saldos=saldos,
-        galpoes=Galpao.find_all()
+        galpoes=Galpao.find_all(),
+        # A tela mostra um histórico de alterações que ainda não tem tabela
+        # no banco; sem esta lista o bloco quebrava ao ser renderizado.
+        historico=[]
     )
 
 # ---------------- GALPÕES ---------------- #
 
+# ---------------- BUSCA GERAL (campo do header) ---------------- #
+
+@app.route("/buscar")
+@login_obrigatorio
+def buscar():
+    q = (request.args.get("q") or "").strip()
+    resultados = {"produtos": [], "clientes": [], "fornecedores": [], "galpoes": []}
+
+    if q:
+        termo = f"%{q}%"
+        emp = session["empresa_id"]
+        conexao = Database.connect()
+        cursor = conexao.cursor(dictionary=True)
+        try:
+            cursor.execute("""
+                SELECT id, nome, sku, categoria, ativo FROM produto
+                WHERE empresa_id = %s
+                  AND (nome LIKE %s OR sku LIKE %s OR categoria LIKE %s OR codigo_barras LIKE %s)
+                ORDER BY ativo DESC, nome LIMIT 20
+            """, (emp,) + (termo,) * 4)
+            resultados["produtos"] = cursor.fetchall()
+
+            cursor.execute("""
+                SELECT id, nome, empresa, cidade, cpf_cnpj FROM cliente
+                WHERE empresa_id = %s
+                  AND (nome LIKE %s OR empresa LIKE %s OR cpf_cnpj LIKE %s
+                       OR email LIKE %s OR cidade LIKE %s)
+                ORDER BY nome LIMIT 20
+            """, (emp,) + (termo,) * 5)
+            resultados["clientes"] = cursor.fetchall()
+
+            cursor.execute("""
+                SELECT id, nome, nome_ctt, cnpj FROM fornecedor
+                WHERE empresa_id = %s
+                  AND (nome LIKE %s OR nome_ctt LIKE %s OR cnpj LIKE %s OR email LIKE %s)
+                ORDER BY nome LIMIT 20
+            """, (emp,) + (termo,) * 4)
+            resultados["fornecedores"] = cursor.fetchall()
+
+            cursor.execute("""
+                SELECT id, nome, cidade, estado FROM galpao
+                WHERE empresa_id = %s
+                  AND (nome LIKE %s OR cidade LIKE %s OR estado LIKE %s OR nome_resp LIKE %s)
+                ORDER BY nome LIMIT 20
+            """, (emp,) + (termo,) * 4)
+            resultados["galpoes"] = cursor.fetchall()
+        finally:
+            cursor.close()
+            conexao.close()
+
+    total = sum(len(v) for v in resultados.values())
+    return render_template("busca.html", q=q, total=total, **resultados)
+
+
 @app.route("/galpao")
 @login_obrigatorio
 def galpao():
-    return render_template("galpao.html", galpoes=Galpao.find_all())
+    busca = (request.args.get("busca") or "").strip()
+    galpoes = Galpao.find_all()
+
+    if busca:
+        termo = busca.lower()
+
+        def combina(g):
+            campos = (g.get("nome"), g.get("cidade"), g.get("estado"),
+                      g.get("nome_resp"), g.get("endereco"), g.get("stats"))
+            return any(termo in str(c).lower() for c in campos if c)
+
+        galpoes = [g for g in galpoes if combina(g)]
+
+    galpoes, menu = ordenar_e_filtrar(galpoes, "galpoes")
+    return render_template("galpao.html", galpoes=galpoes, busca=busca, menu_filtros=menu)
 
 @app.route("/galpao/novo")
 @login_obrigatorio
 def novo_galpao():
-    return render_template("galpao.html")
+    # O cadastro de galpão é um modal dentro da própria listagem; renderizar
+    # o template solto deixava a tela sem os galpões e sem a barra de busca.
+    return redirect(url_for("galpao"))
 
 @app.route("/galpao/salvar", methods=["POST"])
 @login_obrigatorio
@@ -2103,7 +3228,7 @@ def salvar_galpao():
     except Exception as e:
 
         flash(
-            f"Erro: {e}",
+            f"Erro: {mensagem_erro(e)}",
             "erro"
         )
 
@@ -2114,6 +3239,8 @@ def salvar_galpao():
 @app.route("/fornecedores")
 @login_obrigatorio
 def fornecedores():
+    busca = (request.args.get("busca") or "").strip()
+
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
@@ -2135,6 +3262,8 @@ def fornecedores():
             LEFT JOIN fornecedor_produto fp
                 ON fp.fornecedor_id = f.id
 
+            WHERE f.empresa_id = %s
+
             GROUP BY
                 f.id,
                 f.nome,
@@ -2145,12 +3274,13 @@ def fornecedores():
                 f.cnpj
 
             ORDER BY f.nome ASC
-        """)
+        """, (session["empresa_id"],))
 
         lista_fornecedores = cursor.fetchall()
         
 
-        cursor.execute("SELECT id, nome, sku FROM produto ORDER BY nome ASC")
+        cursor.execute("SELECT id, nome, sku FROM produto WHERE empresa_id = %s ORDER BY nome ASC",
+                       (session["empresa_id"],))
         lista_produtos = cursor.fetchall()
 
         cursor.execute("""
@@ -2168,20 +3298,38 @@ def fornecedores():
             FROM fornecedor_produto fp
             JOIN produto p ON fp.produto_id = p.id
             JOIN fornecedor f ON fp.fornecedor_id = f.id
+            WHERE f.empresa_id = %s
             ORDER BY f.nome ASC, p.nome ASC
-        """)
+        """, (session["empresa_id"],))
         fornecedores_produtos = cursor.fetchall()
 
     finally:
         cursor.close()
         conexao.close()
 
+    # A lista principal é filtrada em Python: a consulta agrupa produtos por
+    # fornecedor, e filtrar no SQL mudaria as contagens exibidas.
+    if busca:
+        termo = busca.lower()
+
+        def combina(fornecedor):
+            campos = (fornecedor.get("nome"), fornecedor.get("nome_ctt"),
+                      fornecedor.get("email"), fornecedor.get("cnpj"),
+                      fornecedor.get("telefone"))
+            return any(termo in str(c).lower() for c in campos if c)
+
+        lista_fornecedores = [f for f in lista_fornecedores if combina(f)]
+
+    lista_fornecedores, menu = ordenar_e_filtrar(lista_fornecedores, "fornecedores")
+
     return render_template(
         "fornecedores.html",
         fornecedores=lista_fornecedores,
         lista_fornecedores=lista_fornecedores,
         lista_produtos=lista_produtos,
-        fornecedores_produtos=fornecedores_produtos
+        fornecedores_produtos=fornecedores_produtos,
+        menu_filtros=menu,
+        busca=busca
     )
 
 
@@ -2194,14 +3342,41 @@ def novo_fornecedor():
 @app.route("/fornecedor/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_fornecedor():
+    nome  = (request.form.get("nome") or "").strip()
+    email = (request.form.get("email") or "").strip()
+
+    # O fornecedor não tinha nenhuma conferência: entrava qualquer CNPJ.
+    # Agora vale a mesma regra do cliente, aceitando a pontuação.
+    cnpj, erro = validar_documento(request.form.get("cnpj"), obrigatorio=False)
+    if erro:
+        flash(erro, "erro")
+        return redirect(url_for("fornecedores"))
+
+    telefone, erro = validar_telefone_campo(request.form.get("telefone"))
+    if erro:
+        flash(erro, "erro")
+        return redirect(url_for("fornecedores"))
+
+    if not nome:
+        flash("Informe o nome do fornecedor.", "erro")
+        return redirect(url_for("fornecedores"))
+
+    if email and not email_valido(email):
+        flash("Informe um e-mail válido.", "erro")
+        return redirect(url_for("fornecedores"))
+
+    if cnpj and documento_ja_usado("fornecedor", cnpj):
+        flash("Já existe um fornecedor com este CNPJ.", "erro")
+        return redirect(url_for("fornecedores"))
+
     try:
         fornecedor = Fornecedor(
-            nome=request.form.get("nome"),
+            nome=nome,
             ativo=request.form.get("ativo"),
-            cnpj=request.form.get("cnpj"),
-            nome_ctt=request.form.get("nome_ctt"),
-            telefone=request.form.get("telefone"),
-            email=request.form.get("email")
+            cnpj=cnpj,
+            nome_ctt=(request.form.get("nome_ctt") or "").strip(),
+            telefone=telefone,
+            email=email
         )
         fornecedor.insert()
         flash("Fornecedor cadastrado!", "sucesso")
@@ -2213,6 +3388,31 @@ def salvar_fornecedor():
 @app.route("/fornecedor/atualizar/<int:fornecedor_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_fornecedor(fornecedor_id):
+    nome  = (request.form.get("nome") or "").strip()
+    email = (request.form.get("email") or "").strip()
+
+    cnpj, erro = validar_documento(request.form.get("cnpj"), obrigatorio=False)
+    if erro:
+        flash(erro, "erro")
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+    telefone, erro = validar_telefone_campo(request.form.get("telefone"))
+    if erro:
+        flash(erro, "erro")
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+    if not nome:
+        flash("Informe o nome do fornecedor.", "erro")
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+    if email and not email_valido(email):
+        flash("Informe um e-mail válido.", "erro")
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
+    if cnpj and documento_ja_usado("fornecedor", cnpj, fornecedor_id):
+        flash("Já existe outro fornecedor com este CNPJ.", "erro")
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
+
     try:
         conexao = Database.connect()
         cursor = conexao.cursor()
@@ -2222,11 +3422,11 @@ def atualizar_fornecedor(fornecedor_id):
             SET nome=%s, cnpj=%s, nome_ctt=%s, email=%s, telefone=%s, ativo=%s
             WHERE id=%s
         """, (
-            request.form.get("nome"),
-            request.form.get("cnpj"),
-            request.form.get("nome_ctt"),
-            request.form.get("email"),
-            request.form.get("telefone"),
+            nome,
+            cnpj,
+            (request.form.get("nome_ctt") or "").strip(),
+            email,
+            telefone,
             request.form.get("ativo"),
             fornecedor_id
         ))
@@ -2300,7 +3500,7 @@ def vincular_fornecedor_produto():
         flash("Produto associado ao fornecedor com sucesso!", "sucesso")
     except Exception as e:
         conexao.rollback()
-        flash(f"Erro ao salvar vínculo comercial: {e}", "erro")
+        flash(f"Erro ao salvar vínculo comercial: {mensagem_erro(e)}", "erro")
     finally:
         cursor.close()
         conexao.close()
@@ -2344,34 +3544,88 @@ def itens_fornecedor(fornecedor_id):
             flash("Fornecedor não encontrado.", "erro")
             return redirect(url_for("fornecedores"))
 
-        # Busca os produtos vinculados com todas as colunas que o template precisa
-        cursor.execute("""
-            SELECT
-                p.id            AS produto_id,
-                p.nome          AS produto_nome,
-                p.sku,
-                fp.preco_custo,
-                fp.desconto,
-                fp.quantidade_minima,
-                fp.prazo_entrega_dias,
-                fp.ativo,
-                f.nome          AS fornecedor_nome
-            FROM fornecedor_produto fp
-            JOIN produto   p ON p.id  = fp.produto_id
-            JOIN fornecedor f ON f.id = fp.fornecedor_id
-            WHERE fp.fornecedor_id = %s
-            ORDER BY p.nome ASC
-        """, (fornecedor_id,))
-        fornecedores_produtos = cursor.fetchall()
+        fornecedores_produtos = itens_do_fornecedor(cursor, fornecedor_id)
+
+        busca = (request.args.get("busca") or "").strip()
+        if busca:
+            termo = busca.lower()
+            fornecedores_produtos = [
+                i for i in fornecedores_produtos
+                if termo in _texto(i["produto_nome"]) or termo in _texto(i["sku"])
+            ]
+        fornecedores_produtos, menu = ordenar_e_filtrar(fornecedores_produtos, "itens_fornecedor")
 
         return render_template(
             "itens_fornecedores.html",
             fornecedor=fornecedor,
-            fornecedores_produtos=fornecedores_produtos
+            fornecedores_produtos=fornecedores_produtos,
+            busca=busca,
+            menu_filtros=menu,
         )
     finally:
         cursor.close()
         conexao.close()
+
+
+def itens_do_fornecedor(cursor, fornecedor_id):
+    cursor.execute("""
+        SELECT
+            p.id            AS produto_id,
+            p.nome          AS produto_nome,
+            p.sku,
+            p.imagem,
+            p.ativo         AS produto_ativo,
+            fp.preco_custo,
+            fp.desconto,
+            fp.quantidade_minima,
+            fp.prazo_entrega_dias,
+            fp.ativo,
+            f.nome          AS fornecedor_nome
+        FROM fornecedor_produto fp
+        JOIN produto   p ON p.id  = fp.produto_id
+        JOIN fornecedor f ON f.id = fp.fornecedor_id
+        WHERE fp.fornecedor_id = %s
+        ORDER BY p.nome ASC
+    """, (fornecedor_id,))
+    return cursor.fetchall()
+
+
+@app.route("/itens_fornecedores/<int:fornecedor_id>/exportar")
+@login_obrigatorio
+def exportar_itens_fornecedor(fornecedor_id):
+    """Catálogo do fornecedor em CSV (abre direto no Excel, separado por ;)."""
+    import csv
+
+    conexao = Database.connect()
+    cursor = conexao.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT nome FROM fornecedor WHERE id = %s", (fornecedor_id,))
+        fornecedor = cursor.fetchone()
+        itens = itens_do_fornecedor(cursor, fornecedor_id)
+    finally:
+        cursor.close()
+        conexao.close()
+
+    saida = io.StringIO()
+    escritor = csv.writer(saida, delimiter=";")
+    escritor.writerow(["Produto", "SKU", "Preço de custo", "Desconto (%)",
+                       "Quantidade mínima", "Prazo (dias)", "Situação"])
+    for item in itens:
+        escritor.writerow([
+            item["produto_nome"], item["sku"],
+            f'{to_float(item["preco_custo"]):.2f}'.replace(".", ","),
+            f'{to_float(item["desconto"]):.2f}'.replace(".", ","),
+            to_int(item["quantidade_minima"]), to_int(item["prazo_entrega_dias"]),
+            "Ativo" if item["ativo"] else "Inativo",
+        ])
+
+    nome = re.sub(r"[^A-Za-z0-9]+", "_", (fornecedor or {}).get("nome") or "fornecedor").strip("_")
+    # BOM no início: o Excel reconhece os acentos
+    return app.response_class(
+        "\ufeff" + saida.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="itens_{nome}.csv"'},
+    )
 
 
 # Rota nova: cria o produto E já vincula ao fornecedor em uma só ação
@@ -2453,6 +3707,9 @@ def cliente():
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
+    # Pesquisa resolvida no SQL, a partir de ?busca=... enviado pelo formulário
+    busca = (request.args.get("busca") or "").strip()
+
     sql = """
         SELECT
             c.*,
@@ -2461,25 +3718,41 @@ def cliente():
         FROM cliente c
         LEFT JOIN pedido_cliente pc
             ON pc.cliente_id = c.id
-        GROUP BY c.id
-        ORDER BY c.empresa
+           AND pc.status_pedido <> 'cancelado'
+        WHERE c.empresa_id = %s
     """
+    valores = (session["empresa_id"],)
 
-    cursor.execute(sql)
+    if busca:
+        sql += """
+          AND (c.nome LIKE %s OR c.empresa LIKE %s
+               OR c.cpf_cnpj LIKE %s OR c.email LIKE %s
+               OR c.cidade LIKE %s)
+        """
+        valores += tuple([f"%{busca}%"] * 5)
+
+    sql += " GROUP BY c.id ORDER BY c.nome"
+
+    cursor.execute(sql, valores)
     clientes = cursor.fetchall()
 
     cursor.close()
     conexao.close()
 
+    clientes, menu = ordenar_e_filtrar(clientes, "clientes")
+
     return render_template(
         "cliente.html",
-        clientes=clientes
+        clientes=clientes,
+        menu_filtros=menu,
+        busca=busca
     )
 
 @app.route("/cliente/novo")
 @login_obrigatorio
 def novo_cliente():
-    return render_template("cliente.html")
+    # Mesmo caso do galpão: o cadastro é um modal da listagem de clientes.
+    return redirect(url_for("cliente"))
 
 @app.route("/cliente/salvar", methods=["POST"])
 @login_obrigatorio
@@ -2496,67 +3769,39 @@ def salvar_cliente():
         ativo = request.form.get("ativo", "").strip()
 
         # =========================
-        # CPF / CNPJ
+        # CPF / CNPJ, TELEFONE E CEP
         # =========================
+        # A pontuação é aceita e removida antes de conferir, e só os números
+        # são gravados — assim o mesmo documento não fica salvo em dois
+        # formatos diferentes.
 
-        cpf_cnpj_numeros = somente_numeros(cpf_cnpj)
-
-        # Verifica se foi digitado somente número
-        if not cpf_cnpj.isdigit():
-            flash("CPF/CNPJ deve conter somente números.", "erro")
+        cpf_cnpj_numeros, erro = validar_documento(cpf_cnpj)
+        if erro:
+            flash(erro, "erro")
             return redirect(url_for("cliente"))
 
-        # CPF
-        if len(cpf_cnpj_numeros) == 11:
-
-            if not validar_cpf(cpf_cnpj_numeros):
-                flash("CPF inválido. Digite um CPF válido.", "erro")
-                return redirect(url_for("cliente"))
-
-        # CNPJ
-        elif len(cpf_cnpj_numeros) == 14:
-
-            if not validar_cnpj(cpf_cnpj_numeros):
-                flash("CNPJ inválido. Digite um CNPJ válido.", "erro")
-                return redirect(url_for("cliente"))
-
-        else:
-            flash(
-                "CPF deve ter 11 números ou CNPJ deve ter 14 números.",
-                "erro"
-            )
+        telefone, erro = validar_telefone_campo(telefone)
+        if erro:
+            flash(erro, "erro")
             return redirect(url_for("cliente"))
 
-        # =========================
-        # TELEFONE
-        # =========================
+        cep, erro = validar_cep_campo(cep)
+        if erro:
+            flash(erro, "erro")
+            return redirect(url_for("cliente"))
 
-        if telefone:
+        if not nome:
+            flash("Informe o nome do cliente.", "erro")
+            return redirect(url_for("cliente"))
 
-            if not telefone.isdigit():
-                flash("Telefone deve conter somente números.", "erro")
-                return redirect(url_for("cliente"))
+        if email and not email_valido(email):
+            flash("Informe um e-mail válido.", "erro")
+            return redirect(url_for("cliente"))
 
-            if len(telefone) not in [10, 11]:
-                flash(
-                    "Telefone deve ter 10 ou 11 números.",
-                    "erro"
-                )
-                return redirect(url_for("cliente"))
-
-        # =========================
-        # CEP
-        # =========================
-
-        if cep:
-
-            if not cep.isdigit():
-                flash("CEP deve conter somente números.", "erro")
-                return redirect(url_for("cliente"))
-
-            if len(cep) != 8:
-                flash("CEP deve ter exatamente 8 números.", "erro")
-                return redirect(url_for("cliente"))
+        # Um mesmo CPF/CNPJ não pode ser cadastrado duas vezes
+        if documento_ja_usado("cliente", cpf_cnpj_numeros):
+            flash("Já existe um cliente com este CPF/CNPJ.", "erro")
+            return redirect(url_for("cliente"))
 
         # =========================
         # CADASTRO
@@ -2579,25 +3824,61 @@ def salvar_cliente():
         flash("Cliente cadastrado!", "sucesso")
 
     except Exception as e:
-        flash(f"Erro: {e}", "erro")
+        flash(f"Erro: {mensagem_erro(e)}", "erro")
 
     return redirect(url_for("cliente"))
 
 # ---------------- FUNCIONÁRIOS ---------------- #
 
+def validar_cpf_funcionario(valor, ignorar_id=None):
+    """CPF do funcionário: opcional, mas quando informado precisa ser um CPF
+    válido (11 números) e não repetido dentro da empresa. Antes era gravado
+    como veio, sem conferência nenhuma."""
+    numeros, erro = validar_documento(valor, obrigatorio=False)
+    if erro:
+        return None, erro
+    if not numeros:
+        return None, None
+    if len(numeros) != 11:
+        return None, "O CPF do funcionário precisa ter 11 números."
+
+    conexao = Database.connect()
+    cursor = conexao.cursor()
+    try:
+        sql = """SELECT id FROM funcionario
+                 WHERE REGEXP_REPLACE(COALESCE(cpf, ''), '[^0-9]', '') = %s
+                   AND empresa_id = %s"""
+        valores = [numeros, session["empresa_id"]]
+        if ignorar_id:
+            sql += " AND id <> %s"
+            valores.append(ignorar_id)
+        cursor.execute(sql + " LIMIT 1", tuple(valores))
+        if cursor.fetchone():
+            return None, "Já existe um funcionário com este CPF."
+    finally:
+        cursor.close()
+        conexao.close()
+
+    return numeros, None
+
+
 @app.route("/funcionario/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_funcionario():
+    cpf, erro = validar_cpf_funcionario(request.form.get("cpf"))
+    if erro:
+        flash(erro, "erro")
+        return voltar_galpao(request.form.get("galpao_id"))
+
     try:
-        salario = request.form.get("salario")
-        salario = float(salario) if salario else 0.00
+        salario = to_float(request.form.get("salario"))
 
         funcionario = Funcionario(
             nome=request.form.get("nome"),
-            cpf=request.form.get("cpf"),
+            cpf=cpf,
             salario=salario,
-            data_nascimento=request.form.get("data_nascimento"),
-            data_admissao=request.form.get("data_admissao"),
+            data_nascimento=request.form.get("data_nascimento") or None,
+            data_admissao=request.form.get("data_admissao") or None,
             email=request.form.get("email"),
             telefone=request.form.get("telefone"),
             ativo=request.form.get("ativo"),
@@ -2610,7 +3891,7 @@ def salvar_funcionario():
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
 
-    return redirect(url_for("info_galpao", galpao_id=request.form.get("galpao_id")))
+    return voltar_galpao(request.form.get("galpao_id"))
 
 @app.route("/funcionario/atualizar", methods=["POST"])
 @login_obrigatorio
@@ -2621,7 +3902,12 @@ def atualizar_funcionario():
 
     if not funcionario_id or not nome:
         flash("Informe o funcionário e o nome.", "erro")
-        return redirect(url_for("info_galpao", galpao_id=galpao_id))
+        return voltar_galpao(galpao_id)
+
+    cpf, erro = validar_cpf_funcionario(request.form.get("cpf"), ignorar_id=funcionario_id)
+    if erro:
+        flash(erro, "erro")
+        return voltar_galpao(galpao_id)
 
     conn = Database.connect()
     cursor = conn.cursor()
@@ -2633,7 +3919,7 @@ def atualizar_funcionario():
             WHERE id=%s
         """, (
             nome,
-            request.form.get("cpf"),
+            cpf,
             to_float(request.form.get("salario")),
             request.form.get("email"),
             formatar_telefone(request.form.get("telefone", "").strip()),
@@ -2653,7 +3939,7 @@ def atualizar_funcionario():
         cursor.close()
         conn.close()
 
-    return redirect(url_for("info_galpao", galpao_id=galpao_id))
+    return voltar_galpao(galpao_id)
 
 @app.route("/funcionario/deletar/<int:funcionario_id>", methods=["POST"])
 @login_obrigatorio
@@ -2667,8 +3953,8 @@ def deletar_funcionario(funcionario_id):
         conn.close()
         flash("Funcionário removido com sucesso!", "sucesso")
     except Exception as e:
-        flash(f"Erro ao remover funcionário: {e}", "erro")
-    return redirect(url_for("info_galpao", galpao_id=galpao_id))
+        flash(f"Erro ao remover funcionário: {mensagem_erro(e)}", "erro")
+    return voltar_galpao(galpao_id)
 
 # ---------------- MOVIMENTAÇÕES ---------------- #
 
@@ -2736,6 +4022,7 @@ def salvar_movimentacao():
         cursor.execute("""
             SELECT quantidade FROM estoque
             WHERE produto_id = %s AND galpao_id = %s
+            FOR UPDATE
         """, (produto_id, galpao_id))
 
         resultado = cursor.fetchone()
@@ -2748,10 +4035,10 @@ def salvar_movimentacao():
 
         cursor.execute("""
             INSERT INTO movimentacao
-                (produto_id, galpao_id, galpao_destino_id,
+                (empresa_id, produto_id, galpao_id, galpao_destino_id,
                  funcionario_id, tipo, quantidade, observacao)
-            VALUES (%s, %s, %s, %s, %s, %s, %s)
-        """, (produto_id, galpao_id, galpao_destino_id,
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        """, (session["empresa_id"], produto_id, galpao_id, galpao_destino_id,
               funcionario_id, tipo, quantidade, observacao))
 
         if tipo == "entrada":
@@ -2812,19 +4099,60 @@ def info_cliente(cliente_id):
 @app.route("/cliente/atualizar/<int:cliente_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_cliente(cliente_id):
+    nome  = (request.form.get("nome") or "").strip()
+    email = (request.form.get("email") or "").strip()
+
+    # As mesmas regras do cadastro: antes a edição não conferia nada, então
+    # dava para gravar telefone, CEP e documento em qualquer formato.
+    cpf_cnpj, erro = validar_documento(request.form.get("cpf_cnpj"),
+                                       obrigatorio=False)
+    if erro:
+        flash(erro, "erro")
+        return redirect(url_for("info_cliente", cliente_id=cliente_id))
+
+    telefone, erro = validar_telefone_campo(request.form.get("telefone"))
+    if erro:
+        flash(erro, "erro")
+        return redirect(url_for("info_cliente", cliente_id=cliente_id))
+
+    cep, erro = validar_cep_campo(request.form.get("cep"))
+    if erro:
+        flash(erro, "erro")
+        return redirect(url_for("info_cliente", cliente_id=cliente_id))
+
+    if not nome:
+        flash("Informe o nome do cliente.", "erro")
+        return redirect(url_for("info_cliente", cliente_id=cliente_id))
+
+    if email and not email_valido(email):
+        flash("Informe um e-mail válido.", "erro")
+        return redirect(url_for("info_cliente", cliente_id=cliente_id))
+
+    if cpf_cnpj and documento_ja_usado("cliente", cpf_cnpj, cliente_id):
+        flash("Já existe outro cliente com este CPF/CNPJ.", "erro")
+        return redirect(url_for("info_cliente", cliente_id=cliente_id))
+
     try:
         dados = {
-            "nome":     request.form.get("nome"),
-            "ativo":   request.form.get("ativo"),
-            "empresa":  request.form.get("empresa"),
-            "email":    request.form.get("email"),
-            "telefone": request.form.get("telefone"),
-            "cep":      request.form.get("cep"),
-            "cidade":   request.form.get("cidade"),
+            "nome":     nome,
+            # Sem o campo no formulário, mantém a situação atual: antes o
+            # cliente virava "None" (inativo) a cada edição.
+            "ativo":    (request.form.get("ativo")
+                         if request.form.get("ativo") in ("ativo", "inativo")
+                         else (Cliente.find_by_id(cliente_id) or {}).get("ativo") or "ativo"),
+            "empresa":  (request.form.get("empresa") or "").strip(),
+            "email":    email,
+            "telefone": telefone,
+            "cep":      cep,
+            "cidade":   (request.form.get("cidade") or "").strip(),
             "estado":   request.form.get("estado"),
+            "cpf_cnpj": cpf_cnpj,
         }
         Cliente.update(cliente_id, dados)
+        atualizar_imagem("cliente", cliente_id, request.files.get("imagem"), "cliente")
         flash("Cliente atualizado com sucesso!", "sucesso")
+    except ValueError as e:
+        flash(str(e), "erro")
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
     return redirect(url_for("info_cliente", cliente_id=cliente_id))
@@ -2860,11 +4188,12 @@ def buscar_pedidos_entrada(busca=""):
             LEFT JOIN fornecedor f ON pf.fornecedor_id = f.id
             LEFT JOIN galpao     g ON pf.galpao_id     = g.id
         """
-        valores = ()
+        sql += " WHERE pf.empresa_id = %s"
+        valores = (session["empresa_id"],)
 
         if busca:
-            sql += " WHERE f.nome LIKE %s OR pf.numero_documento LIKE %s"
-            valores = (f"%{busca}%", f"%{busca}%")
+            sql += " AND (f.nome LIKE %s OR pf.numero_documento LIKE %s)"
+            valores += (f"%{busca}%", f"%{busca}%")
 
         sql += " ORDER BY pf.id DESC"
 
@@ -2886,11 +4215,12 @@ def buscar_pedidos_saida(busca=""):
             LEFT JOIN cliente c ON pc.cliente_id = c.id
             LEFT JOIN galpao  g ON pc.galpao_id  = g.id
         """
-        valores = ()
+        sql += " WHERE pc.empresa_id = %s"
+        valores = (session["empresa_id"],)
 
         if busca:
-            sql += " WHERE c.nome LIKE %s OR pc.numero_documento LIKE %s"
-            valores = (f"%{busca}%", f"%{busca}%")
+            sql += " AND (c.nome LIKE %s OR pc.numero_documento LIKE %s)"
+            valores += (f"%{busca}%", f"%{busca}%")
 
         sql += " ORDER BY pc.id DESC"
 
@@ -2974,9 +4304,9 @@ def produtos_por_galpao():
                 COALESCE(e.quantidade, 0)  AS estoque_disponivel
             FROM estoque e
             INNER JOIN produto p ON e.produto_id = p.id
-            WHERE e.quantidade > 0 AND p.ativo = TRUE
+            WHERE e.quantidade > 0 AND p.ativo = TRUE AND p.empresa_id = %s
             ORDER BY p.nome
-        """)
+        """, (session["empresa_id"],))
         produtos = cursor.fetchall()
 
         for produto in produtos:
@@ -3004,13 +4334,17 @@ def produtos_por_fornecedor():
                 p.id,
                 p.sku,
                 p.nome,
+                COALESCE(p.ativo, 1) AS ativo,
                 COALESCE(fp.preco_custo, p.preco_custo, 0) AS preco_custo
             FROM produto p
             LEFT JOIN fornecedor_produto fp
-                   ON fp.produto_id = p.id AND fp.ativo = 1
-            WHERE p.ativo = TRUE
-            ORDER BY p.nome
-        """)
+                   ON fp.produto_id = p.id AND COALESCE(fp.ativo, 1) = 1
+            -- Produtos desativados também entram: comprar de novo é
+            -- justamente como um produto volta a ter estoque. Antes eles
+            -- sumiam e a tela dizia "Nenhum produto para este fornecedor".
+            WHERE p.empresa_id = %s
+            ORDER BY COALESCE(p.ativo, 1) DESC, p.nome
+        """, (session["empresa_id"],))
         produtos = cursor.fetchall()
 
         for produto in produtos:
@@ -3040,9 +4374,9 @@ def produtos_do_fornecedor(fornecedor_id):
             cursor.execute("""
                 SELECT p.id, p.sku, p.nome, p.preco_custo
                 FROM produto p
-                WHERE p.ativo = TRUE
+                WHERE p.ativo = TRUE AND p.empresa_id = %s
                 ORDER BY p.nome
-            """)
+            """, (session["empresa_id"],))
             produtos = cursor.fetchall()
 
         for produto in produtos:
@@ -3121,9 +4455,9 @@ def api_todos_produtos():
         cursor.execute("""
             SELECT id, sku, nome, preco_custo
             FROM produto
-            WHERE ativo = TRUE
+            WHERE ativo = TRUE AND empresa_id = %s
             ORDER BY nome ASC
-        """)
+        """, (session["empresa_id"],))
         return jsonify(cursor.fetchall())
     finally:
         cursor.close()
@@ -3153,9 +4487,8 @@ def api_produtos_do_fornecedor(fornecedor_id):
                 GROUP BY produto_id
             ) e_total ON e_total.produto_id = p.id
             WHERE fp.fornecedor_id = %s
-              AND fp.ativo = 1
-              AND p.ativo = TRUE
-            ORDER BY p.nome ASC
+              AND COALESCE(fp.ativo, 1) = 1
+            ORDER BY COALESCE(p.ativo, 1) DESC, p.nome ASC
         """, (fornecedor_id,))
         return jsonify(cursor.fetchall())
     finally:
@@ -3218,6 +4551,15 @@ def adicionar_item_entrada():
 
     if quantidade <= 0:
         flash("A quantidade deve ser maior que zero.", "erro")
+        return redirect(destino)
+
+    if quantidade != int(quantidade):
+        flash("Informe a quantidade em unidades inteiras.", "erro")
+        return redirect(destino)
+
+    # Preço de compra negativo entrava no pedido e reduzia o total
+    if preco < 0:
+        flash("O preço unitário não pode ser negativo.", "erro")
         return redirect(destino)
 
     produto = Produto.find_by_id(produto_id)
@@ -3291,10 +4633,10 @@ def salvar_pedido_entrada():
     try:
         cursor.execute("""
             INSERT INTO pedido_fornecedor
-                (fornecedor_id, galpao_id, numero_documento,
+                (empresa_id, fornecedor_id, galpao_id, numero_documento,
                  data_prevista, observacao, status, valor_total)
-            VALUES (%s, %s, %s, %s, %s, 'recebido', %s)
-        """, (fornecedor_id, galpao_id, numero_documento,
+            VALUES (%s, %s, %s, %s, %s, %s, 'recebido', %s)
+        """, (session["empresa_id"], fornecedor_id, galpao_id, numero_documento,
               data_prevista, observacao, valor_total))
         pedido_id = cursor.lastrowid
 
@@ -3327,9 +4669,9 @@ def salvar_pedido_entrada():
             # Registra a movimentação correspondente
             cursor.execute("""
                 INSERT INTO movimentacao
-                    (produto_id, galpao_id, tipo, quantidade, observacao)
-                VALUES (%s, %s, 'entrada', %s, %s)
-            """, (item["produto_id"], galpao_id, item["quantidade"],
+                    (empresa_id, produto_id, galpao_id, tipo, quantidade, observacao)
+                VALUES (%s, %s, %s, 'entrada', %s, %s)
+            """, (session["empresa_id"], item["produto_id"], galpao_id, item["quantidade"],
                   f"Pedido de entrada #{pedido_id}"))
 
         conn.commit()
@@ -3455,6 +4797,11 @@ def adicionar_item_saida():
 
     destino = destino_pedido_saida(cliente_id, galpao_id)
 
+    # O estoque é contado em unidades inteiras: 2,5 virava 3 sem aviso
+    if quantidade != int(quantidade):
+        flash("Informe a quantidade em unidades inteiras.", "erro")
+        return redirect(destino)
+
     if not galpao_id:
         flash("Selecione o galpão de retirada antes de adicionar produtos.", "erro")
         return redirect(destino)
@@ -3556,18 +4903,18 @@ def salvar_pedido_saida():
         if data_saida:
             cursor.execute("""
                 INSERT INTO pedido_cliente
-                    (cliente_id, galpao_id, numero_documento,
+                    (empresa_id, cliente_id, galpao_id, numero_documento,
                      observacao, valor_total, status_pedido, data_pedido)
-                VALUES (%s, %s, %s, %s, %s, 'pendente', %s)
-            """, (cliente_id, galpao_id, numero_documento, observacao,
+                VALUES (%s, %s, %s, %s, %s, %s, 'pendente', %s)
+            """, (session["empresa_id"], cliente_id, galpao_id, numero_documento, observacao,
                   valor_total, data_saida))
         else:
             cursor.execute("""
                 INSERT INTO pedido_cliente
-                    (cliente_id, galpao_id, numero_documento,
+                    (empresa_id, cliente_id, galpao_id, numero_documento,
                      observacao, valor_total, status_pedido)
-                VALUES (%s, %s, %s, %s, %s, 'pendente')
-            """, (cliente_id, galpao_id, numero_documento, observacao, valor_total))
+                VALUES (%s, %s, %s, %s, %s, %s, 'pendente')
+            """, (session["empresa_id"], cliente_id, galpao_id, numero_documento, observacao, valor_total))
         pedido_id = cursor.lastrowid
 
         for item in itens:
@@ -3575,6 +4922,7 @@ def salvar_pedido_saida():
             cursor.execute("""
                 SELECT quantidade FROM estoque
                 WHERE produto_id = %s AND galpao_id = %s
+            FOR UPDATE
             """, (item["produto_id"], galpao_id))
 
             saldo = cursor.fetchone()
@@ -3600,9 +4948,9 @@ def salvar_pedido_saida():
 
             cursor.execute("""
                 INSERT INTO movimentacao
-                    (produto_id, galpao_id, tipo, quantidade, observacao)
-                VALUES (%s, %s, 'saida', %s, %s)
-            """, (item["produto_id"], galpao_id, item["quantidade"],
+                    (empresa_id, produto_id, galpao_id, tipo, quantidade, observacao)
+                VALUES (%s, %s, %s, 'saida', %s, %s)
+            """, (session["empresa_id"], item["produto_id"], galpao_id, item["quantidade"],
                   f"Pedido de saída #{pedido_id}"))
 
         conn.commit()
@@ -3651,6 +4999,124 @@ def visualizar_pedido_saida(pedido_id):
         conn.close()
 
     return render_template("pedidos_saida/visualizar.html", pedido=pedido)
+
+STATUS_PEDIDO_CLIENTE = ["pendente", "pago", "enviado", "concluido", "cancelado"]
+
+
+@app.route("/pedido_cliente/<int:pedido_id>/editar")
+@login_obrigatorio
+def editar_pedido_cliente(pedido_id):
+    """Tela de edição de um pedido de saída.
+
+    Antes a tela de pedidos do cliente chamava `editar_pedido`, que abre um
+    pedido de FORNECEDOR: o botão levava para outro registro. Além disso o
+    botão era um <button href=...>, que não navega para lugar nenhum.
+    """
+    conexao = Database.connect()
+    cursor = conexao.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT pc.*, c.nome AS cliente_nome, g.nome AS galpao_nome
+            FROM pedido_cliente pc
+            LEFT JOIN cliente c ON c.id = pc.cliente_id
+            LEFT JOIN galpao  g ON g.id = pc.galpao_id
+            WHERE pc.id = %s
+        """, (pedido_id,))
+        pedido = cursor.fetchone()
+
+        if not pedido:
+            flash("Pedido não encontrado.", "erro")
+            return redirect(url_for("cliente"))
+
+        cursor.execute("""
+            SELECT ipc.*, p.nome, p.sku
+            FROM item_pedido_cliente ipc
+            JOIN produto p ON p.id = ipc.produto_id
+            WHERE ipc.pedido_cliente_id = %s
+        """, (pedido_id,))
+        itens = cursor.fetchall()
+
+    finally:
+        cursor.close()
+        conexao.close()
+
+    return render_template(
+        "editar_pedido_cliente.html",
+        pedido=pedido,
+        itens=itens,
+        status_possiveis=STATUS_PEDIDO_CLIENTE
+    )
+
+
+@app.route("/pedido_cliente/<int:pedido_id>/atualizar", methods=["POST"])
+@login_obrigatorio
+def atualizar_pedido_cliente(pedido_id):
+    """Grava os dados do pedido que não mexem no estoque.
+
+    Quantidades e produtos não são editados aqui de propósito: alterá-los
+    mudaria o saldo já baixado no fechamento. Para isso existe o cancelamento,
+    que devolve o estoque, e a abertura de um novo pedido.
+    """
+    numero_documento = (request.form.get("numero_documento") or "").strip() or None
+    observacao       = (request.form.get("observacao") or "").strip() or None
+    status           = (request.form.get("status_pedido") or "").strip()
+
+    if status not in STATUS_PEDIDO_CLIENTE:
+        flash("Situação do pedido inválida.", "erro")
+        return redirect(url_for("editar_pedido_cliente", pedido_id=pedido_id))
+
+    conexao = Database.connect()
+    cursor = conexao.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "SELECT cliente_id, status_pedido FROM pedido_cliente WHERE id = %s",
+            (pedido_id,)
+        )
+        pedido = cursor.fetchone()
+
+        if not pedido:
+            flash("Pedido não encontrado.", "erro")
+            return redirect(url_for("cliente"))
+
+        # Cancelar devolve estoque, então tem rota própria e não entra aqui
+        if status == "cancelado" and pedido["status_pedido"] != "cancelado":
+            flash(
+                "Para cancelar, use o botão de cancelamento: ele devolve o "
+                "estoque ao galpão.",
+                "erro"
+            )
+            return redirect(url_for("editar_pedido_cliente", pedido_id=pedido_id))
+
+        if pedido["status_pedido"] == "cancelado" and status != "cancelado":
+            flash("Um pedido cancelado não pode voltar a ficar ativo.", "erro")
+            return redirect(url_for("editar_pedido_cliente", pedido_id=pedido_id))
+
+        cursor.execute("""
+            UPDATE pedido_cliente
+            SET numero_documento = %s, observacao = %s, status_pedido = %s
+            WHERE id = %s
+        """, (numero_documento, observacao, status, pedido_id))
+
+        conexao.commit()
+        flash("Pedido atualizado com sucesso!", "sucesso")
+
+        cliente_id = pedido["cliente_id"]
+
+    except Exception as e:
+        conexao.rollback()
+        flash(f"Erro ao atualizar o pedido: {mensagem_erro(e)}", "erro")
+        return redirect(url_for("editar_pedido_cliente", pedido_id=pedido_id))
+
+    finally:
+        cursor.close()
+        conexao.close()
+
+    if cliente_id:
+        return redirect(url_for("pedidos_clientes", cliente_id=cliente_id))
+
+    return redirect(url_for("listar_pedidos_saida"))
+
 
 @app.route("/editar_pedido/<int:id>")
 @login_obrigatorio
@@ -3797,17 +5263,20 @@ def pedidos_clientes(cliente_id):
         cursor.execute(sql, tuple(valores))
         pedidos = cursor.fetchall()
 
+        pedidos, menu = ordenar_e_filtrar(pedidos, "pedidos")
+
         return render_template(
             "pedidos_cliente.html",
             cliente=c,
             pedidos=pedidos,
+            menu_filtros=menu,
             galpoes=Galpao.find_all(),
             produtos=Produto.find_all(),
             busca=busca
         )
     except Exception as e:
         app.logger.exception("Falha ao carregar pedidos do cliente")
-        flash(f"Erro ao carregar pedidos do cliente: {e}", "erro")
+        flash(f"Erro ao carregar pedidos do cliente: {mensagem_erro(e)}", "erro")
         return redirect(url_for("cliente"))
     finally:
         cursor.close()
@@ -3889,9 +5358,12 @@ def pedidos():
     """
     busca = (request.args.get("busca") or "").strip()
 
+    pedidos, menu = ordenar_e_filtrar(buscar_pedidos_entrada(busca), "pedidos")
+
     return render_template(
         "pedidos.html",
-        pedidos=buscar_pedidos_entrada(busca),
+        pedidos=pedidos,
+        menu_filtros=menu,
         busca=busca
     )
 

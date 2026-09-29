@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-Software HYPEX - Fornecedores
+Software HYPEX - Configurações
 {% endblock %}
 
 {% block css %}
@@ -24,104 +24,30 @@ Software HYPEX - Fornecedores
 
         <section class="config-grid">
 
-            <!-- ===== PERFIL DO USUÁRIO LOGADO ===== -->
-            <div class="config-card">
-                <h3><i class="bi bi-person-fill-gear"></i> Perfil do Administrador</h3>
-
-                <form method="POST" action="{{ url_for('salvar_perfil') }}">
-                    <div class="input-resp">
-                        <label>Nome do Responsável</label>
-                        <input type="text" name="nome" value="{{ usuario.nome or '' }}" required>
-                    </div>
-
-                    <div class="input-resp">
-                        <label>E-mail de Contato</label>
-                        <input type="email" name="email" value="{{ usuario.email or '' }}" required>
-                    </div>
-
-                    <div class="input-resp">
-                        <label>Telefone</label>
-                        <input type="tel" name="telefone" value="{{ usuario.telefone or '' }}"
-                            placeholder="(11) 90000-0000">
-                    </div>
-
-                    <div class="input-resp">
-                        <label>Perfil de Acesso</label>
-                        <input type="text" value="{{ (usuario.tipo or 'operador') | capitalize }}" readonly>
-                    </div>
-
-                    <button type="submit" class="salvar-btn w-100 mt-2">Salvar Perfil</button>
-                </form>
-            </div>
-
-            <!-- ===== TEMA ===== -->
-            <div class="config-card">
-                <h3><i class="bi bi-display"></i> Sistema e Tema</h3>
-
-                <!-- O botão envia um POST para a mesma rota usada pelo atalho da
-                     barra lateral. A preferência fica na sessão, então vale em
-                     todas as telas. -->
-                <form method="POST" action="{{ url_for('alternar_tema') }}" class="modo-escolha">
-                    <input type="hidden" name="voltar_para" value="{{ url_for('config') }}">
-                    <span>Modo Escuro (Dark Mode)</span>
-                    <button type="submit" class="switch switch-botao"
-                        title="{{ 'Desativar modo escuro' if tema == 'escuro' else 'Ativar modo escuro' }}">
-                        <span class="slider round {{ 'ligado' if tema == 'escuro' }}"></span>
-                    </button>
-                </form>
-
-                <!-- Sidebar minimizada: mesma preferência do botão do menu -->
-                <form method="POST" action="{{ url_for('alternar_menu') }}" class="modo-escolha">
-                    <input type="hidden" name="voltar_para" value="{{ url_for('config') }}">
-                    <span>Menu Lateral Minimizado</span>
-                    <button type="submit" class="switch switch-botao"
-                        title="{{ 'Expandir menu' if sidebar_minimizada else 'Minimizar menu' }}">
-                        <span class="slider round {{ 'ligado' if sidebar_minimizada }}"></span>
-                    </button>
-                </form>
-            </div>
-
-            <!-- ===== SENHA ===== -->
-            <div class="config-card">
-                <h3><i class="bi bi-lock-fill"></i> Alterar Senha de Acesso</h3>
-
-                <form method="POST" action="{{ url_for('alterar_senha') }}">
-                    <div class="input-resp">
-                        <label>Senha Atual</label>
-                        <input type="password" name="senha_atual" required>
-                    </div>
-
-                    <div class="input-resp">
-                        <label>Nova Senha</label>
-                        <input type="password" name="nova_senha" minlength="6" required>
-                    </div>
-
-                    <div class="input-resp">
-                        <label>Confirmar Nova Senha</label>
-                        <input type="password" name="confirmar_senha" minlength="6" required>
-                    </div>
-
-                    <button type="submit" class="senha-btn mt-2">
-                        <i class="bi bi-lock-fill"></i>
-                        Alterar Senha
-                    </button>
-                </form>
-            </div>
-
             <!-- ===== DADOS DA EMPRESA ===== -->
             <div class="config-card full-width">
                 <h3><i class="bi bi-building-fill"></i> Dados da Empresa</h3>
 
-                <form method="POST" enctype="multipart/form-data"
+                {% if not pode_gerenciar %}
+                <p class="config-dica">Somente administradores e gerentes alteram os dados da empresa.</p>
+                {% endif %}
+                <form method="POST" enctype="multipart/form-data" class="empresa-form"
                     action="{{ url_for('salvar_empresa') }}">
+                    <fieldset class="empresa-fieldset" {{ 'disabled' if not pode_gerenciar }}>
 
-                    {% with campo_id='imagem-empresa', imagem=empresa.imagem,
-                            padrao='perfil.png', alt=empresa.nome,
-                            titulo='Imagem exibida no menu' %}
-                    {% include '_imagem_upload.html' %}
-                    {% endwith %}
+                    <div class="empresa-foto campo-imagem">
+                        <img class="preview-imagem"
+                            src="{{ url_for('static', filename='imagem/' + (empresa.imagem | imagem_ou('perfil.png'))) }}"
+                            alt="{{ empresa.nome }}">
+                        <input type="file" id="imagem-empresa" name="imagem" class="input-imagem"
+                            accept="image/png,image/jpeg,image/webp,image/gif" hidden>
+                        <label for="imagem-empresa" class="alterar-foto">
+                            <i class="bi bi-camera-fill"></i> Alterar foto
+                        </label>
+                        <small>PNG, JPG, WEBP ou GIF até 5 MB</small>
+                    </div>
 
-                    <div class="inputs-empresa mt-3">
+                    <div class="empresa-campos">
                         <div class="input-resp">
                             <label>Razão Social</label>
                             <input type="text" name="nome" value="{{ empresa.nome or '' }}"
@@ -130,13 +56,171 @@ Software HYPEX - Fornecedores
 
                         <div class="input-resp">
                             <label>CNPJ</label>
-                            <input type="text" name="cnpj" value="{{ empresa.cnpj or '' }}"
+                            <input type="text" name="cnpj" value="{{ empresa.cnpj | documento if empresa.cnpj else '' }}"
                                 placeholder="00.000.000/0001-00">
+                        </div>
+
+                        <div class="config-acoes">
+                            <button type="submit" class="salvar-btn">
+                                <i class="bi bi-check-lg"></i> Salvar Empresa
+                            </button>
+                        </div>
+                    </div>
+                    </fieldset>
+                </form>
+            </div>
+
+            <!-- ===== PERFIL DO USUÁRIO LOGADO ===== -->
+            <div class="config-card">
+                <h3><i class="bi bi-person-fill-gear"></i> Meu Perfil</h3>
+
+                <form method="POST" action="{{ url_for('salvar_perfil') }}">
+                    <div class="input-resp">
+                        <label>Nome</label>
+                        <input type="text" name="nome" value="{{ usuario.nome or '' }}" required>
+                    </div>
+
+                    <div class="input-resp">
+                        <label>E-mail</label>
+                        <input type="email" name="email" value="{{ usuario.email or '' }}" required>
+                    </div>
+
+                    <div class="config-duas-colunas">
+                        <div class="input-resp">
+                            <label>Telefone</label>
+                            <input type="tel" name="telefone" value="{{ usuario.telefone | telefone if usuario.telefone else '' }}"
+                                placeholder="(11) 90000-0000">
+                        </div>
+
+                        <div class="input-resp">
+                            <label>Perfil de Acesso</label>
+                            <input type="text" value="{{ usuario_tipo }}" readonly>
                         </div>
                     </div>
 
-                    <button type="submit" class="salvar-btn mt-3">Salvar Empresa</button>
+                    <div class="config-acoes">
+                        <button type="submit" class="salvar-btn">
+                            <i class="bi bi-check-lg"></i> Salvar Perfil
+                        </button>
+                    </div>
                 </form>
+            </div>
+
+            <!-- ===== SENHA ===== -->
+            <div class="config-card">
+                <h3><i class="bi bi-lock-fill"></i> Alterar Senha</h3>
+
+                <form method="POST" action="{{ url_for('alterar_senha') }}">
+                    <div class="input-resp">
+                        <label>Senha Atual</label>
+                        <input type="password" name="senha_atual" autocomplete="current-password" required>
+                    </div>
+
+                    <div class="config-duas-colunas">
+                        <div class="input-resp">
+                            <label>Nova Senha</label>
+                            <input type="password" name="nova_senha" minlength="6" autocomplete="new-password" required>
+                        </div>
+
+                        <div class="input-resp">
+                            <label>Confirmar Nova Senha</label>
+                            <input type="password" name="confirmar_senha" minlength="6" autocomplete="new-password" required>
+                        </div>
+                    </div>
+
+                    <small class="config-dica">Mínimo de 6 caracteres.</small>
+
+                    <div class="config-acoes">
+                        <button type="submit" class="senha-btn">
+                            <i class="bi bi-lock-fill"></i> Alterar Senha
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {% if perfil == 'admin' %}
+            <!-- ===== EQUIPE ===== -->
+            <div class="config-card full-width">
+                <h3><i class="bi bi-people-fill"></i> Equipe e Usuários</h3>
+                <div class="equipe-atalho">
+                    <p>Crie acessos para sua equipe e defina quem é administrador, gerente ou operador.</p>
+                    <a href="{{ url_for('usuarios') }}" class="salvar-btn"><i class="bi bi-people-fill"></i> Gerenciar Usuários</a>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- ===== NOTIFICAÇÕES ===== -->
+            <div class="config-card full-width" id="notificacoes">
+                <h3><i class="bi bi-bell-fill"></i> Notificações</h3>
+                <p class="config-dica">
+                    Define o que aparece no sininho do topo e nos alertas do dashboard. Vale para toda a equipe.
+                    {% if not pode_gerenciar %}Somente administradores e gerentes podem alterar.{% endif %}
+                </p>
+
+                <form method="POST" action="{{ url_for('salvar_notificacoes') }}">
+                    <fieldset class="empresa-fieldset" {{ 'disabled' if not pode_gerenciar }}>
+                    <div class="preferencias">
+                        {% for coluna, (padrao, rotulo, explicacao) in opcoes_notificacao.items() %}
+                        <label class="modo-escolha notif-opcao">
+                            <span>
+                                <strong>{{ rotulo }}</strong>
+                                <small>{{ explicacao }}</small>
+                            </span>
+                            <input type="checkbox" name="{{ coluna }}" value="1" class="notif-check"
+                                {{ 'checked' if notificacoes[coluna] }}>
+                            <span class="notif-switch" aria-hidden="true"></span>
+                        </label>
+                        {% endfor %}
+
+                        <label class="modo-escolha notif-opcao">
+                            <span>
+                                <strong>Aviso antecipado</strong>
+                                <small>Avisar quando o saldo estiver até esta porcentagem acima do mínimo (0 = só no mínimo)</small>
+                            </span>
+                            <span class="notif-margem">
+                                <input type="number" name="notif_margem" min="0" max="200" step="5"
+                                    value="{{ notificacoes.notif_margem }}"> %
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="config-acoes">
+                        <button type="submit" class="salvar-btn"><i class="bi bi-check-lg"></i> Salvar Notificações</button>
+                    </div>
+                    </fieldset>
+                </form>
+            </div>
+
+            <!-- ===== PREFERÊNCIAS ===== -->
+            <div class="config-card full-width">
+                <h3><i class="bi bi-sliders"></i> Preferências</h3>
+
+                <div class="preferencias">
+                    <form method="POST" action="{{ url_for('alternar_tema') }}" class="modo-escolha">
+                        <input type="hidden" name="voltar_para" value="{{ url_for('config') }}">
+                        <input type="hidden" name="tema" value="{{ 'claro' if tema == 'escuro' else 'escuro' }}">
+                        <span>
+                            <strong><i class="bi bi-moon-stars-fill"></i> Modo escuro</strong>
+                            <small>Cores escuras em todas as telas</small>
+                        </span>
+                        <button type="submit" class="switch switch-botao"
+                            title="{{ 'Desativar modo escuro' if tema == 'escuro' else 'Ativar modo escuro' }}">
+                            <span class="slider round {{ 'ligado' if tema == 'escuro' }}"></span>
+                        </button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('alternar_menu') }}" class="modo-escolha">
+                        <input type="hidden" name="voltar_para" value="{{ url_for('config') }}">
+                        <span>
+                            <strong><i class="bi bi-layout-sidebar"></i> Menu lateral minimizado</strong>
+                            <small>Mostra só os ícones no menu</small>
+                        </span>
+                        <button type="submit" class="switch switch-botao"
+                            title="{{ 'Expandir menu' if sidebar_minimizada else 'Minimizar menu' }}">
+                            <span class="slider round {{ 'ligado' if sidebar_minimizada }}"></span>
+                        </button>
+                    </form>
+                </div>
             </div>
 
         </section>

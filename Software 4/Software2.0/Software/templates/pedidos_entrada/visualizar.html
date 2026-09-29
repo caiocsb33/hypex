@@ -16,9 +16,7 @@ Software HYPEX - Pedido de Entrada #{{ pedido.id }}
             <h1><i class="bi bi-basket2-fill"></i> PEDIDO DE ENTRADA #{{ pedido.id }}</h1>
             <p>Nota {{ pedido.numero_documento or '—' }} — fornecedor {{ pedido.fornecedor_nome or '—' }}</p>
 
-            <a href="{{ url_for('listar_pedidos_entrada') }}">
-                <button class="btn btn-voltar"><i class="bi bi-arrow-left"></i> Voltar</button>
-            </a>
+            <a href="{{ url_for('listar_pedidos_entrada') }}" class="btn btn-voltar"><i class="bi bi-arrow-left"></i> Voltar</a>
         </div>
 
     </header>

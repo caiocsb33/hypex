@@ -1,4 +1,5 @@
 from core.database import Database
+from core.empresa import empresa_atual
 
 
 class Cliente:
@@ -21,10 +22,10 @@ class Cliente:
         try:
             cursor.execute("""
                 INSERT INTO cliente
-                (nome, empresa, ativo, cidade, estado, cpf_cnpj, cep, email, telefone)
-                VALUES (%s, %s, %s,%s, %s, %s, %s, %s, %s)
+                (empresa_id, nome, empresa, ativo, cidade, estado, cpf_cnpj, cep, email, telefone)
+                VALUES (%s, %s, %s, %s,%s, %s, %s, %s, %s, %s)
             """, (
-                self.nome, self.empresa, self.ativo, self.cidade, self.estado,
+                empresa_atual(), self.nome, self.empresa, self.ativo, self.cidade, self.estado,
                 self.cpf_cnpj, self.cep, self.email, self.telefone
             ))
             conn.commit()
@@ -37,7 +38,8 @@ class Cliente:
         conn = Database.connect()
         cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute("SELECT * FROM cliente")
+            cursor.execute("SELECT * FROM cliente WHERE empresa_id = %s ORDER BY nome",
+                           (empresa_atual(),))
             return cursor.fetchall()
         finally:
             cursor.close()
@@ -48,7 +50,8 @@ class Cliente:
         conn = Database.connect()
         cursor = conn.cursor(dictionary=True)
         try:
-            cursor.execute("SELECT * FROM cliente WHERE id = %s", (id,))
+            cursor.execute("SELECT * FROM cliente WHERE id = %s AND empresa_id = %s",
+                           (id, empresa_atual()))
             return cursor.fetchone()
         finally:
             cursor.close()
@@ -68,12 +71,17 @@ class Cliente:
                     cep = %s,
                     cidade = %s,
                     estado = %s,
-                    ativo = %s
-                WHERE id = %s
+                    ativo = %s,
+                    cpf_cnpj = %s
+                WHERE id = %s AND empresa_id = %s
             """, (
                 dados["nome"], dados["empresa"], dados["email"],
                 dados["telefone"], dados["cep"], dados["cidade"],
-                dados["estado"], dados["ativo"], cliente_id
+                dados["estado"], dados["ativo"],
+                # Documento vazio fica nulo: a coluna é única e o vazio
+                # repetido bloquearia o segundo cliente sem documento.
+                dados.get("cpf_cnpj") or None,
+                cliente_id, empresa_atual()
             ))
             conn.commit()
         finally:
@@ -85,7 +93,8 @@ class Cliente:
         conn = Database.connect()
         cursor = conn.cursor()
         try:
-            cursor.execute("DELETE FROM cliente WHERE id = %s", (cliente_id,))
+            cursor.execute("DELETE FROM cliente WHERE id = %s AND empresa_id = %s",
+                           (cliente_id, empresa_atual()))
             conn.commit()
         finally:
             cursor.close()

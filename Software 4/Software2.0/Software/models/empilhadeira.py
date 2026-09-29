@@ -1,4 +1,5 @@
 from core.database import Database
+from core.empresa import empresa_atual
 
 
 class Empilhadeira:
@@ -21,10 +22,11 @@ class Empilhadeira:
         try:
             cursor.execute("""
                 INSERT INTO empilhadeira
-                    (marca, modelo, ano_fabricacao, tipo_combustivel,
+                    (empresa_id, marca, modelo, ano_fabricacao, tipo_combustivel,
                      capacidade, galpao_id, funcionario_id, ativo)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
             """, (
+                empresa_atual(),
                 self.marca,
                 self.modelo,
                 self.ano_fabricacao,

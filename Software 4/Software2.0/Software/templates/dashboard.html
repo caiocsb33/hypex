@@ -104,6 +104,22 @@ Software HYPEX - Dashboard
                         Estoque avaliado em R$ {{ valor_estoque | moeda }}
                     </span>
                 </div>
+
+                <!-- Lucro de cada mês: barra verde acima da linha, vermelha abaixo -->
+                <div class="grafico-lucro" role="img" aria-label="Lucro dos últimos 6 meses">
+                    {% for m in grafico_lucro %}
+                    <div class="grafico-coluna"
+                        title="{{ m.rotulo }}: lucro R$ {{ m.lucro | moeda }} (ganhos R$ {{ m.ganhos | moeda }}, gastos R$ {{ m.gastos | moeda }})">
+                        <div class="grafico-metade positivo">
+                            {% if m.lucro > 0 %}<span class="barra" style="height: {{ m.altura }}%"></span>{% endif %}
+                        </div>
+                        <div class="grafico-metade negativo">
+                            {% if m.lucro < 0 %}<span class="barra" style="height: {{ m.altura }}%"></span>{% endif %}
+                        </div>
+                        <small>{{ m.rotulo }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
 
             <div class="cards-valor cards-grafico-valor">

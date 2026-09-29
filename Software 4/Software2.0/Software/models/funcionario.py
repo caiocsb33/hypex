@@ -1,4 +1,5 @@
 from core.database import Database
+from core.empresa import empresa_atual
  
  
 class Funcionario:
@@ -21,9 +22,10 @@ class Funcionario:
  
         cursor.execute("""
             INSERT INTO funcionario
-            (nome, cpf, salario, data_nascimento, data_admissao, ativo, email, telefone, cargo, galpao_id)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (empresa_id, nome, cpf, salario, data_nascimento, data_admissao, ativo, email, telefone, cargo, galpao_id)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """, (
+            empresa_atual(),
             self.nome,
             self.cpf,
             self.salario,
@@ -72,8 +74,9 @@ class Funcionario:
                 SELECT f.*, g.nome AS galpao_nome
                 FROM funcionario f
                 LEFT JOIN galpao g ON f.galpao_id = g.id
+                WHERE f.empresa_id = %s
                 ORDER BY f.nome
-            """)
+            """, (empresa_atual(),))
             return cursor.fetchall()
 
         finally:
