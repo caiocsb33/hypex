@@ -1,6 +1,8 @@
 
 from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash, session, abort
+from flask.sessions import SessionInterface, SessionMixin
+from werkzeug.datastructures import CallbackDict
 from werkzeug.security import generate_password_hash, check_password_hash
 from core.database import Database
 import json
@@ -22,122 +24,94 @@ import io
 
 app = Flask(__name__)
 
-def carregar_chave_secreta():
-    """Chave que assina a sessão.
 
-    Uma chave aleatória a cada inicialização derrubava o login de todo mundo
-    sempre que o servidor reiniciava (e não funciona com mais de um processo).
-    Sem FLASK_SECRET_KEY no ambiente, a chave é gerada uma vez e guardada em
-    instance/secret_key, fora do versionamento.
-    """
-    chave = os.environ.get("FLASK_SECRET_KEY")
-    if chave:
-        return chave
+class SessaoBanco(CallbackDict, SessionMixin):
+    def __init__(self, dados=None, sid=None, nova=False):
+        def ao_mudar(sessao):
+            sessao.modified = True
+        CallbackDict.__init__(self, dados, ao_mudar)
+        self.sid = sid
+        self.new = nova
+        self.modified = False
 
-    pasta = os.path.join(os.path.dirname(os.path.abspath(__file__)), "instance")
-    arquivo = os.path.join(pasta, "secret_key")
+
+class SessoesNoBanco(SessionInterface):
+    duracao = timedelta(days=7)
+
+    def open_session(self, app, request):
+        sid = request.cookies.get(app.config["SESSION_COOKIE_NAME"])
+        if sid:
+            conexao = Database.connect()
+            cursor = conexao.cursor()
+            try:
+                cursor.execute(
+                    "SELECT dados FROM sessao WHERE id = %s AND expira_em > NOW()", (sid,)
+                )
+                linha = cursor.fetchone()
+            finally:
+                cursor.close()
+                conexao.close()
+            if linha:
+                return SessaoBanco(json.loads(linha[0]), sid)
+        return SessaoBanco(sid=secrets.token_urlsafe(32), nova=True)
+
+    def save_session(self, app, sessao, resposta):
+        nome = app.config["SESSION_COOKIE_NAME"]
+        conexao = Database.connect()
+        cursor = conexao.cursor()
+        try:
+            if not sessao:
+                if not sessao.new:
+                    cursor.execute("DELETE FROM sessao WHERE id = %s", (sessao.sid,))
+                    conexao.commit()
+                    resposta.delete_cookie(nome)
+                return
+            if not sessao.modified and not sessao.new:
+                return
+            expira = datetime.now() + self.duracao
+            cursor.execute("""
+                INSERT INTO sessao (id, dados, expira_em) VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE dados = VALUES(dados), expira_em = VALUES(expira_em)
+            """, (sessao.sid, json.dumps(dict(sessao), default=str), expira))
+            conexao.commit()
+        finally:
+            cursor.close()
+            conexao.close()
+        resposta.set_cookie(nome, sessao.sid, expires=expira, httponly=True, samesite="Lax")
+
+
+def criar_tabela_sessao():
     try:
-        with open(arquivo) as f:
-            chave = f.read().strip()
-    except FileNotFoundError:
-        chave = ""
-    if not chave:
-        os.makedirs(pasta, exist_ok=True)
-        chave = secrets.token_hex(32)
-        with open(arquivo, "w") as f:
-            f.write(chave)
-    return chave
+        conexao = Database.connect()
+    except Exception:
+        return
+    cursor = conexao.cursor()
+    try:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS sessao (
+                id VARCHAR(64) PRIMARY KEY,
+                dados TEXT NOT NULL,
+                expira_em DATETIME NOT NULL
+            )
+        """)
+        cursor.execute("DELETE FROM sessao WHERE expira_em < NOW()")
+        conexao.commit()
+    finally:
+        cursor.close()
+        conexao.close()
 
 
-app.secret_key = carregar_chave_secreta()
-
-# O cookie de sessão não vai junto em POSTs vindos de outros sites e não é
-# acessível por JavaScript.
-app.config.update(
-    SESSION_COOKIE_SAMESITE="Lax",
-    SESSION_COOKIE_HTTPONLY=True,
-)
-
-
-@app.before_request
-def bloquear_post_de_outro_site():
-    """Proteção contra CSRF.
-
-    Sem isso, uma página de outro site podia enviar um formulário escondido
-    para /produto/desativar/1, /cliente/deletar/1... usando a sessão de
-    quem estivesse logado. Todo POST precisa vir do próprio sistema:
-    o navegador informa a origem no cabeçalho Origin (ou Referer).
-    """
-    if request.method != "POST":
-        return None
-
-    origem = request.headers.get("Origin") or request.headers.get("Referer")
-    if not origem:
-        # Clientes sem navegador (testes, scripts internos) não mandam origem
-        return None
-
-    from urllib.parse import urlparse
-    if urlparse(origem).netloc != request.host:
-        abort(403)
-    return None
-
-
-@app.after_request
-def cabecalhos_de_seguranca(resposta):
-    # Não deixa outro site abrir o sistema dentro de um iframe (clickjacking)
-    resposta.headers.setdefault("X-Frame-Options", "SAMEORIGIN")
-    # O navegador respeita o tipo do arquivo (imagens enviadas não viram script)
-    resposta.headers.setdefault("X-Content-Type-Options", "nosniff")
-    resposta.headers.setdefault("Referrer-Policy", "same-origin")
-    return resposta
-
-
-# ------------ LIMITE DE TENTATIVAS DE LOGIN ----------#
-# Em memória: suficiente para um processo. Com vários servidores, trocar por
-# uma tabela ou Redis.
-TENTATIVAS_LOGIN = {}
-LIMITE_TENTATIVAS = 5
-JANELA_BLOQUEIO = timedelta(minutes=15)
-
-
-def _chave_login(email):
-    return (email or "").lower(), request.remote_addr
-
-
-def login_bloqueado(email):
-    """Minutos restantes de bloqueio, ou 0."""
-    falhas = [t for t in TENTATIVAS_LOGIN.get(_chave_login(email), [])
-              if datetime.now() - t < JANELA_BLOQUEIO]
-    TENTATIVAS_LOGIN[_chave_login(email)] = falhas
-    if len(falhas) >= LIMITE_TENTATIVAS:
-        restante = JANELA_BLOQUEIO - (datetime.now() - falhas[0])
-        return max(1, int(restante.total_seconds() // 60) + 1)
-    return 0
-
-
-def registrar_falha_login(email):
-    TENTATIVAS_LOGIN.setdefault(_chave_login(email), []).append(datetime.now())
-
-
-def limpar_falhas_login(email):
-    TENTATIVAS_LOGIN.pop(_chave_login(email), None)
-
+criar_tabela_sessao()
+app.session_interface = SessoesNoBanco()
 
 # ---------------- NOTIFICAÇÕES ---------------- #
 
-# Preferências guardadas na tabela empresa (valem para toda a equipe).
-# coluna -> (valor padrão, rótulo, explicação)
 PREFERENCIAS_NOTIFICACAO = {
-    "notif_estoque_baixo": (1, "Estoque baixo",
-                            "Avisar quando o saldo chegar no mínimo ou abaixo dele"),
-    "notif_sem_estoque": (1, "Sem estoque",
-                          "Avisar quando o saldo zerar"),
-    "notif_incluir_inativos": (1, "Incluir produtos inativos",
-                               "Também avisar sobre produtos desativados que ainda têm saldo cadastrado"),
-    "notif_pedidos_pendentes": (1, "Pedidos pendentes",
-                                "Avisar sobre pedidos de saída aguardando andamento"),
+    "notif_estoque_baixo": (1, "Estoque baixo","Avisar quando o saldo chegar no mínimo ou abaixo dele"),
+    "notif_sem_estoque": (1, "Sem estoque","Avisar quando o saldo zerar"),
+    "notif_incluir_inativos": (1, "Incluir produtos inativos","Também avisar sobre produtos desativados que ainda têm saldo cadastrado"),
+    "notif_pedidos_pendentes": (1, "Pedidos pendentes","Avisar sobre pedidos de saída aguardando andamento"),
 }
-# Aviso antecipado: avisa quando o saldo estiver até X% acima do mínimo
 MARGEM_PADRAO = 0
 
 
@@ -155,13 +129,6 @@ def preferencias_notificacao(cursor, empresa_id):
 
 
 def alertas_estoque(cursor, empresa_id, prefs=None, limite=None):
-    """Saldos que precisam de atenção, por galpão.
-
-    É a regra única usada pelo sininho e pelo dashboard. Antes os dois só
-    olhavam produtos com ativo = TRUE, e um produto desativado (ou com a
-    situação em branco) sumia dos alertas mesmo aparecendo abaixo do mínimo
-    na tela de estoque.
-    """
     prefs = prefs or preferencias_notificacao(cursor, empresa_id)
     condicoes = []
     if prefs["notif_estoque_baixo"]:
@@ -198,7 +165,6 @@ def alertas_estoque(cursor, empresa_id, prefs=None, limite=None):
 
 
 def montar_notificacoes(cursor, empresa_id):
-    """Lista pronta para o sininho: estoque e pedidos pendentes."""
     prefs = preferencias_notificacao(cursor, empresa_id)
     itens = []
 
@@ -280,8 +246,6 @@ def dados_globais():
                     usuario_nome = usuario["nome"] or ""
                     usuario_tipo = usuario["tipo"] or ""
 
-            # Sininho do header: mesma regra do dashboard, com as
-            # preferências de notificação da empresa (Configuração)
             notificacoes_estoque = montar_notificacoes(cursor, session["empresa_id"])
             total_notificacoes = len(notificacoes_estoque)
             notificacoes_estoque = notificacoes_estoque[:8]
@@ -292,9 +256,7 @@ def dados_globais():
 
     return {
         "empresa_nome": empresa_nome,
-        # Foto que aparece no topo do menu lateral
         "empresa_imagem": empresa_imagem,
-        # Usuário logado e notificações, mostrados no header
         "usuario_nome": usuario_nome,
         "usuario_primeiro_nome": usuario_nome.split()[0] if usuario_nome.strip() else "",
         "usuario_tipo": {"admin": "Administrador", "gerente": "Gerente",
@@ -303,21 +265,13 @@ def dados_globais():
         "perfil": perfil_atual(),
         "pode_gerenciar": pode_gerenciar(),
         "total_notificacoes": total_notificacoes,
-        # Preferências de interface guardadas na sessão. Antes ficavam no
-        # localStorage e eram aplicadas por JavaScript depois que a página
-        # carregava; agora chegam prontas no HTML.
         "tema": session.get("tema", "claro"),
         "sidebar_minimizada": session.get("sidebar_minimizada", False),
-        # Usada como valor padrão nos campos de data dos formulários
         "hoje": datetime.now().strftime("%Y-%m-%d"),
-        # Módulo atual, para o menu destacar o item certo
         "modulo_atual": modulo_do_endpoint(request.endpoint),
     }
 
 
-# Cada item do menu cobre várias telas. Antes o destaque comparava o caminho
-# exato ("/galpao"), então ao entrar em /estoque, /info_produto/1 ou
-# /pedidos_cliente/1 nenhum item aparecia selecionado.
 MODULOS = {
     "dashboard": {"dashboard"},
 
@@ -371,11 +325,6 @@ def modulo_do_endpoint(endpoint):
 # ---------------- PREFERÊNCIAS DE INTERFACE ---------------- #
 
 def voltar_para(padrao="dashboard"):
-    """Devolve o usuário para a página em que ele estava.
-
-    O destino vem de um campo escondido do formulário. Só caminhos internos
-    são aceitos: "//" e "http://" seriam redirecionamentos para fora do site.
-    """
     destino = (request.form.get("voltar_para") or "").strip()
 
     if destino.startswith("/") and not destino.startswith("//"):
@@ -385,11 +334,6 @@ def voltar_para(padrao="dashboard"):
 
 
 def voltar_galpao(galpao_id):
-    """Volta para a tela do galpão; sem galpão válido, para a lista.
-
-    Os formulários de funcionário e empilhadeira mandam o galpão num campo
-    escondido. Sem ele o url_for estourava com erro 500.
-    """
     if str(galpao_id or "").strip().isdigit():
         return redirect(url_for("info_galpao", galpao_id=int(galpao_id)))
     return redirect(url_for("galpao"))
@@ -397,7 +341,6 @@ def voltar_galpao(galpao_id):
 
 @app.route("/tema/alternar", methods=["POST"])
 def alternar_tema():
-    # O header manda o tema escolhido (lua ou sol); sem valor, alterna.
     escolhido = request.form.get("tema")
     if escolhido in ("claro", "escuro"):
         session["tema"] = escolhido
@@ -414,12 +357,6 @@ def alternar_menu():
 # ---------------- FUNÇÕES AUXILIARES ---------------- #
 
 def to_float(value, default=0.0):
-    """Converte número digitado no padrão brasileiro ou americano.
-
-    float("12,50") dava erro e o valor virava 0 sem aviso: um preço digitado
-    com vírgula era gravado como zero. Aceita "12,50", "1.234,56", "R$ 9,90"
-    e "12.5".
-    """
     if value is None:
         return default
     if isinstance(value, (int, float)):
@@ -430,7 +367,6 @@ def to_float(value, default=0.0):
         return default
 
     if "," in texto:
-        # vírgula é o decimal; pontos são separador de milhar
         texto = texto.replace(".", "").replace(",", ".")
 
     try:
@@ -482,12 +418,10 @@ def email_valido(email):
 
 
 def somente_numeros(valor):
-    """Remove tudo que não for número."""
     return re.sub(r"\D", "", valor or "")
 
 
 def formatar_documento(valor):
-    """Aplica a máscara de CPF ou CNPJ, a partir dos números."""
     numeros = somente_numeros(valor)
 
     if len(numeros) == 11:
@@ -506,16 +440,6 @@ def formatar_cep(valor):
 
 
 def validar_documento(valor, obrigatorio=True):
-    """Confere um CPF ou CNPJ e devolve (numeros, erro).
-
-    Aceita o documento como a pessoa costuma digitar, com ponto, barra e
-    traço: a pontuação é removida antes de conferir. Antes a checagem era
-    feita no texto cru com isdigit(), então "12.345.678/0001-95" era
-    recusado mesmo sendo válido — e a máscara aparecia no próprio campo.
-
-    O valor devolvido é sempre só números, para o banco não guardar o mesmo
-    documento em dois formatos diferentes.
-    """
     numeros = somente_numeros(valor)
 
     if not numeros:
@@ -537,7 +461,6 @@ def validar_documento(valor, obrigatorio=True):
 
 
 def validar_telefone_campo(valor, obrigatorio=False):
-    """Confere o telefone aceitando parênteses, espaço e traço."""
     numeros = somente_numeros(valor)
 
     if not numeros:
@@ -552,7 +475,6 @@ def validar_telefone_campo(valor, obrigatorio=False):
 
 
 def validar_cep_campo(valor, obrigatorio=False):
-    """Confere o CEP aceitando o traço."""
     numeros = somente_numeros(valor)
 
     if not numeros:
@@ -567,11 +489,6 @@ def validar_cep_campo(valor, obrigatorio=False):
 
 
 def documento_ja_usado(tabela, numeros, ignorar_id=None):
-    """Diz se o CPF/CNPJ já pertence a outro registro da tabela.
-
-    Compara sem a pontuação, para não deixar passar o mesmo documento salvo
-    em formatos diferentes por versões anteriores do sistema.
-    """
     if not numeros:
         return False
 
@@ -601,7 +518,6 @@ def documento_ja_usado(tabela, numeros, ignorar_id=None):
 
 @app.template_filter("documento")
 def filtro_documento(valor):
-    """Mostra o CPF/CNPJ com máscara, esteja ele salvo como estiver."""
     return formatar_documento(valor) or "—"
 
 
@@ -635,7 +551,6 @@ def validar_cnpj(cnpj):
     if len(cnpj) != 14 or cnpj == cnpj[0] * 14:
         return False
 
-    # Primeiro dígito verificador
     pesos1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
 
     soma = sum(
@@ -649,7 +564,6 @@ def validar_cnpj(cnpj):
     if digito1 != int(cnpj[12]):
         return False
 
-    # Segundo dígito verificador
     pesos2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2]
 
     soma = sum(
@@ -664,10 +578,6 @@ def validar_cnpj(cnpj):
 
 # ------------ VERIFICAÇÃO DO BANCO ----------#
 
-# Estruturas criadas depois da primeira versão do banco.sql. Se o banco foi
-# criado por uma versão anterior e a migração não foi aplicada, várias telas
-# quebram com "Internal Server Error" sem explicar o motivo. A verificação
-# abaixo troca esse erro por uma instrução clara.
 ESTRUTURAS_NECESSARIAS = [
     ("coluna", "empilhadeira", "funcionario_id"),
     ("coluna", "produto", "imagem"),
@@ -680,17 +590,11 @@ ESTRUTURAS_NECESSARIAS = [
 
 # ------------ MULTIEMPRESA (SaaS) ----------#
 
-# Cada empresa cliente do sistema só pode ver os próprios dados. As tabelas
-# principais guardam o dono em empresa_id; as tabelas filhas (estoque, itens
-# de pedido, vínculo fornecedor-produto...) herdam o dono pelo registro pai.
 TABELAS_DA_EMPRESA = [
     "fornecedor", "cliente", "galpao", "funcionario", "empilhadeira",
     "produto", "movimentacao", "pedido_fornecedor", "pedido_cliente",
 ]
 
-# Documentos e códigos que antes eram únicos no banco inteiro. Num SaaS duas
-# empresas podem ter o mesmo cliente ou o mesmo SKU, então a unicidade passa
-# a ser por empresa.
 UNICOS_POR_EMPRESA = {
     "fornecedor": ["cnpj"],
     "cliente": ["cpf_cnpj"],
@@ -700,11 +604,6 @@ UNICOS_POR_EMPRESA = {
 
 
 def migrar_multiempresa():
-    """Atualiza bancos criados antes da separação por empresa.
-
-    Idempotente: pode rodar a cada inicialização. Os registros antigos ficam
-    com a primeira empresa cadastrada, que era a única dona na prática.
-    """
     try:
         conexao = Database.connect()
     except Exception:
@@ -732,7 +631,6 @@ def migrar_multiempresa():
                 )
 
             for coluna in UNICOS_POR_EMPRESA.get(tabela, []):
-                # Índices únicos que tenham só a coluna (o formato antigo)
                 cursor.execute(f"SHOW INDEX FROM {tabela} WHERE Non_unique = 0")
                 indices = {}
                 for linha in cursor.fetchall():
@@ -746,19 +644,15 @@ def migrar_multiempresa():
                         f"(empresa_id, {coluna})"
                     )
 
-        # Clientes que perderam a situação ao serem editados (bug antigo:
-        # o formulário não enviava o campo e gravava NULL/"None")
         cursor.execute("""
             UPDATE cliente SET ativo = 'ativo'
             WHERE ativo IS NULL OR ativo IN ('', 'None')
         """)
 
-        # Foto do cliente (adicionada depois da primeira versão)
         cursor.execute("SHOW COLUMNS FROM cliente LIKE 'imagem'")
         if not cursor.fetchone():
             cursor.execute("ALTER TABLE cliente ADD COLUMN imagem VARCHAR(255) NULL")
 
-        # Preferências de notificação da empresa (tela Configuração)
         novas = dict((c, f"TINYINT(1) NOT NULL DEFAULT {p[0]}")
                      for c, p in PREFERENCIAS_NOTIFICACAO.items())
         novas["notif_margem"] = f"INT NOT NULL DEFAULT {MARGEM_PADRAO}"
@@ -782,12 +676,7 @@ migrar_multiempresa()
 
 
 def empresa_atual():
-    """Empresa da sessão; toda consulta de dados filtra por ela."""
     return session.get("empresa_id")
-
-
-# Para cada nome de parâmetro (na URL ou no formulário), a tabela dona do id.
-# Parâmetros genéricos como "id" dependem da rota e ficam em IDS_POR_ENDPOINT.
 IDS_POR_PARAMETRO = {
     "galpao_id": "galpao",
     "galpao_destino_id": "galpao",
@@ -824,15 +713,12 @@ IDS_POR_ENDPOINT = {
 
 PERFIS = {"admin": "Administrador", "gerente": "Gerente", "operador": "Operador"}
 
-# Ações que não têm volta (excluir) ou mexem na conta da empresa ficam com
-# administradores e gerentes. O operador cadastra, edita, desativa e cancela.
 ENDPOINTS_GERENCIA = {
     "deletar_galpao", "deletar_empilhadeira", "excluir_produto",
     "deletar_fornecedor", "deletar_funcionario", "deletar_cliente",
     "deletar_pedido", "deletar_pedido_saida", "salvar_empresa", "salvar_notificacoes",
 }
 
-# Gestão da equipe: só o administrador
 ENDPOINTS_ADMIN = {
     "usuarios", "salvar_usuario", "alternar_usuario_ativo", "alterar_perfil_usuario",
 }
@@ -850,9 +736,6 @@ def pode_gerenciar():
 def verificar_perfil():
     if "usuario_id" not in session or request.endpoint in (None, "static"):
         return None
-
-    # Relê o usuário: um perfil trocado ou uma conta desativada pelo
-    # administrador vale na hora, não só no próximo login.
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
     try:
@@ -886,7 +769,6 @@ def verificar_perfil():
     return None
 
 
-# Rotas que recebem o id do registro num campo "id" do formulário
 IDS_NO_FORMULARIO = {
     "atualizar_funcionario": "funcionario",
 }
@@ -908,11 +790,6 @@ def registro_da_empresa(tabela, registro_id):
 
 @app.before_request
 def proteger_dados_da_empresa():
-    """Barra qualquer id de outra empresa, venha da URL ou do formulário.
-
-    Sem isso bastava trocar o número na barra de endereço (/info_cliente/7)
-    para abrir, editar ou excluir dados de outro cliente do SaaS.
-    """
     if not empresa_atual() or request.endpoint in (None, "static"):
         return None
 
@@ -946,12 +823,10 @@ def proteger_dados_da_empresa():
     return None
 
 
-# Resultado guardado após a primeira checagem, para não consultar a cada request
 _estruturas_faltando = None
 
 
 def verificar_banco(forcar=False):
-    """Devolve a lista de estruturas que faltam no banco."""
     global _estruturas_faltando
 
     if _estruturas_faltando is not None and not forcar:
@@ -979,7 +854,6 @@ def verificar_banco(forcar=False):
             conexao.close()
 
     except Exception:
-        # Banco fora do ar é outro problema; não é o caso de acusar migração
         return []
 
     _estruturas_faltando = faltando
@@ -988,7 +862,6 @@ def verificar_banco(forcar=False):
 
 @app.before_request
 def avisar_banco_desatualizado():
-    """Mostra o que fazer em vez de deixar a tela estourar com erro 500."""
     if request.endpoint in ("static", "banco_desatualizado"):
         return None
 
@@ -1012,19 +885,12 @@ def banco_desatualizado():
 
 EXTENSOES_IMAGEM = {"png", "jpg", "jpeg", "webp", "gif"}
 
-# Limite de tamanho do arquivo enviado
-TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024  # 5 MB
+TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024
 
 PASTA_IMAGENS = os.path.join("static", "imagem")
 
 
 def salvar_imagem(arquivo, prefixo, identificador):
-    """Grava a imagem enviada e devolve o nome do arquivo.
-
-    Devolve None quando nada foi enviado, e levanta ValueError quando o
-    arquivo não serve. O nome inclui o tipo e o id (ex.: fornecedor_3.png),
-    então trocar a imagem sobrescreve a anterior em vez de acumular lixo.
-    """
     if not arquivo or not arquivo.filename:
         return None
 
@@ -1036,7 +902,6 @@ def salvar_imagem(arquivo, prefixo, identificador):
             "Formato de imagem inválido. Use PNG, JPG, JPEG, WEBP ou GIF."
         )
 
-    # O ponteiro precisa voltar ao início depois de medir o tamanho
     arquivo.seek(0, os.SEEK_END)
     tamanho = arquivo.tell()
     arquivo.seek(0)
@@ -1049,7 +914,6 @@ def salvar_imagem(arquivo, prefixo, identificador):
     os.makedirs(pasta, exist_ok=True)
     arquivo.save(os.path.join(pasta, nome_imagem))
 
-    # Remove versões antigas com outra extensão, para não sobrar arquivo órfão
     for outra in EXTENSOES_IMAGEM:
         if outra == extensao:
             continue
@@ -1061,7 +925,6 @@ def salvar_imagem(arquivo, prefixo, identificador):
 
 
 def atualizar_imagem(tabela, registro_id, arquivo, prefixo):
-    """Salva a imagem e grava o nome na coluna `imagem` da tabela."""
     nome_imagem = salvar_imagem(arquivo, prefixo, registro_id)
 
     if not nome_imagem:
@@ -1084,11 +947,6 @@ def atualizar_imagem(tabela, registro_id, arquivo, prefixo):
 
 @app.template_filter("imagem_ou")
 def filtro_imagem_ou(nome_imagem, padrao="imagemproduto.png"):
-    """Devolve o caminho da imagem do registro ou de uma imagem padrão.
-
-    Se o arquivo tiver sumido da pasta, cai no padrão em vez de mostrar
-    um ícone de imagem quebrada.
-    """
     if nome_imagem:
         caminho = os.path.join(app.root_path, PASTA_IMAGENS, nome_imagem)
         if os.path.exists(caminho):
@@ -1101,26 +959,22 @@ def filtro_imagem_ou(nome_imagem, padrao="imagemproduto.png"):
 
 @app.template_filter("moeda")
 def formatar_moeda(valor):
-    """Formata um número no padrão brasileiro: 1234.5 -> 1.234,50."""
     try:
         numero = float(valor or 0)
     except (TypeError, ValueError):
         numero = 0.0
 
-    # Formata no padrão americano e troca os separadores de posição
     texto = f"{numero:,.2f}"
     return texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 @app.template_filter("telefone")
 def filtro_telefone(valor):
-    """Exibe o telefone sempre no mesmo formato, esteja ele salvo como estiver."""
     return formatar_telefone(valor or "")
 
 
 @app.template_filter("quantidade")
 def formatar_quantidade(valor):
-    """Mostra quantidades sem casas decimais desnecessárias: 3.000 -> 3."""
     try:
         numero = float(valor or 0)
     except (TypeError, ValueError):
@@ -1134,7 +988,6 @@ def formatar_quantidade(valor):
 
 # ------------ MENSAGENS DE ERRO ----------#
 
-# Rótulos amigáveis para as colunas com índice único no banco.
 CAMPOS_UNICOS = {
     "cnpj":          "CNPJ",
     "cpf":           "CPF",
@@ -1146,16 +999,12 @@ CAMPOS_UNICOS = {
 
 
 def mensagem_erro(e):
-    """Converte exceções do banco em texto compreensível para o usuário.
 
-    Sem isso, uma tentativa de cadastrar um CNPJ repetido mostrava na tela
-    algo como "1062 (23000): Duplicate entry ... for key 'cnpj'".
-    """
     texto = str(e)
 
     if "Duplicate entry" in texto:
         for coluna, rotulo in CAMPOS_UNICOS.items():
-            # "key 'cnpj'" (antigo) ou "key 'uq_cliente_empresa_cpf_cnpj'" (por empresa)
+            
             if (f"key '{coluna}'" in texto or f"key '{coluna}_" in texto
                     or re.search(rf"key '(\w+\.)?uq_\w+_empresa_{coluna}'", texto)):
                 return f"Já existe um registro cadastrado com este {rotulo}."
@@ -1174,10 +1023,6 @@ def mensagem_erro(e):
 # ------------ LISTAGENS (filtro e agrupamento feitos no servidor) ----------#
 
 # ---------------- ORDENAÇÃO E FILTROS DAS LISTAGENS ---------------- #
-#
-# O botão "Filtros" abre um menu (sem JavaScript) com opções de ordem e de
-# situação. As opções ficam aqui, junto da regra de ordenação, para cada tela
-# declarar só a lista que usa.
 
 def _texto(valor):
     return str(valor or "").strip().lower()
@@ -1238,7 +1083,6 @@ ORDENS = {
     ],
 }
 
-# Filtros de situação por tela: valor -> (rótulo, função que decide se entra)
 SITUACOES = {
     "produtos": [
         ("ativos", "Ativos", lambda p: bool(p.get("ativo"))),
@@ -1268,11 +1112,6 @@ SITUACOES = {
 
 
 def ordenar_e_filtrar(itens, tela):
-    """Aplica ?ordem= e ?situacao= da URL à lista e devolve o contexto do menu.
-
-    Valores desconhecidos são ignorados (voltam para a ordem padrão), então
-    uma URL editada à mão nunca quebra a tela.
-    """
     ordens = ORDENS.get(tela, [])
     situacoes = SITUACOES.get(tela, [])
 
@@ -1300,7 +1139,6 @@ def ordenar_e_filtrar(itens, tela):
 
 
 def vendas_por_produto():
-    """Quantidade vendida de cada produto da empresa (pedidos não cancelados)."""
     conexao = Database.connect()
     cursor = conexao.cursor()
     try:
@@ -1325,11 +1163,6 @@ def com_vendas(produtos):
 
 
 def filtrar_produtos(produtos, busca):
-    """Filtra a listagem de produtos pelo texto digitado na barra de pesquisa.
-
-    A busca é resolvida aqui, no Python, e não no JavaScript da página:
-    o formulário envia ?busca=... por GET e a rota devolve a lista já filtrada.
-    """
     termo = (busca or "").strip().lower()
 
     if not termo:
@@ -1349,12 +1182,6 @@ def filtrar_produtos(produtos, busca):
 
 
 def agrupar_produtos_por_id(produtos):
-    """Soma as quantidades de linhas repetidas do mesmo produto.
-
-    Um produto pode ocupar várias localizações dentro do mesmo galpão, o que
-    gera uma linha por localização. Antes essa soma era feita no navegador;
-    agora a lista já chega pronta ao template.
-    """
     agrupados = {}
 
     for produto in produtos:
@@ -1411,11 +1238,9 @@ def dashboard():
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
-    # Todos os números são só da empresa logada
     emp = session["empresa_id"]
 
     try:
-        # ---- Contagens gerais ----
         cursor.execute("SELECT COUNT(*) AS total FROM fornecedor WHERE empresa_id = %s", (emp,))
         total_fornecedores = cursor.fetchone()["total"]
 
@@ -1428,7 +1253,6 @@ def dashboard():
         cursor.execute("SELECT COUNT(*) AS total FROM produto WHERE ativo = TRUE AND empresa_id = %s", (emp,))
         total_produtos = cursor.fetchone()["total"]
 
-        # ---- Ganhos: pedidos de saída que não foram cancelados ----
         cursor.execute("""
             SELECT COALESCE(SUM(valor_total), 0) AS total
             FROM pedido_cliente
@@ -1437,7 +1261,6 @@ def dashboard():
         """, (emp,))
         ganhos = to_float(cursor.fetchone()["total"])
 
-        # ---- Gastos: pedidos de entrada que não foram cancelados ----
         cursor.execute("""
             SELECT COALESCE(SUM(valor_total), 0) AS total
             FROM pedido_fornecedor
@@ -1448,7 +1271,6 @@ def dashboard():
 
         lucro = ganhos - gastos
 
-        # ---- Gráfico: ganhos, gastos e lucro dos últimos 6 meses ----
         cursor.execute("""
             SELECT DATE_FORMAT(data_pedido, '%Y-%m') AS mes, SUM(valor_total) AS total
             FROM pedido_cliente
@@ -1484,13 +1306,10 @@ def dashboard():
             grafico_lucro.append({"rotulo": nomes_meses[mes - 1], "ganhos": g,
                                   "gastos": c, "lucro": g - c})
 
-        # Altura de cada barra em % da maior, calculada aqui para o
-        # template só desenhar (sem biblioteca de gráfico nem JS)
         maior = max([abs(m["lucro"]) for m in grafico_lucro] + [1])
         for m in grafico_lucro:
             m["altura"] = round(abs(m["lucro"]) / maior * 100, 1)
 
-        # ---- Comparação com o mês anterior, para a variação percentual ----
         cursor.execute("""
             SELECT COALESCE(SUM(valor_total), 0) AS total
             FROM pedido_cliente
@@ -1516,7 +1335,6 @@ def dashboard():
             
             variacao = None
 
-        # ---- Valor imobilizado em estoque (preço de custo) ----
         cursor.execute("""
             SELECT COALESCE(SUM(e.quantidade * p.preco_custo), 0) AS total
             FROM estoque e
@@ -1526,7 +1344,6 @@ def dashboard():
         """, (emp,))
         valor_estoque = to_float(cursor.fetchone()["total"])
 
-        # ---- Produtos mais vendidos ----
         cursor.execute("""
             SELECT p.nome, p.sku,
                    SUM(ipc.quantidade) AS quantidade,
@@ -1542,7 +1359,6 @@ def dashboard():
         """, (emp,))
         mais_vendidos = cursor.fetchall()
 
-        # ---- Últimas movimentações ----
         cursor.execute("""
             SELECT m.tipo, m.quantidade, m.data_movimentacao, m.observacao,
                    p.nome AS produto, g.nome AS galpao
@@ -1555,8 +1371,6 @@ def dashboard():
         """, (emp,))
         atividades = cursor.fetchall()
 
-        # ---- Alertas de estoque baixo ----
-        # Mesma regra do sininho (preferências em Configuração > Notificações)
         todos_alertas = alertas_estoque(cursor, emp)
         alertas = todos_alertas[:5]
         total_alertas = len(todos_alertas)
@@ -1597,22 +1411,10 @@ def login():
         email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "")
 
-        if not email or not senha:
-            flash("Informe o e-mail e a senha.", "erro")
-            return render_template("login.html")
-
-        espera = login_bloqueado(email)
-        if espera:
-            flash(f"Muitas tentativas erradas. Tente de novo em {espera} minuto(s).", "erro")
-            return render_template("login.html"), 429
-
         conexao = Database.connect()
         cursor = conexao.cursor(dictionary=True)
 
         try:
-            # O mesmo e-mail pode existir em mais de uma empresa do SaaS
-            # (usuario tem UNIQUE(email, empresa_id)); entra na conta cuja
-            # senha confere.
             cursor.execute("""
                 SELECT id, nome, email, senha, empresa_id, tipo, ativo
                 FROM usuario
@@ -1626,11 +1428,8 @@ def login():
             )
 
             if not usuario:
-                registrar_falha_login(email)
                 flash("Email ou senha inválidos!", "erro")
                 return render_template("login.html")
-
-            limpar_falhas_login(email)
 
             if not usuario["ativo"]:
                 flash("Usuário inativo.", "erro")
@@ -1691,9 +1490,6 @@ def redefinir_senha(token):
             flash("Este link de recuperação expirou.", "erro")
             return redirect(url_for("esqueci_senha"))
 
-        # ------------------------------------------------
-        # GET
-        # ------------------------------------------------
 
         if request.method == "GET":
 
@@ -1702,9 +1498,6 @@ def redefinir_senha(token):
                 token=token
             )
 
-        # ------------------------------------------------
-        # POST
-        # ------------------------------------------------
 
         senha = request.form.get("senha", "").strip()
         confirmar_senha = request.form.get("confirmar_senha", "").strip()
@@ -1733,10 +1526,8 @@ def redefinir_senha(token):
                 token=token
             )
 
-        # Criptografa a nova senha
         senha_hash = generate_password_hash(senha)
 
-        # Atualiza a senha
         cursor.execute("""
             UPDATE usuario
             SET senha = %s
@@ -1746,7 +1537,6 @@ def redefinir_senha(token):
             recuperacao["usuario_id"]
         ))
 
-        # Marca o token como utilizado
         cursor.execute("""
             UPDATE recuperacao_senha
             SET usado = 1
@@ -1811,13 +1601,10 @@ def esqueci_senha():
 
             if usuario:
 
-                # Gera token seguro
                 token = secrets.token_urlsafe(32)
 
-                # Token válido por 30 minutos
                 expira_em = datetime.now() + timedelta(minutes=30)
 
-                # Salva no banco
                 cursor.execute("""
                     INSERT INTO recuperacao_senha
                     (usuario_id, token, expira_em, usado)
@@ -1828,7 +1615,6 @@ def esqueci_senha():
                     expira_em
                 ))
 
-                # Link para redefinir a senha
                 link = url_for(
                     "redefinir_senha",
                     token=token,
@@ -1871,16 +1657,9 @@ def esqueci_senha():
     return render_template("esqueci_senha.html")
 
 # ---------------- CONFIG ---------------- #
-
 @app.route('/config')
 @login_obrigatorio
 def config():
-    """Tela de configurações.
-
-    Antes era um mockup: os campos vinham preenchidos com dados fixos
-    ("Ricardo Souza"), nenhum formulário tinha destino e o botão de modo
-    escuro não fazia nada. Agora tudo vem do banco e cada bloco tem rota.
-    """
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
@@ -1913,7 +1692,6 @@ def config():
 @app.route('/config/notificacoes', methods=["POST"])
 @login_obrigatorio
 def salvar_notificacoes():
-    """Preferências de notificação da empresa (sininho e dashboard)."""
     valores = [1 if request.form.get(coluna) else 0 for coluna in PREFERENCIAS_NOTIFICACAO]
     margem = max(0, min(to_int(request.form.get("notif_margem")), 200))
 
@@ -1968,7 +1746,6 @@ def salvar_perfil():
 
         conexao.commit()
 
-        # O e-mail é usado para exibir quem está logado
         session["usuario_logado"] = email
         flash("Perfil atualizado com sucesso!", "sucesso")
 
@@ -2006,8 +1783,6 @@ def alterar_senha():
         )
         usuario = cursor.fetchone()
 
-        # A senha atual é conferida para ninguém trocar a senha de uma
-        # sessão deixada aberta.
         if not usuario or not check_password_hash(usuario["senha"], senha_atual):
             flash("A senha atual está incorreta.", "erro")
             return redirect(url_for("config"))
@@ -2053,7 +1828,6 @@ def salvar_empresa():
 
         conexao.commit()
 
-        # A imagem da empresa é a que aparece no topo do menu lateral
         atualizar_imagem("empresa", session["empresa_id"],
                          request.files.get("imagem"), "empresa")
 
@@ -2143,9 +1917,7 @@ def salvar_usuario():
 
     return redirect(url_for("usuarios"))
 
-
 def _alterar_usuario(usuario_id, campo, valor, mensagem):
-    """Troca perfil/ativo de alguém da equipe (nunca de si mesmo)."""
     if usuario_id == session.get("usuario_id"):
         flash("Você não pode alterar o próprio perfil ou desativar a própria conta.", "erro")
         return redirect(url_for("usuarios"))
@@ -2185,9 +1957,6 @@ def alterar_perfil_usuario(usuario_id):
         return redirect(url_for("usuarios"))
     return _alterar_usuario(usuario_id, "tipo", tipo, f"Perfil alterado para {PERFIS[tipo]}.")
 
-
-# Sair é uma mudança de estado, então exige POST: um link GET podia ser
-# disparado por pré-carregamento do navegador e derrubar a sessão sozinho.
 @app.route('/logout', methods=["POST"])
 def logout():
     session.clear()
@@ -2211,15 +1980,11 @@ def cadastro_emp():
             flash("Informe o nome da empresa.", "erro")
             return render_template("cadastro.html")
 
-        # O CNPJ só era testado como "preenchido": entrava qualquer número.
-        # Agora os dígitos verificadores são conferidos, e a pontuação é
-        # aceita e removida antes de gravar.
         cnpj, erro = validar_documento(cnpj)
         if erro:
             flash(erro, "erro")
             return render_template("cadastro.html")
 
-        # CPF (11) também vale: MEI e profissionais autônomos usam o sistema
         if len(cnpj) not in (11, 14):
             flash("Informe um CPF (11 números) ou CNPJ (14 números).", "erro")
             return render_template("cadastro.html")
@@ -2243,10 +2008,6 @@ def cadastro_emp():
         cursor = conexao.cursor(dictionary=True)
 
         try:
-
-            # Verifica se o CNPJ já existe
-            # Compara sem a pontuação: empresas cadastradas por versões
-            # anteriores podem ter o CNPJ salvo com ponto e barra.
             cursor.execute("""
                 SELECT id
                 FROM empresa
@@ -2258,7 +2019,6 @@ def cadastro_emp():
                 flash("Este CPF/CNPJ já está cadastrado.", "erro")
                 return render_template("cadastro.html")
 
-            # Verifica se o e-mail já existe
             cursor.execute("""
                 SELECT id
                 FROM usuario
@@ -2270,7 +2030,6 @@ def cadastro_emp():
                 flash("Este e-mail já está cadastrado.", "erro")
                 return render_template("cadastro.html")
 
-            # Cria a empresa
             cursor.execute("""
                 INSERT INTO empresa (nome, cnpj)
                 VALUES (%s, %s)
@@ -2278,7 +2037,6 @@ def cadastro_emp():
 
             empresa_id = cursor.lastrowid
 
-            # Cria o usuário administrador
             cursor.execute("""
                 INSERT INTO usuario
                 (nome, telefone, email, senha, empresa_id, tipo, ativo)
@@ -2294,8 +2052,6 @@ def cadastro_emp():
             usuario_id = cursor.lastrowid
             conexao.commit()
 
-            # Já entra na conta nova: quem acabou de criar a empresa não
-            # precisa digitar tudo de novo na tela de login.
             session.clear()
             session["usuario_logado"] = email
             session["usuario_id"] = usuario_id
@@ -2329,7 +2085,6 @@ def cadastro_emp():
 @app.route("/estoque")
 @login_obrigatorio
 def estoque():
-    # Visão consolidada: soma o estoque do produto em todos os galpões.
     busca = (request.args.get("busca") or "").strip()
 
     produtos, menu = ordenar_e_filtrar(
@@ -2357,9 +2112,6 @@ def estoque_galpao(galpao_id):
 
     busca = (request.args.get("busca") or "").strip()
 
-    # A consolidação por produto é feita aqui, no Python, e não mais no
-    # JavaScript da página: um produto guardado em várias localizações do
-    # mesmo galpão aparece em uma única linha com a quantidade somada.
     produtos = agrupar_produtos_por_id(Estoque.find_by_galpao(galpao_id))
 
     produtos, menu = ordenar_e_filtrar(com_vendas(filtrar_produtos(produtos, busca)), "produtos")
@@ -2419,21 +2171,11 @@ def info_galpao(galpao_id):
 def atualizar_galpao(galpao_id):
     try:
 
-        # =========================
-        # TELEFONE
-        # =========================
-
-        # Aceita "(15) 99999-9999" ou só números, como as outras telas
         telefone, erro = validar_telefone_campo(request.form.get("telefone"))
 
         if erro:
             flash(erro, "erro")
             return redirect(url_for("info_galpao", galpao_id=galpao_id))
-
-
-        # =========================
-        # CEP
-        # =========================
 
         cep = request.form.get("cep", "").strip()
 
@@ -2478,11 +2220,6 @@ def atualizar_galpao(galpao_id):
                 )
             )
 
-
-        # =========================
-        # CAPACIDADE
-        # =========================
-
         caixas_por_nivel = to_int(
             request.form.get("caixas_por_nivel")
         )
@@ -2500,11 +2237,6 @@ def atualizar_galpao(galpao_id):
             * niveis_por_prateleira
             * total_prateleiras
         )
-
-
-        # =========================
-        # DADOS
-        # =========================
 
         dados = {
             "nome_resp": request.form.get("nome_resp"),
@@ -2548,7 +2280,6 @@ def atualizar_galpao(galpao_id):
             galpao_id=galpao_id
         )
     )
-
 
 @app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
 @login_obrigatorio
@@ -2612,7 +2343,6 @@ def atualizar_empilhadeira(empilhadeira_id):
         "ano_fabricacao":   request.form.get("ano_fabricacao"),
         "tipo_combustivel": request.form.get("tipo_combustivel"),
         "capacidade":       to_int(request.form.get("capacidade")),
-        # Operador responsável: vazio significa "sem operador atribuído"
         "funcionario_id":   to_int(request.form.get("funcionario_id")) or None,
         "ativo":            request.form.get("ativo"),
     }
@@ -2646,8 +2376,6 @@ def deletar_empilhadeira(empilhadeira_id):
 @app.route("/produtos")
 @login_obrigatorio
 def produtos():
-    # Mesma listagem consolidada de /estoque, mantida como rota separada
-    # porque vários redirecionamentos apontam para "produtos".
     busca = (request.args.get("busca") or "").strip()
 
     lista, menu = ordenar_e_filtrar(
@@ -2680,7 +2408,6 @@ def salvar_produto():
     cursor = conn.cursor(dictionary=True)
 
     try:
-        # 1. Verifica se o produto já existe pelo SKU
         cursor.execute("SELECT id FROM produto WHERE sku = %s AND empresa_id = %s LIMIT 1",
                        (sku, session["empresa_id"]))
         produto_existente = cursor.fetchone()
@@ -2688,7 +2415,6 @@ def salvar_produto():
         if produto_existente:
             produto_id = produto_existente["id"]
         else:
-            # 2. Se não existir, insere o novo produto
             dados_produto = (
                 sku,
                 nome,
@@ -2711,12 +2437,10 @@ def salvar_produto():
             
             produto_id = cursor.lastrowid
 
-        # 3. Imagem: mesma validação de tipo e tamanho das outras telas
         nome_imagem = salvar_imagem(request.files.get("imagem"), "produto", produto_id)
         if nome_imagem:
             cursor.execute("UPDATE produto SET imagem = %s WHERE id = %s", (nome_imagem, produto_id))
 
-        # 4. Atualiza ou insere a quantidade no estoque do galpão (evita duplicar linhas)
         if galpao_id:
             cursor.execute("""
                 INSERT INTO estoque (produto_id, galpao_id, quantidade, estoque_minimo)
@@ -2744,7 +2468,6 @@ def salvar_produto():
 @app.route("/produto/editar/<int:id>")
 @login_obrigatorio
 def editar_produto(id):
-    # Redireciona para info_produtos, que já exibe o formulário de edição
     return redirect(url_for("info_produtos", id=id))
 
 @app.route("/produto/atualizar/<int:id>", methods=["POST"])
@@ -2756,8 +2479,6 @@ def atualizar_produto(id):
         flash("Produto não encontrado.", "erro")
         return redirect(url_for("produtos"))
 
-    # O formulário envia "quantidade_minimo"; antes a rota lia "estoque_minimo",
-    # então o mínimo era gravado como 0 a cada salvamento.
     estoque_minimo = to_int(request.form.get("quantidade_minimo"))
 
     dados = {
@@ -2772,8 +2493,6 @@ def atualizar_produto(id):
         "tipo": request.form.get("tipo"),
         "codigo_barras": request.form.get("codigo_barras") or None,
         "item_por_caixa": to_int(request.form.get("item_por_caixa")),
-        # Produto.update grava a coluna `imagem` sempre. Sem este valor a
-        # imagem atual era apagada toda vez que o produto era editado.
         "imagem": produto.get("imagem"),
     }
 
@@ -2782,7 +2501,6 @@ def atualizar_produto(id):
         return redirect(url_for("info_produtos", id=id))
 
     try:
-        # Troca da imagem, quando uma nova for enviada
         imagem = request.files.get("imagem")
 
         if imagem and imagem.filename:
@@ -2826,12 +2544,6 @@ def atualizar_produto(id):
 @app.route("/produto/ajustar_estoque/<int:id>", methods=["POST"])
 @login_obrigatorio
 def ajustar_estoque_produto(id):
-    """Corrige o saldo de um produto em um galpão.
-
-    A quantidade não é editada junto com os dados do produto porque o saldo é
-    por galpão e precisa ficar registrado: todo acerto vira uma movimentação
-    do tipo "ajuste_inventario".
-    """
     galpao_id  = to_int(request.form.get("galpao_id"))
     quantidade = to_float(request.form.get("quantidade"))
     observacao = (request.form.get("observacao") or "").strip() or "Ajuste de inventário"
@@ -2873,14 +2585,7 @@ def ajustar_estoque_produto(id):
     return redirect(url_for("info_produtos", id=id))
 
 def voltar_para_produto(produto_id, padrao="info_produtos"):
-    """Devolve o usuário à tela de onde a ação partiu.
 
-    Ativar, desativar ou excluir um produto pode ser feito de vários lugares
-    (estoque, itens do fornecedor, inativos, ficha do produto). O formulário
-    manda em `voltar_para` a página de origem; sem ela, cai no destino padrão.
-    Só caminhos internos são aceitos, para o campo não virar redirecionamento
-    para fora do site.
-    """
     destino = (request.form.get("voltar_para") or "").strip()
 
     if destino.startswith("/") and not destino.startswith("//"):
@@ -2901,9 +2606,6 @@ def desativar_produto(id):
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
 
-    # Volta para a tela de origem (itens do fornecedor, estoque, ficha do
-    # produto). Antes caía sempre na ficha do produto, tirando o usuário da
-    # lista em que ele estava trabalhando.
     return voltar_para_produto(id)
 
 @app.route("/produto/reativar/<int:id>", methods=["POST"])
@@ -2930,15 +2632,12 @@ def excluir_produto(id):
         Produto.safe_delete(id)
         flash("Produto excluído com sucesso!", "sucesso")
     except ValueError as e:
-        # Produto com histórico: a mensagem já explica, e a ficha continua existindo
         flash(str(e), "erro")
         return redirect(url_for("info_produtos", id=id))
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
         return redirect(url_for("info_produtos", id=id))
 
-    # Excluído de vez: a ficha não existe mais, então volta para a lista de
-    # origem (itens do fornecedor, inativos, estoque).
     return voltar_para_produto(id, padrao="produtos")
 
 # ---------------- INFO PRODUTO ---------------- #
@@ -2972,8 +2671,6 @@ def info_produtos(id):
 
         produtos = Produto.find_all_completo()
 
-        # Saldo por galpão: o total exibido no topo é a soma destes valores,
-        # e cada linha permite ajustar o estoque daquele galpão.
         cursor.execute("""
             SELECT e.galpao_id, g.nome AS galpao_nome,
                    e.quantidade, e.estoque_minimo
@@ -2994,14 +2691,12 @@ def info_produtos(id):
         produtos=produtos,
         saldos=saldos,
         galpoes=Galpao.find_all(),
-        # A tela mostra um histórico de alterações que ainda não tem tabela
-        # no banco; sem esta lista o bloco quebrava ao ser renderizado.
         historico=[]
     )
 
 # ---------------- GALPÕES ---------------- #
 
-# ---------------- BUSCA GERAL (campo do header) ---------------- #
+# ---------------- BUSCA - header ---------------- #
 
 @app.route("/buscar")
 @login_obrigatorio
@@ -3077,8 +2772,6 @@ def galpao():
 @app.route("/galpao/novo")
 @login_obrigatorio
 def novo_galpao():
-    # O cadastro de galpão é um modal dentro da própria listagem; renderizar
-    # o template solto deixava a tela sem os galpões e sem a barra de busca.
     return redirect(url_for("galpao"))
 
 @app.route("/galpao/salvar", methods=["POST"])
@@ -3086,20 +2779,11 @@ def novo_galpao():
 def salvar_galpao():
     try:
 
-        # =========================
-        # E-MAIL
-        # =========================
-
         email = request.form.get("email_resp", "").strip()
 
         if not email_valido(email):
             flash("Informe um e-mail válido.", "erro")
             return redirect(url_for("galpao"))
-
-
-        # =========================
-        # NOME DO RESPONSÁVEL
-        # =========================
 
         nome_resp = request.form.get("nome_resp", "").strip()
 
@@ -3110,14 +2794,8 @@ def salvar_galpao():
             )
             return redirect(url_for("galpao"))
 
-
-        # =========================
-        # CEP
-        # =========================
-
         cep = request.form.get("cep", "").strip()
 
-        # Remove hífen e espaços
         cep = cep.replace("-", "").replace(" ", "")
 
         if not cep:
@@ -3135,11 +2813,6 @@ def salvar_galpao():
             )
             return redirect(url_for("galpao"))
 
-
-        # =========================
-        # ÁREA TOTAL
-        # =========================
-
         area_total = request.form.get("area_total", "").strip()
 
         if not area_valida(area_total):
@@ -3148,11 +2821,6 @@ def salvar_galpao():
                 "erro"
             )
             return redirect(url_for("galpao"))
-
-
-        # =========================
-        # TELEFONE
-        # =========================
 
         telefone = request.form.get("telefone", "").strip()
 
@@ -3172,11 +2840,6 @@ def salvar_galpao():
             )
             return redirect(url_for("galpao"))
 
-
-        # =========================
-        # CAPACIDADE DO GALPÃO
-        # =========================
-
         caixas_por_nivel = to_int(
             request.form.get("caixas_por_nivel")
         )
@@ -3194,11 +2857,6 @@ def salvar_galpao():
             * niveis_por_prateleira
             * total_prateleiras
         )
-
-
-        # =========================
-        # CRIAÇÃO DO GALPÃO
-        # =========================
 
         g = Galpao(
             nome=request.form.get("nome"),
@@ -3245,7 +2903,6 @@ def fornecedores():
     cursor = conexao.cursor(dictionary=True)
 
     try:
-        # Removido o WHERE ativo = 'ativo' — agora traz todos
         cursor.execute("""
             SELECT
                 f.id,
@@ -3307,8 +2964,6 @@ def fornecedores():
         cursor.close()
         conexao.close()
 
-    # A lista principal é filtrada em Python: a consulta agrupa produtos por
-    # fornecedor, e filtrar no SQL mudaria as contagens exibidas.
     if busca:
         termo = busca.lower()
 
@@ -3345,8 +3000,6 @@ def salvar_fornecedor():
     nome  = (request.form.get("nome") or "").strip()
     email = (request.form.get("email") or "").strip()
 
-    # O fornecedor não tinha nenhuma conferência: entrava qualquer CNPJ.
-    # Agora vale a mesma regra do cliente, aceitando a pontuação.
     cnpj, erro = validar_documento(request.form.get("cnpj"), obrigatorio=False)
     if erro:
         flash(erro, "erro")
@@ -3433,7 +3086,6 @@ def atualizar_fornecedor(fornecedor_id):
 
         conexao.commit()
 
-        # Troca da imagem do fornecedor, quando enviada
         atualizar_imagem("fornecedor", fornecedor_id,
                          request.files.get("imagem"), "fornecedor")
 
@@ -3525,7 +3177,7 @@ def info_fornecedor(fornecedor_id):
         fornecedor=fornecedor,
         produtos=produtos,
         lista_produtos=lista_produtos,
-        historico=[]   # FIX: evita erro no template enquanto a tabela de log não existe
+        historico=[]  
     )
 
 # ---------------- ITENS FORNECEDOR ---------------- #
@@ -3593,7 +3245,6 @@ def itens_do_fornecedor(cursor, fornecedor_id):
 @app.route("/itens_fornecedores/<int:fornecedor_id>/exportar")
 @login_obrigatorio
 def exportar_itens_fornecedor(fornecedor_id):
-    """Catálogo do fornecedor em CSV (abre direto no Excel, separado por ;)."""
     import csv
 
     conexao = Database.connect()
@@ -3620,7 +3271,6 @@ def exportar_itens_fornecedor(fornecedor_id):
         ])
 
     nome = re.sub(r"[^A-Za-z0-9]+", "_", (fornecedor or {}).get("nome") or "fornecedor").strip("_")
-    # BOM no início: o Excel reconhece os acentos
     return app.response_class(
         "\ufeff" + saida.getvalue(),
         mimetype="text/csv; charset=utf-8",
@@ -3628,7 +3278,6 @@ def exportar_itens_fornecedor(fornecedor_id):
     )
 
 
-# Rota nova: cria o produto E já vincula ao fornecedor em uma só ação
 @app.route("/fornecedor/<int:fornecedor_id>/salvar_item", methods=["POST"])
 @login_obrigatorio
 def salvar_item_fornecedor(fornecedor_id):
@@ -3654,7 +3303,6 @@ def salvar_item_fornecedor(fornecedor_id):
 
         produto_id = produto.insert()
 
-        # Salva campos extras que não estão no __init__ padrão
         conn = Database.connect()
         cursor = conn.cursor()
         try:
@@ -3668,7 +3316,6 @@ def salvar_item_fornecedor(fornecedor_id):
                 produto_id
             ))
 
-            # Vincula ao fornecedor
             cursor.execute("""
                 INSERT INTO fornecedor_produto
                     (fornecedor_id, produto_id, preco_custo, desconto,
@@ -3707,7 +3354,6 @@ def cliente():
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
-    # Pesquisa resolvida no SQL, a partir de ?busca=... enviado pelo formulário
     busca = (request.args.get("busca") or "").strip()
 
     sql = """
@@ -3751,7 +3397,6 @@ def cliente():
 @app.route("/cliente/novo")
 @login_obrigatorio
 def novo_cliente():
-    # Mesmo caso do galpão: o cadastro é um modal da listagem de clientes.
     return redirect(url_for("cliente"))
 
 @app.route("/cliente/salvar", methods=["POST"])
@@ -3767,13 +3412,6 @@ def salvar_cliente():
         cep = request.form.get("cep", "").strip()
         estado = request.form.get("estado", "").strip()
         ativo = request.form.get("ativo", "").strip()
-
-        # =========================
-        # CPF / CNPJ, TELEFONE E CEP
-        # =========================
-        # A pontuação é aceita e removida antes de conferir, e só os números
-        # são gravados — assim o mesmo documento não fica salvo em dois
-        # formatos diferentes.
 
         cpf_cnpj_numeros, erro = validar_documento(cpf_cnpj)
         if erro:
@@ -3798,14 +3436,9 @@ def salvar_cliente():
             flash("Informe um e-mail válido.", "erro")
             return redirect(url_for("cliente"))
 
-        # Um mesmo CPF/CNPJ não pode ser cadastrado duas vezes
         if documento_ja_usado("cliente", cpf_cnpj_numeros):
             flash("Já existe um cliente com este CPF/CNPJ.", "erro")
             return redirect(url_for("cliente"))
-
-        # =========================
-        # CADASTRO
-        # =========================
 
         c = Cliente(
             nome=nome,
@@ -3831,9 +3464,7 @@ def salvar_cliente():
 # ---------------- FUNCIONÁRIOS ---------------- #
 
 def validar_cpf_funcionario(valor, ignorar_id=None):
-    """CPF do funcionário: opcional, mas quando informado precisa ser um CPF
-    válido (11 números) e não repetido dentro da empresa. Antes era gravado
-    como veio, sem conferência nenhuma."""
+
     numeros, erro = validar_documento(valor, obrigatorio=False)
     if erro:
         return None, erro
@@ -3961,7 +3592,6 @@ def deletar_funcionario(funcionario_id):
 @app.route("/movimentacoes")
 @login_obrigatorio
 def movimentacoes():
-    # Os filtros são resolvidos aqui, no servidor, via query string (?produto_id=&galpao_id=&tipo=).
     produto_id = to_int(request.args.get("produto_id")) or None
     galpao_id  = to_int(request.args.get("galpao_id")) or None
     tipo       = (request.args.get("tipo") or "").strip().lower() or None
@@ -4018,7 +3648,7 @@ def salvar_movimentacao():
     conexao = Database.connect()
     cursor = conexao.cursor()
     try:
-        # Saldo atual na origem
+
         cursor.execute("""
             SELECT quantidade FROM estoque
             WHERE produto_id = %s AND galpao_id = %s
@@ -4045,7 +3675,7 @@ def salvar_movimentacao():
             delta_origem = quantidade
         elif tipo in ("saida", "transferencia"):
             delta_origem = -quantidade
-        else:  # ajuste_inventario define o saldo absoluto
+        else:  
             delta_origem = None
 
         if delta_origem is None:
@@ -4061,7 +3691,7 @@ def salvar_movimentacao():
                 ON DUPLICATE KEY UPDATE quantidade = quantidade + VALUES(quantidade)
             """, (produto_id, galpao_id, delta_origem))
 
-        # Na transferência o estoque sai da origem e entra no destino
+        
         if tipo == "transferencia":
             cursor.execute("""
                 INSERT INTO estoque (produto_id, galpao_id, quantidade, estoque_minimo)
@@ -4102,8 +3732,6 @@ def atualizar_cliente(cliente_id):
     nome  = (request.form.get("nome") or "").strip()
     email = (request.form.get("email") or "").strip()
 
-    # As mesmas regras do cadastro: antes a edição não conferia nada, então
-    # dava para gravar telefone, CEP e documento em qualquer formato.
     cpf_cnpj, erro = validar_documento(request.form.get("cpf_cnpj"),
                                        obrigatorio=False)
     if erro:
@@ -4135,8 +3763,6 @@ def atualizar_cliente(cliente_id):
     try:
         dados = {
             "nome":     nome,
-            # Sem o campo no formulário, mantém a situação atual: antes o
-            # cliente virava "None" (inativo) a cada edição.
             "ativo":    (request.form.get("ativo")
                          if request.form.get("ativo") in ("ativo", "inativo")
                          else (Cliente.find_by_id(cliente_id) or {}).get("ativo") or "ativo"),
@@ -4169,16 +3795,7 @@ def deletar_cliente(cliente_id):
     return redirect(url_for("cliente"))
 
 
-# ------------------------------------------------------------------ #
-# API — produtos disponíveis por galpão                               #
-# ------------------------------------------------------------------ #
-
-# ------------------------------------------------------------------ #
-# CONSULTAS DE PEDIDOS                                                #
-# ------------------------------------------------------------------ #
-
 def buscar_pedidos_entrada(busca=""):
-    """Pedidos de fornecedor, opcionalmente filtrados por fornecedor/documento."""
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -4205,7 +3822,6 @@ def buscar_pedidos_entrada(busca=""):
 
 
 def buscar_pedidos_saida(busca=""):
-    """Pedidos de cliente, opcionalmente filtrados por cliente/documento."""
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -4231,13 +3847,6 @@ def buscar_pedidos_saida(busca=""):
         conn.close()
 
 
-# ------------------------------------------------------------------ #
-# CARRINHO DE PEDIDOS (mantido na sessão, sem JavaScript)             #
-# ------------------------------------------------------------------ #
-# Antes os itens do pedido eram montados no navegador e enviados em um
-# campo escondido "itens_json". Agora cada item é adicionado por um POST
-# normal, guardado na sessão do Flask e renderizado direto no template.
-
 def carrinho_obter(chave):
     return session.get(chave, [])
 
@@ -4257,7 +3866,6 @@ def carrinho_total(itens):
 
 
 def carrinho_adicionar(chave, produto, quantidade, preco_unitario):
-    """Adiciona (ou soma, se já existir) um produto ao carrinho da sessão."""
     itens = carrinho_obter(chave)
 
     for item in itens:
@@ -4286,11 +3894,6 @@ def carrinho_remover(chave, indice):
 
 
 def produtos_por_galpao():
-    """Todos os produtos com saldo, com o galpão a que pertencem.
-
-    A tela recebe a lista inteira e mostra só os do galpão escolhido, então
-    trocar de galpão não precisa recarregar a página.
-    """
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -4320,11 +3923,6 @@ def produtos_por_galpao():
 
 
 def produtos_por_fornecedor():
-    """Produtos ativos com os fornecedores a que estão vinculados.
-
-    `fornecedor_id` vazio marca os produtos sem vínculo, que continuam
-    disponíveis para qualquer fornecedor (mesma regra do fallback anterior).
-    """
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -4339,9 +3937,6 @@ def produtos_por_fornecedor():
             FROM produto p
             LEFT JOIN fornecedor_produto fp
                    ON fp.produto_id = p.id AND COALESCE(fp.ativo, 1) = 1
-            -- Produtos desativados também entram: comprar de novo é
-            -- justamente como um produto volta a ter estoque. Antes eles
-            -- sumiam e a tela dizia "Nenhum produto para este fornecedor".
             WHERE p.empresa_id = %s
             ORDER BY COALESCE(p.ativo, 1) DESC, p.nome
         """, (session["empresa_id"],))
@@ -4357,7 +3952,6 @@ def produtos_por_fornecedor():
 
 
 def produtos_do_fornecedor(fornecedor_id):
-    """Produtos vinculados ao fornecedor (ou todos os ativos, se não houver vínculo)."""
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -4389,7 +3983,6 @@ def produtos_do_fornecedor(fornecedor_id):
 
 
 def produtos_do_galpao(galpao_id):
-    """Produtos com saldo disponível no galpão informado."""
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -4415,12 +4008,6 @@ def produtos_do_galpao(galpao_id):
     finally:
         cursor.close()
         conn.close()
-
-
-
-# ------------------------------------------------------------------ #
-# API — produtos disponíveis por galpão
-# ------------------------------------------------------------------ #
 
 @app.route("/api/produtos_do_galpao/<int:galpao_id>")
 @login_obrigatorio
@@ -4495,25 +4082,16 @@ def api_produtos_do_fornecedor(fornecedor_id):
         cursor.close()
         conn.close()
 
-
-# ------------------------------------------------------------------ #
-# PEDIDOS DE ENTRADA  (usa tabela: pedido_fornecedor)                 #
-# ------------------------------------------------------------------ #
-
 CARRINHO_ENTRADA = "carrinho_entrada"
 
 
 @app.route("/cadastro_pedido_entrada")
 @login_obrigatorio
 def cadastro_pedido_entrada():
-    # O fornecedor escolhido volta pela query string, então a lista de
-    # produtos é montada aqui no servidor — sem chamada AJAX.
     fornecedor_id = to_int(request.args.get("fornecedor_id")) or None
     galpao_id     = to_int(request.args.get("galpao_id")) or None
     produto_id    = to_int(request.args.get("produto_id")) or None
     itens         = carrinho_obter(CARRINHO_ENTRADA)
-    # A lista completa vai para a tela, que mostra só os produtos do
-    # fornecedor escolhido. Sem recarregar a página para trocar de fornecedor.
     produtos = produtos_por_fornecedor()
 
     return render_template(
@@ -4557,7 +4135,6 @@ def adicionar_item_entrada():
         flash("Informe a quantidade em unidades inteiras.", "erro")
         return redirect(destino)
 
-    # Preço de compra negativo entrava no pedido e reduzia o total
     if preco < 0:
         flash("O preço unitário não pode ser negativo.", "erro")
         return redirect(destino)
@@ -4596,8 +4173,6 @@ def limpar_pedido_entrada():
 def listar_pedidos_entrada():
     return redirect(url_for("pedidos", busca=request.args.get("busca") or None))
 
-
-# Mantida por compatibilidade: os redirecionamentos antigos apontavam para cá.
 @app.route("/pedidos_entrada/novo")
 @login_obrigatorio
 def novo_pedido_entrada():
@@ -4648,7 +4223,6 @@ def salvar_pedido_entrada():
             """, (pedido_id, item["produto_id"],
                   item["quantidade"], item["preco_unitario"]))
 
-            # AUTO-VÍNCULO: associa o produto ao fornecedor, se ainda não estiver
             cursor.execute("""
                 INSERT INTO fornecedor_produto
                     (fornecedor_id, produto_id, preco_custo, desconto,
@@ -4659,14 +4233,12 @@ def salvar_pedido_entrada():
                     ativo = 1
             """, (fornecedor_id, item["produto_id"], item["preco_unitario"]))
 
-            # Entrada de estoque no galpão de destino
             cursor.execute("""
                 INSERT INTO estoque (produto_id, galpao_id, quantidade, estoque_minimo)
                 VALUES (%s, %s, %s, 0)
                 ON DUPLICATE KEY UPDATE quantidade = quantidade + VALUES(quantidade)
             """, (item["produto_id"], galpao_id, item["quantidade"]))
 
-            # Registra a movimentação correspondente
             cursor.execute("""
                 INSERT INTO movimentacao
                     (empresa_id, produto_id, galpao_id, tipo, quantidade, observacao)
@@ -4722,10 +4294,6 @@ def visualizar_pedido_entrada(pedido_id):
     return render_template("pedidos_entrada/visualizar.html", pedido=pedido)
 
 
-# ------------------------------------------------------------------ #
-# PEDIDOS DE SAÍDA  (usa tabela: pedido_cliente)                      #
-# ------------------------------------------------------------------ #
-
 CARRINHO_SAIDA = "carrinho_saida"
 
 
@@ -4738,12 +4306,9 @@ def cadastro_pedido(cliente_id):
         flash("Cliente não encontrado.", "erro")
         return redirect(url_for("cliente"))
 
-    # Assim como na entrada, o galpão volta pela query string e os produtos
-    # disponíveis são carregados aqui no servidor.
     galpao_id  = to_int(request.args.get("galpao_id")) or None
     produto_id = to_int(request.args.get("produto_id")) or None
     itens      = carrinho_obter(CARRINHO_SAIDA)
-    # Lista completa; a tela filtra pelo galpão escolhido
     produtos = produtos_por_galpao()
 
     return render_template(
@@ -4762,7 +4327,6 @@ def cadastro_pedido(cliente_id):
 @app.route("/cadastro_pedido_saida")
 @login_obrigatorio
 def cadastro_pedido_saida():
-    # Sem cliente definido: mostra a tela com o seletor de clientes.
     galpao_id  = to_int(request.args.get("galpao_id")) or None
     produto_id = to_int(request.args.get("produto_id")) or None
     itens      = carrinho_obter(CARRINHO_SAIDA)
@@ -4797,7 +4361,6 @@ def adicionar_item_saida():
 
     destino = destino_pedido_saida(cliente_id, galpao_id)
 
-    # O estoque é contado em unidades inteiras: 2,5 virava 3 sem aviso
     if quantidade != int(quantidade):
         flash("Informe a quantidade em unidades inteiras.", "erro")
         return redirect(destino)
@@ -4814,7 +4377,6 @@ def adicionar_item_saida():
         flash("A quantidade deve ser maior que zero.", "erro")
         return redirect(destino)
 
-    # O preço e a disponibilidade vêm do banco, não do formulário.
     disponiveis = {p["id"]: p for p in produtos_do_galpao(galpao_id)}
     produto = disponiveis.get(produto_id)
 
@@ -4863,8 +4425,6 @@ def limpar_pedido_saida():
 @app.route("/pedidos_saida")
 @login_obrigatorio
 def listar_pedidos_saida():
-    # Cada pedido de saída pertence a um cliente, então a consulta começa
-    # pela lista de clientes em vez de uma listagem geral.
     flash("Escolha o cliente para ver os pedidos de saída.", "sucesso")
     return redirect(url_for("cliente"))
 
@@ -4899,7 +4459,6 @@ def salvar_pedido_saida():
     conn = Database.connect()
     cursor = conn.cursor()
     try:
-        # Sem data informada o banco usa a data/hora atual (DEFAULT do campo)
         if data_saida:
             cursor.execute("""
                 INSERT INTO pedido_cliente
@@ -4918,7 +4477,6 @@ def salvar_pedido_saida():
         pedido_id = cursor.lastrowid
 
         for item in itens:
-            # Confere o saldo dentro da transação, para não deixar estoque negativo
             cursor.execute("""
                 SELECT quantidade FROM estoque
                 WHERE produto_id = %s AND galpao_id = %s
@@ -5006,12 +4564,6 @@ STATUS_PEDIDO_CLIENTE = ["pendente", "pago", "enviado", "concluido", "cancelado"
 @app.route("/pedido_cliente/<int:pedido_id>/editar")
 @login_obrigatorio
 def editar_pedido_cliente(pedido_id):
-    """Tela de edição de um pedido de saída.
-
-    Antes a tela de pedidos do cliente chamava `editar_pedido`, que abre um
-    pedido de FORNECEDOR: o botão levava para outro registro. Além disso o
-    botão era um <button href=...>, que não navega para lugar nenhum.
-    """
     conexao = Database.connect()
     cursor = conexao.cursor(dictionary=True)
 
@@ -5052,12 +4604,6 @@ def editar_pedido_cliente(pedido_id):
 @app.route("/pedido_cliente/<int:pedido_id>/atualizar", methods=["POST"])
 @login_obrigatorio
 def atualizar_pedido_cliente(pedido_id):
-    """Grava os dados do pedido que não mexem no estoque.
-
-    Quantidades e produtos não são editados aqui de propósito: alterá-los
-    mudaria o saldo já baixado no fechamento. Para isso existe o cancelamento,
-    que devolve o estoque, e a abertura de um novo pedido.
-    """
     numero_documento = (request.form.get("numero_documento") or "").strip() or None
     observacao       = (request.form.get("observacao") or "").strip() or None
     status           = (request.form.get("status_pedido") or "").strip()
@@ -5079,7 +4625,6 @@ def atualizar_pedido_cliente(pedido_id):
             flash("Pedido não encontrado.", "erro")
             return redirect(url_for("cliente"))
 
-        # Cancelar devolve estoque, então tem rota própria e não entra aqui
         if status == "cancelado" and pedido["status_pedido"] != "cancelado":
             flash(
                 "Para cancelar, use o botão de cancelamento: ele devolve o "
@@ -5121,14 +4666,11 @@ def atualizar_pedido_cliente(pedido_id):
 @app.route("/editar_pedido/<int:id>")
 @login_obrigatorio
 def editar_pedido(id):
-    # A edição de um pedido já recebido mexeria no saldo de estoque, então
-    # a tela é somente leitura: mostra o pedido e seus itens.
     return redirect(url_for("visualizar_pedido_entrada", pedido_id=id))
 
 @app.route("/deletar_pedido/<int:id>", methods=["POST"])
 @login_obrigatorio
 def deletar_pedido(id):
-    """Exclui um pedido de ENTRADA (fornecedor) e desfaz a entrada de estoque."""
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -5138,7 +4680,6 @@ def deletar_pedido(id):
         if not pedido:
             raise ValueError("Pedido de entrada não encontrado.")
 
-        # Devolve o estoque que este pedido havia somado ao galpão
         cursor.execute("""
             SELECT produto_id, quantidade
             FROM item_pedido_fornecedor
@@ -5173,11 +4714,6 @@ def deletar_pedido(id):
 @app.route("/deletar_pedido_saida/<int:id>", methods=["POST"])
 @login_obrigatorio
 def deletar_pedido_saida(id):
-    """Exclui um pedido de SAÍDA (cliente) e devolve o estoque ao galpão.
-
-    Antes a tela de pedidos do cliente chamava "deletar_pedido", que apaga
-    pedidos de fornecedor — ou seja, excluía o registro errado.
-    """
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -5190,7 +4726,6 @@ def deletar_pedido_saida(id):
         if not pedido:
             raise ValueError("Pedido de saída não encontrado.")
 
-        # Um pedido cancelado já teve o estoque devolvido
         if pedido["status_pedido"] != "cancelado":
             cursor.execute("""
                 SELECT produto_id, quantidade
@@ -5292,7 +4827,6 @@ def info_pedido_cliente(pedido_id):
     cursor = conexao.cursor(dictionary=True)
 
     try:
-        # Dados do pedido
         sql = """
             SELECT
                 pc.*,
@@ -5317,7 +4851,6 @@ def info_pedido_cliente(pedido_id):
             flash("Pedido não encontrado.", "erro")
             return redirect(url_for("cliente"))
 
-        # Itens do pedido
         sql_itens = """
             SELECT
                 ipc.*,
@@ -5351,11 +4884,6 @@ def info_pedido_cliente(pedido_id):
 @app.route("/pedidos")
 @login_obrigatorio
 def pedidos():
-    """Pedidos de entrada (compras de fornecedor).
-
-    As saídas não aparecem aqui: elas pertencem ao cliente e ficam em
-    /pedidos_cliente/<cliente_id>.
-    """
     busca = (request.args.get("busca") or "").strip()
 
     pedidos, menu = ordenar_e_filtrar(buscar_pedidos_entrada(busca), "pedidos")
@@ -5390,8 +4918,7 @@ def salvar_pedido():
 @app.route("/pedido/processar/<int:id>", methods=["POST"])
 @login_obrigatorio
 def processar_pedido(id):
-    # Conclui um pedido de saída pendente. A baixa de estoque já ocorreu no
-    # fechamento do pedido, então aqui só o status muda.
+
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
     try:
@@ -5426,7 +4953,6 @@ def processar_pedido(id):
 @app.route("/pedido/cancelar/<int:id>", methods=["POST"])
 @login_obrigatorio
 def cancelar_pedido(id):
-    # PedidoCliente.cancelar devolve o estoque e marca o pedido como cancelado.
     try:
         PedidoCliente.cancelar(id)
         flash("Pedido cancelado e estoque devolvido.", "sucesso")
@@ -5443,5 +4969,4 @@ def pagina_nao_encontrada(error):
 # ---------------- RUN ---------------- #
 
 if __name__ == "__main__":
-    # Ative o modo debug apenas em desenvolvimento: FLASK_DEBUG=1 python app.py
-    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
+    app.run(debug=True)

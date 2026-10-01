@@ -1,16 +1,5 @@
-{# ---------------------------------------------------------------
-   Botão "Filtros" com menu de ordenação e situação.
 
-   Fica DENTRO do <form method="GET"> da barra de pesquisa: os rádios
-   viram ?ordem=...&situacao=... e a busca digitada vai junto.
-   Abre e fecha com <details>, sem JavaScript.
-
-   Parâmetros:
-     menu_filtros - dicionário montado por ordenar_e_filtrar() no app.py
-     limpar_url   - endereço da tela sem filtros
---------------------------------------------------------------- #}
 {% if menu_filtros is not defined %}
-{# Rota que ainda não monta o menu: mantém um botão simples de busca #}
 <button class="action-btn filter-btn" type="submit"><i class="bi bi-funnel-fill"></i> Filtros</button>
 {% else %}
 {% set ativos = (1 if menu_filtros.ordem else 0) + (1 if menu_filtros.situacao else 0) %}

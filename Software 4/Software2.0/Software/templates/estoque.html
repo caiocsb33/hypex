@@ -184,9 +184,6 @@ Software HYPEX - Gestão de Estoque
         </p>
         {% endif %}
     </header>
-
-    <!-- O <form> é a própria barra: a caixa de busca fica à esquerda e os
-         botões à direita, como no restante do sistema. -->
     <form method="GET" class="barra-pesquisa"
         action="{{ url_for('estoque_galpao', galpao_id=galpao.id) if galpao else url_for('estoque') }}">
 

@@ -12,7 +12,6 @@ class Empilhadeira:
         self.tipo_combustivel = tipo_combustivel
         self.capacidade = capacidade
         self.galpao_id = galpao_id
-        # Operador responsável; fica nulo quando ninguém está atribuído
         self.funcionario_id = funcionario_id or None
         self.ativo = ativo
 
@@ -47,9 +46,6 @@ class Empilhadeira:
         finally:
             cursor.close()
             conn.close()
-
-    # Lista as empilhadeiras do galpão já com o nome do operador,
-    # para a tela não precisar de uma consulta por linha.
     @staticmethod
     def find_by_galpao(galpao_id):
         conn = Database.connect()

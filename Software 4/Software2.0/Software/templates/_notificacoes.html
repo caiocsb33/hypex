@@ -1,12 +1,3 @@
-{# ---------------------------------------------------------------
-   Notificações do sistema (flash messages).
-
-   Substitui os blocos de "alert" que apareciam empurrando o conteúdo da
-   página. Aqui elas flutuam no canto da tela, com ícone do Bootstrap Icons
-   conforme a categoria, e sem depender de JavaScript: o fechar é um
-   checkbox + CSS, e cada notificação some sozinha por animação.
---------------------------------------------------------------- #}
-
 {% with mensagens = get_flashed_messages(with_categories=true) %}
 {% if mensagens %}
 <div class="notificacoes" role="status" aria-live="polite">

@@ -22,7 +22,6 @@ Software HYPEX - Fornecedores
 
 
             <div class="grupo-botoes">
-                <!-- FIX: botões ligados aos forms pelo atributo form= -->
                 {% if pode_gerenciar %}
                 <form method="POST" id="excluir-cliente" action="{{ url_for('deletar_cliente', cliente_id=cliente.id) }}"></form>
                 {% with id='excluir-cliente', form_id='excluir-cliente',
@@ -40,13 +39,11 @@ Software HYPEX - Fornecedores
             </div>
         </header>
 
-        <!-- Form principal de atualização -->
         <form id="form-cliente" method="POST" enctype="multipart/form-data"
             action="{{ url_for('atualizar_cliente', cliente_id=cliente.id) }}">
 
             <section class="config-grid">
 
-                <!-- Card 1: identificação (só exibição) -->
                 <div class="config-card">
                     {% with campo_id='imagem-cliente', imagem=cliente.imagem,
                             padrao='perfil.png', alt=cliente.nome,
@@ -55,7 +52,6 @@ Software HYPEX - Fornecedores
                     {% endwith %}
                     <div class="input-resp mt-3">
                         <label>Nome Completo / Razão Social</label>
-                        <!-- disabled: só exibição; o campo "nome" real está no card de dados -->
                         <input disabled type="text" value="{{ cliente.nome }}">
                     </div>
                     <div class="input-resp mt-3">
@@ -67,64 +63,52 @@ Software HYPEX - Fornecedores
                     </div>
                 </div>
 
-                <!-- Card 2: comunicação -->
                 <div class="config-card">
                     <h3><i class="bi bi-telephone-fill"></i> Comunicação</h3>
                     <div class="input-resp">
                         <label>Empresa Vinculada</label>
-                        <!-- FIX: adicionado name="empresa" -->
                         <input type="text" name="empresa" value="{{ cliente.empresa or '' }}"
                             placeholder="Pessoa Física">
                     </div>
                     <div class="input-resp">
                         <label>E-mail</label>
-                        <!-- FIX: adicionado name="email" -->
                         <input type="email" name="email" value="{{ cliente.email }}">
                     </div>
                     <div class="input-resp">
                         <label>Telefone</label>
-                        <!-- FIX: adicionado name="telefone" -->
                         <input type="tel" name="telefone"
                             value="{{ cliente.telefone | telefone }}"
                             placeholder="(00) 00000-0000">
                     </div>
                 </div>
-
-                <!-- Card 3: dados fiscais e endereço -->
                 <div class="config-card full-width">
                     <h3><i class="bi bi-geo-alt-fill"></i> Dados Fiscais e Endereço</h3>
                     <div class="inputs-empresa">
                         <div class="input-resp">
                             <label>CPF / CNPJ</label>
-                            <!-- Editável: o documento pode ter sido digitado
-                                 errado no cadastro. A rota confere os dígitos
-                                 e recusa um documento já usado por outro
-                                 cliente. Pode digitar com ou sem pontuação. -->
+
                             <input type="text" name="cpf_cnpj"
                                 value="{{ cliente.cpf_cnpj | documento }}"
                                 placeholder="000.000.000-00 ou 00.000.000/0000-00">
                         </div>
                         <div class="input-resp">
                             <label>CEP</label>
-                            <!-- FIX: adicionado name="cep" -->
                             <input type="text" name="cep" value="{{ cliente.cep | cep }}"
                                 placeholder="00000-000">
                         </div>
                         <div class="input-resp">
                             <label>Estado</label>
-                            <!-- FIX: adicionado name="estado" -->
                             <input type="text" name="estado" value="{{ cliente.estado }}">
                         </div>
                     </div>
                     <div class="inputs-empresa">
                         <div class="input-resp">
                             <label>Nome Completo</label>
-                            <!-- FIX: adicionado name="nome" -->
+
                             <input type="text" name="nome" value="{{ cliente.nome }}">
                         </div>
                         <div class="input-resp">
                             <label>Cidade</label>
-                            <!-- FIX: adicionado name="cidade" -->
                             <input type="text" name="cidade" value="{{ cliente.cidade }}">
                         </div>
                     </div>
@@ -132,9 +116,7 @@ Software HYPEX - Fornecedores
 
             </section>
         </form>
-        <!-- /form-cliente -->
 
-        <!-- Tabela de pedidos -->
         <section class="config-card full-width ativar-sensor mt-4">
             <h3><i class="bi bi-basket2-fill"></i> Pedidos do Cliente</h3>
             <div class="sensor-lista-container">

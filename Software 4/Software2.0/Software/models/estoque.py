@@ -4,7 +4,6 @@ from core.empresa import empresa_atual
 
 class Estoque:
 
-    # Busca todos os registros de estoque de um produto específico
     @staticmethod
     def find_by_produto(produto_id):
         conn = Database.connect()
@@ -18,9 +17,6 @@ class Estoque:
         finally:
             cursor.close()
             conn.close()
-
-    # CORREÇÃO: método novo — busca todos os produtos de um galpão específico
-    # Era chamado como find_by_produto(galpao_id) em estoque_galpao(), o que estava errado
     @staticmethod
     def find_by_galpao(galpao_id):
         conn = Database.connect()
@@ -69,7 +65,6 @@ class Estoque:
             cursor.close()
             conn.close()
 
-    # Retorna a quantidade disponível de um produto em um galpão específico
     @staticmethod
     def get_quantidade(produto_id, galpao_id):
         conn = Database.connect()
@@ -87,7 +82,6 @@ class Estoque:
             cursor.close()
             conn.close()
 
-    # Cria um registro de estoque caso ele ainda não exista para o produto/galpão
     @staticmethod
     def criar_se_nao_existir(produto_id, galpao_id):
         conn = Database.connect()
@@ -110,7 +104,6 @@ class Estoque:
             cursor.close()
             conn.close()
 
-    # Atualiza diretamente a quantidade de um item no estoque
     @staticmethod
     def atualizar_quantidade(produto_id, galpao_id, nova_quantidade):
         conn = Database.connect()
@@ -128,7 +121,6 @@ class Estoque:
             cursor.close()
             conn.close()
 
-    # Realiza movimentação de entrada ou saída no estoque
     @staticmethod
     def movimentar(produto_id, galpao_id, quantidade, tipo):
         conn = Database.connect()
@@ -175,7 +167,6 @@ class Estoque:
             cursor.close()
             conn.close()
 
-    # Gera um resumo consolidado do estoque total por produto
     @staticmethod
     def resumo_geral():
         conn = Database.connect()

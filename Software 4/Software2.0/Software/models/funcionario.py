@@ -46,8 +46,6 @@ class Funcionario:
         cursor = conn.cursor(dictionary=True)
 
         try:
-            # Traz também a empilhadeira que o funcionário opera. A coluna
-            # `empilhadeira` era lida pela tela mas nunca era consultada.
             cursor.execute("""
                 SELECT
                     f.*,

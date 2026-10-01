@@ -33,12 +33,11 @@ Software HYPEX - Fornecedores
                     <i class="bi bi-plus-lg"></i> Adicionar Produto
                 </button>
 
-                <!-- ===================== MODAL ADICIONAR PRODUTO ===================== -->
                 <div class="modal fade" id="modalAdicionarProduto" tabindex="-1"
                     aria-labelledby="modalAdicionarProdutoLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-scrollable modal-lg">
 
-                        <!-- FIX: action aponta para a rota correta que cria o produto E vincula ao fornecedor -->
+                
                         <form method="POST"
                             action="{{ url_for('salvar_item_fornecedor', fornecedor_id=fornecedor.id) }}"
                             class="modal-content">
@@ -134,7 +133,7 @@ Software HYPEX - Fornecedores
                                             value="0">
                                     </div>
                                 </div>
-                            </div><!-- /modal-body -->
+                            </div>
 
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
@@ -143,8 +142,8 @@ Software HYPEX - Fornecedores
 
                         </form>
                     </div>
-                </div><!-- /modal -->
-            </div><!-- /add-produto -->
+                </div>
+            </div>
         </header>
 
         <form method="GET" class="barra-pesquisa" action="{{ url_for('itens_fornecedor', fornecedor_id=fornecedor.id) }}">
@@ -203,7 +202,6 @@ Software HYPEX - Fornecedores
                             <span class="selo-situacao inativo"><i class="bi bi-circle-fill"></i> Inativo</span>
                             {% endif %}
                         </td>
-                        <!-- FIX: substituído produto.id (inexistente) por item.produto_id -->
                         <td class="acao-estoque">
                             <div class="acoes-linha">
                             <a href="{{ url_for('editar_produto', id=item.produto_id) }}" class="acao-btn btn-editar"

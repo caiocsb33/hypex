@@ -5,8 +5,6 @@ class CrudBase:
     table = ""
     fields = []
 
-    # Tabelas com empresa_id: toda operação fica restrita à empresa logada,
-    # para uma empresa do SaaS nunca enxergar ou alterar dados de outra.
     por_empresa = True
 
     @classmethod

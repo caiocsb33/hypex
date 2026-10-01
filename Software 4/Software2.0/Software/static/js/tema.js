@@ -1,8 +1,3 @@
-// Troca de tema (claro/escuro) e abrir/fechar o menu lateral sem recarregar
-// a página. A escolha continua salva na sessão pelas mesmas rotas do Flask
-// (o formulário é enviado em segundo plano); sem JS, os formulários
-// funcionam normalmente recarregando a página.
-
 (function () {
 
     function salvar(form, extra) {
@@ -11,10 +6,9 @@
             dados.append(extra.name, extra.value);
         }
         fetch(form.action, { method: "POST", body: dados, redirect: "manual" })
-            .catch(function () { /* a tela já mudou; na próxima página a sessão confirma */ });
+            .catch(function () {});
     }
 
-    // ---------- TEMA ----------
     var formTema = document.querySelector(".tema-toggle");
 
     if (formTema) {
@@ -33,8 +27,6 @@
                 return;
             }
 
-            // A classe só existe durante a troca, para a transição não
-            // atrasar hovers e outras mudanças do dia a dia.
             body.classList.add("trocando-tema");
             body.classList.toggle("modo-escuro", escuro);
             setTimeout(function () {
@@ -51,7 +43,6 @@
         });
     }
 
-    // ---------- MENU LATERAL ----------
     var formMenu = document.getElementById("form-menu");
     var menu = document.getElementById("menu");
 

@@ -8,20 +8,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>{% block title %}Software HYPEX{% endblock %}</title>
-
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- CSS global -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='notificacoes.css') }}">
 
-    <!-- CSS específico de cada página -->
     {% block css %}
     {% endblock %}
 
-    <!-- Modo escuro: depois do CSS da página para sobrescrever as cores -->
     <link rel="stylesheet" href="{{ url_for('static', filename='modo-escuro.css') }}">
 
 </head>
@@ -31,13 +25,6 @@
 {% if sidebar_minimizada %}{% set _ = classes_body.append('sidebar-minimizada') %}{% endif %}
 <body class="{{ classes_body | join(' ') }}">
 
-    <!-- ========================= -->
-    <!-- SIDEBAR -->
-    <!-- ========================= -->
-
-    <!-- BOTÃO DO MENU MOBILE
-         Abrir e fechar acontece na mesma página, então não vale uma ida ao
-         servidor: o checkbox escondido guarda o estado e o CSS reage a ele. -->
     <input type="checkbox" id="btnMenuMobile" class="menu-mobile-check" hidden>
     <label for="btnMenuMobile" class="btn-menu-mobile" title="Abrir menu" aria-label="Abrir menu">
         <i class="bi bi-list" aria-hidden="true"></i>
@@ -45,8 +32,6 @@
 
     <aside id="menu" class="{{ 'minimizada' if sidebar_minimizada }}" aria-label="Menu principal">
 
-        <!-- Minimizar é uma preferência que precisa durar entre as páginas,
-             então vai para a sessão por POST. -->
         <form method="POST" action="{{ url_for('alternar_menu') }}" id="form-menu">
             <input type="hidden" name="voltar_para" value="{{ request.full_path if request.query_string else request.path }}">
             <button id="btn-minimizar" class="btn-minimizar" type="submit"
@@ -139,9 +124,6 @@
 
         </nav>
 
-
-        <!-- Configuração fica sozinha no rodapé do menu; tema, voz e sair
-             foram para o header. -->
         <div class="menu-rodape">
             <a href="/config" class="menu-config {% if modulo_atual == 'config' %}selected{% endif %}"
                 aria-label="Configuração" title="Configuração">
@@ -152,20 +134,10 @@
 
     </aside>
 
-
-    <!-- ========================= -->
-    <!-- CONTEÚDO DA PÁGINA -->
-    <!-- ========================= -->
-
     <div class="conteudo">
 
-        <!-- ========================= -->
-        <!-- HEADER -->
-        <!-- Os menus suspensos usam <details>: abrem sem JavaScript. -->
-        <!-- ========================= -->
         <header class="topo">
 
-            <!-- Busca geral: produtos, clientes, fornecedores e galpões -->
             <form method="GET" action="{{ url_for('buscar') }}" class="topo-busca" role="search">
                 <input type="search" name="q" value="{{ request.args.get('q', '') if request.endpoint == 'buscar' else '' }}"
                     placeholder="Pesquisar..." aria-label="Pesquisar no sistema">
@@ -187,7 +159,6 @@
                 </button>
             </form>
 
-            <!-- LEITURA POR VOZ -->
             <button id="btnVoz" class="topo-icone" type="button" aria-label="Ativar leitura por voz"
                 aria-pressed="false" title="Ativar leitura por voz">
                 <i id="iconeVoz" class="bi bi-volume-mute-fill" aria-hidden="true"></i>
@@ -259,9 +230,6 @@
         {% endblock %}
 
     </div>
-
-
-    <!-- Notificações do sistema, em um único lugar para todas as telas -->
     {% include '_notificacoes.html' %}
 
 
@@ -269,13 +237,10 @@
     </script>
 
 
-    <!-- Pré-visualização das imagens escolhidas nos formulários -->
     <script src="{{ url_for('static', filename='js/imagem-preview.js') }}"></script>
 
-    <!-- Recursos de acessibilidade: leitura dos controles e navegação por teclado -->
     <script src="{{ url_for('static', filename='js/acessibilidade.js') }}"></script>
 
-    <!-- Tema e menu trocam na hora, com transição, sem recarregar a página -->
     <script src="{{ url_for('static', filename='js/tema.js') }}"></script>
 
     {% block javascript %}

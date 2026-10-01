@@ -1,14 +1,3 @@
-/* =========================================================
-   PRÉ-VISUALIZAÇÃO DA IMAGEM ESCOLHIDA
-   =========================================================
-
-   Mostra a imagem antes de salvar e avisa quando o arquivo não serve.
-   O aviso aparece na própria tela, e não em uma caixa do navegador.
-
-   A validação de verdade é feita no servidor (salvar_imagem, em app.py);
-   aqui é só para o usuário não descobrir o problema depois de enviar.
-========================================================= */
-
 document.addEventListener("DOMContentLoaded", function () {
 
     var TIPOS_PERMITIDOS = [
@@ -19,7 +8,7 @@ document.addEventListener("DOMContentLoaded", function () {
         "image/gif"
     ];
 
-    var TAMANHO_MAXIMO = 5 * 1024 * 1024; // 5 MB
+    var TAMANHO_MAXIMO = 5 * 1024 * 1024;
 
     var campos = document.querySelectorAll(".campo-imagem .input-imagem");
 
@@ -28,7 +17,6 @@ document.addEventListener("DOMContentLoaded", function () {
         var bloco = campo.closest(".campo-imagem");
         var preview = bloco ? bloco.querySelector(".preview-imagem") : null;
 
-        // Espaço para o aviso, criado uma vez por bloco
         var aviso = document.createElement("p");
         aviso.className = "aviso-imagem";
         aviso.hidden = true;

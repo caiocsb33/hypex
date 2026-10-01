@@ -78,8 +78,6 @@ class Cliente:
                 dados["nome"], dados["empresa"], dados["email"],
                 dados["telefone"], dados["cep"], dados["cidade"],
                 dados["estado"], dados["ativo"],
-                # Documento vazio fica nulo: a coluna é única e o vazio
-                # repetido bloquearia o segundo cliente sem documento.
                 dados.get("cpf_cnpj") or None,
                 cliente_id, empresa_atual()
             ))

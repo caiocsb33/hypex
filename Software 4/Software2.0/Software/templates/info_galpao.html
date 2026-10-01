@@ -43,14 +43,11 @@ Software HYPEX - Fornecedores
         </div>
     </header>
 
-    <!-- ===== MODAL CONFIRMAR SALVAMENTO ===== -->
-    <!-- ===== MODAL CONFIRMAR EXCLUSÃO DO GALPÃO ===== -->
     <form id="form-galpao" method="POST" enctype="multipart/form-data"
         action="{{ url_for('atualizar_galpao', galpao_id=galpao.id) }}">
 
         <section class="config-grid">
 
-            <!-- Card 1: imagem e nome do galpão -->
             <div class="config-card">
                 {% with campo_id='imagem-galpao', imagem=galpao.imagem,
                 padrao='imagemgalpao.png', alt=galpao.nome,
@@ -60,13 +57,10 @@ Software HYPEX - Fornecedores
 
                 <div class="input-resp mt-2">
                     <label>Nome do Galpão</label>
-                    <!-- Estava `disabled` e sem `name`: o nome nunca era
-                             enviado e o galpão não salvava. -->
                     <input type="text" name="nome" value="{{ galpao.nome }}" placeholder="Nome do Galpão" required>
                 </div>
             </div>
 
-            <!-- Card 2: perfil administrador -->
             <div class="config-card">
                 <h3><i class="bi-solid bi-person-fill-gear"></i> Perfil Administrador do Galpão</h3>
                 <div class="input-resp">
@@ -91,7 +85,6 @@ Software HYPEX - Fornecedores
                 </div>
             </div>
 
-            <!-- Card 3: localização e estrutura -->
             <div class="config-card full-width">
                 <h3><i class="bi-solid bi-geo-alt-fill"></i> Localização e Estrutura</h3>
                 <div class="inputs-empresa">
@@ -138,9 +131,7 @@ Software HYPEX - Fornecedores
 
         </section>
     </form>
-    <!-- /form-galpao -->
 
-    <!-- ===== CADASTRAR EMPILHADEIRA ===== -->
     <form method="POST" action="{{ url_for('salvar_empilhadeira') }}">
         <input type="hidden" name="galpao_id" value="{{ galpao.id }}">
         <div class="cad-empilhadeira full-width sensor-conteudo">
@@ -195,7 +186,6 @@ Software HYPEX - Fornecedores
         </div>
     </form>
 
-    <!-- ===== CADASTRAR FUNCIONÁRIO ===== -->
     <form method="POST" action="{{ url_for('salvar_funcionario') }}">
         <input type="hidden" name="galpao_id" value="{{ galpao.id }}">
         <div class="config-card full-width sensor-conteudo">
@@ -254,8 +244,6 @@ Software HYPEX - Fornecedores
             </div>
         </div>
     </form>
-
-    <!-- ===== TABELA FUNCIONÁRIOS ===== -->
     <section class="config-card full-width ativar-sensor">
         <h3><i class="bi-solid bi-person-lines-fill"></i> Funcionários</h3>
         <div class="sensor-lista-container">
@@ -305,14 +293,12 @@ Software HYPEX - Fornecedores
                             {% endif %}
                         </td>
                         <td>
-                            <!-- Botão abrir offcanvas de edição -->
                             <button type="button" class="acao-btn" data-bs-toggle="offcanvas"
                                 data-bs-target="#offcanvas-func-{{ funcionario.id }}"
                                 aria-controls="offcanvas-func-{{ funcionario.id }}">
                                 <i class="bi-solid bi-pen-fill"></i>
                             </button>
 
-                            <!-- Offcanvas edição funcionário -->
                             <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvas-func-{{ funcionario.id }}"
                                 aria-labelledby="label-func-{{ funcionario.id }}">
                                 <div class="offcanvas-header">
@@ -378,7 +364,6 @@ Software HYPEX - Fornecedores
                                 </div>
                             </div>
 
-                            <!-- Botão deletar funcionário -->
                             {% if pode_gerenciar %}
                             <form method="POST" id="excluir-funcionario-{{ funcionario.id }}" action="{{ url_for('deletar_funcionario', funcionario_id=funcionario.id) }}">
                                 <input type="hidden" name="galpao_id" value="{{ galpao.id }}">
@@ -393,7 +378,6 @@ Software HYPEX - Fornecedores
                             {% endwith %}
                             {% endif %}
 
-                            <!-- Modal confirmar exclusão funcionário -->
                         </td>
                     </tr>
                     {% endfor %}
@@ -402,7 +386,6 @@ Software HYPEX - Fornecedores
         </div>
     </section>
 
-    <!-- ===== TABELA EMPILHADEIRAS ===== -->
     <section class="config-card full-width ativar-sensor mt-4">
         <h3><i class="bi-solid bi-person-lines-fill"></i> Empilhadeiras</h3>
         <div class="sensor-lista-container">
@@ -444,14 +427,12 @@ Software HYPEX - Fornecedores
                             {% endif %}
                         </td>
                         <td>
-                            <!-- Botão abrir offcanvas de edição -->
                             <button type="button" class="acao-btn" data-bs-toggle="offcanvas"
                                 data-bs-target="#offcanvas-emp-{{ empilhadeira.id }}"
                                 aria-controls="offcanvas-emp-{{ empilhadeira.id }}">
                                 <i class="bi-solid bi-pen-fill"></i>
                             </button>
 
-                            <!-- Offcanvas edição empilhadeira -->
                             <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvas-emp-{{ empilhadeira.id }}"
                                 aria-labelledby="label-emp-{{ empilhadeira.id }}">
                                 <div class="offcanvas-header">
@@ -520,7 +501,6 @@ Software HYPEX - Fornecedores
                                 </div>
                             </div>
 
-                            <!-- Botão deletar empilhadeira -->
                             {% if pode_gerenciar %}
                             <form method="POST" id="excluir-empilhadeira-{{ empilhadeira.id }}" action="{{ url_for('deletar_empilhadeira', empilhadeira_id=empilhadeira.id) }}">
                                 <input type="hidden" name="galpao_id" value="{{ galpao.id }}">
@@ -535,7 +515,6 @@ Software HYPEX - Fornecedores
                             {% endwith %}
                             {% endif %}
 
-                            <!-- Modal confirmar exclusão empilhadeira -->
                         </td>
                     </tr>
                     {% endfor %}

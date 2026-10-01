@@ -21,17 +21,6 @@ class PedidoCliente(CrudBase):
         self.valor_total = valor_total
         self.status_pedido = status_pedido
 
-    # ------------------------------------------------------------------
-    # Cria pedido + itens em uma única transação
-    # dados = {
-    #   "cliente_id": int,
-    #   "galpao_id":  int,
-    #   "itens": [
-    #       {"produto_id": int, "quantidade": float, "preco_unitario": float},
-    #       ...
-    #   ]
-    # }
-    # ------------------------------------------------------------------
     @classmethod
     def criar_com_itens(cls, dados):
         conexao = Database.connect()
@@ -42,13 +31,11 @@ class PedidoCliente(CrudBase):
             if not itens:
                 raise ValueError("O pedido deve ter pelo menos um item.")
 
-            # Calcula o total somando todos os itens
             valor_total = sum(
                 float(i["quantidade"]) * float(i["preco_unitario"])
                 for i in itens
             )
 
-            # 1. Insere o cabeçalho do pedido
             cursor.execute("""
                 INSERT INTO pedido_cliente
                     (empresa_id, cliente_id, galpao_id, valor_total, status_pedido)
@@ -61,7 +48,6 @@ class PedidoCliente(CrudBase):
             ))
             pedido_id = cursor.lastrowid
 
-            # 2. Insere cada item na tabela item_pedido_cliente
             for item in itens:
                 cursor.execute("""
                     INSERT INTO item_pedido_cliente
@@ -74,7 +60,6 @@ class PedidoCliente(CrudBase):
                     float(item["preco_unitario"]),
                 ))
 
-            # 3. Baixa o estoque de cada item no galpão escolhido
             galpao_id = dados["galpao_id"]
             for item in itens:
                 cursor.execute("""
@@ -114,9 +99,6 @@ class PedidoCliente(CrudBase):
             cursor.close()
             conexao.close()
 
-    # ------------------------------------------------------------------
-    # Busca todos os pedidos de um cliente (para info_cliente.html)
-    # ------------------------------------------------------------------
     @classmethod
     def find_by_cliente(cls, cliente_id):
         conexao = Database.connect()
@@ -140,9 +122,6 @@ class PedidoCliente(CrudBase):
             cursor.close()
             conexao.close()
 
-    # ------------------------------------------------------------------
-    # Lista geral de pedidos com todos os itens (para pedidos.html)
-    # ------------------------------------------------------------------
     @classmethod
     def find_all_with_product(cls):
         conexao = Database.connect()
@@ -173,9 +152,6 @@ class PedidoCliente(CrudBase):
             cursor.close()
             conexao.close()
 
-    # ------------------------------------------------------------------
-    # Cancela um pedido pendente e devolve o estoque
-    # ------------------------------------------------------------------
     @classmethod
     def cancelar(cls, pedido_id):
         conexao = Database.connect()

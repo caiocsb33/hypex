@@ -24,12 +24,9 @@ Software HYPEX - Fornecedores
 
 
             <div id="add-forn">
-                <!-- Button -->
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
                     <i class="bi-solid bi-plus-lg"></i> Adicionar Fornecedor
                 </button>
-
-                <!-- Modal -->
                 <form method="POST" action="{{ url_for('salvar_fornecedor') }}">
                     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel"
                         aria-hidden="true">
@@ -93,10 +90,6 @@ Software HYPEX - Fornecedores
 
 
         </header>
-
-        <!-- Pesquisa resolvida no servidor: o formulário envia ?busca=... por GET
-             e a rota devolve a lista já filtrada. Os botões "Filtros" e "Exportar"
-             foram retirados: não tinham nenhuma ação por trás. -->
         <form method="GET" class="barra-pesquisa" action="{{ url_for('fornecedores') }}">
             <div class="caixa-pesquisa">
                 <i class="bi bi-search"></i>

@@ -3,8 +3,6 @@ from werkzeug.security import generate_password_hash
 
 # ===== DADOS DA EMPRESA =====
 nome_empresa = "Imbil"
-# CNPJ com dígitos verificadores válidos: o sistema confere o CNPJ ao
-# salvar os dados da empresa, e um número inventado seria recusado.
 cnpj = "45723174000110"
 
 # ===== DADOS DO USUÁRIO =====

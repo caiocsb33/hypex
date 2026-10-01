@@ -9,7 +9,6 @@ CREATE TABLE empresa (
     nome VARCHAR(100) NOT NULL,
     cnpj VARCHAR(20) UNIQUE,
     imagem VARCHAR(255),
-    -- Preferências de notificação (Configuração > Notificações)
     notif_estoque_baixo TINYINT(1) NOT NULL DEFAULT 1,
     notif_sem_estoque TINYINT(1) NOT NULL DEFAULT 1,
     notif_incluir_inativos TINYINT(1) NOT NULL DEFAULT 1,
@@ -155,9 +154,7 @@ CREATE TABLE usuario (
 -- =========================================
 -- RECUPERACAO DE SENHA
 -- =========================================
--- Usada pelas rotas /esqueci-senha e /redefinir-senha/<token>.
--- A tabela era consultada pelo app.py, mas não existia no script do banco,
--- então todo o fluxo de recuperação de senha quebrava.
+
 CREATE TABLE recuperacao_senha (
     id INT AUTO_INCREMENT PRIMARY KEY,
     usuario_id INT NOT NULL,
@@ -192,9 +189,6 @@ CREATE TABLE empilhadeira (
     REFERENCES galpao(id)
     ON DELETE SET NULL
     ON UPDATE CASCADE,
-
-    -- Operador responsável pela empilhadeira. Se o funcionário sair,
-    -- a empilhadeira fica sem operador em vez de ser apagada.
     FOREIGN KEY (funcionario_id)
     REFERENCES funcionario(id)
     ON DELETE SET NULL
@@ -384,7 +378,7 @@ CREATE TABLE pedido_fornecedor (
     fornecedor_id      INT,
     funcionario_id     INT,
     galpao_id          INT,
-    numero_documento   VARCHAR(100),                          -- NOVO
+    numero_documento   VARCHAR(100),                          
     data_pedido        TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     data_prevista      DATE,
     data_recebimento   DATE,
@@ -435,9 +429,9 @@ CREATE TABLE pedido_cliente (
     id               INT AUTO_INCREMENT PRIMARY KEY,
     empresa_id INT NOT NULL,
     cliente_id       INT,
-    galpao_id        INT NULL,                               -- NOVO
-    numero_documento VARCHAR(100),                           -- NOVO
-    produto_id       INT,                                    -- legado, ignorar no novo fluxo
+    galpao_id        INT NULL,                               
+    numero_documento VARCHAR(100),                           
+    produto_id       INT,                                    
     produto_pedido   VARCHAR(200),
     observacao       VARCHAR(200) NULL,
     data_pedido      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -453,7 +447,7 @@ CREATE TABLE pedido_cliente (
     updated_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 
     FOREIGN KEY (cliente_id) REFERENCES cliente(id),
-    FOREIGN KEY (galpao_id)  REFERENCES galpao(id),         -- NOVO
+    FOREIGN KEY (galpao_id)  REFERENCES galpao(id),         
     FOREIGN KEY (produto_id) REFERENCES produto(id),
 
     FOREIGN KEY (empresa_id)

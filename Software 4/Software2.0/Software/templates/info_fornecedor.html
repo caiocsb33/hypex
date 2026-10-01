@@ -22,7 +22,6 @@ Software HYPEX - Fornecedores
 
 
             <div class="grupo-botoes">
-                <!-- FIX: botão de exclusão ligado ao form de exclusão abaixo -->
                 {% if pode_gerenciar %}
                 <form method="POST" id="excluir-fornecedor" action="{{ url_for('deletar_fornecedor', fornecedor_id=fornecedor.id) }}"></form>
                 {% with id='excluir-fornecedor', form_id='excluir-fornecedor',
@@ -34,20 +33,17 @@ Software HYPEX - Fornecedores
                 {% include '_confirmar.html' %}
                 {% endwith %}
                 {% endif %}
-                <!-- FIX: botão de salvar ligado ao form principal -->
+
                 <button type="submit" form="form-fornecedor" class="salvar-btn">
                     Salvar Alterações
                 </button>
             </div>
         </header>
 
-        <!-- Form principal de atualização -->
         <form id="form-fornecedor" method="POST" enctype="multipart/form-data"
             action="{{ url_for('atualizar_fornecedor', fornecedor_id=fornecedor.id) }}">
 
             <section class="config-grid">
-
-                <!-- Card 1: logotipo do fornecedor -->
                 <div class="config-card">
                     {% with campo_id='imagem-fornecedor', imagem=fornecedor.imagem,
                             padrao='imagemfornecedor.png', alt=fornecedor.nome,
@@ -57,53 +53,42 @@ Software HYPEX - Fornecedores
 
                     <div class="input-resp mt-2">
                         <label>Nome da Empresa</label>
-                        <!-- Somente leitura: o campo "nome" que é enviado está
-                             no card de dados contratuais. -->
                         <input type="text" value="{{ fornecedor.nome }}" readonly>
                     </div>
                 </div>
 
-                <!-- Card 2: contato principal -->
                 <div class="config-card">
                     <h3><i class="bi bi-person-bounding-box"></i> Contato Principal</h3>
                     <div class="input-resp">
                         <label>Nome do Representante</label>
-                        <!-- FIX: adicionado name="nome_ctt" -->
                         <input type="text" name="nome_ctt" value="{{ fornecedor.nome_ctt }}">
                     </div>
                     <div class="input-resp">
                         <label>E-mail de Contato</label>
-                        <!-- FIX: adicionado name="email" -->
                         <input type="email" name="email" value="{{ fornecedor.email }}">
                     </div>
                     <div class="input-resp">
                         <label>Telefone/WhatsApp</label>
-                        <!-- FIX: adicionado name="telefone" -->
                         <input type="tel" name="telefone" value="{{ fornecedor.telefone | telefone if fornecedor.telefone else '' }}">
                     </div>
                     <div class="input-resp">
                         <label>Status da Conta</label>
-                        <!-- FIX: adicionado name="ativo" -->
                         <select name="ativo">
                             <option value="ativo" {{ 'selected' if fornecedor.ativo=='ativo' }}>Ativo</option>
                             <option value="inativo" {{ 'selected' if fornecedor.ativo=='inativo' }}>Inativo</option>
                         </select>
                     </div>
                 </div>
-
-                <!-- Card 3: dados contratuais -->
                 <div class="config-card full-width">
                     <h3><i class="bi bi-building-fill"></i> Dados Contratuais & Localização</h3>
                     <div class="inputs-empresa">
                         <div class="input-resp">
                             <label>Nome da Empresa</label>
-                            <!-- FIX: adicionado name="nome" -->
                             <input type="text" name="nome" value="{{ fornecedor.nome }}"
                                 placeholder="Ex: Distribuidora Hypex LTDA">
                         </div>
                         <div class="input-resp">
                             <label>CNPJ</label>
-                            <!-- FIX: adicionado name="cnpj" -->
                             <input type="text" name="cnpj" value="{{ fornecedor.cnpj | documento if fornecedor.cnpj else '' }}"
                                 placeholder="00.000.000/0001-00">
                         </div>
@@ -122,9 +107,7 @@ Software HYPEX - Fornecedores
 
             </section>
         </form>
-        <!-- /form-fornecedor -->
 
-        <!-- Tabela de produtos vinculados -->
         <section class="config-card full-width ativar-sensor mt-4">
             <h3><i class="bi bi-box-seam-fill"></i> Produtos Vinculados</h3>
             <div class="sensor-lista-container">

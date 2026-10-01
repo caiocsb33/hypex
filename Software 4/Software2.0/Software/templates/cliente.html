@@ -33,13 +33,6 @@
 
     </header>
 
-
-    <!-- MENSAGENS -->
-
-
-
-    <!-- MODAL -->
-
     <div class="modal fade" id="exampleModal" tabindex="-1">
 
         <div class="modal-dialog">
@@ -188,12 +181,6 @@
 
     </div>
 
-
-    <!-- BARRA DE PESQUISA -->
-
-    <!-- Pesquisa resolvida no servidor: o formulário envia ?busca=... por GET
-         e a rota devolve a lista já filtrada. Os botões "Filtros" e "Exportar"
-         foram retirados: não tinham nenhuma ação por trás. -->
     <form method="GET" class="barra-pesquisa" action="{{ url_for('cliente') }}">
         <div class="caixa-pesquisa">
             <i class="bi bi-search"></i>
@@ -211,9 +198,6 @@
             {% endif %}
         </div>
     </form>
-
-
-    <!-- CARDS DOS CLIENTES -->
 
     <section class="clientes-cards">
 
@@ -370,7 +354,6 @@
 </section>
 
 <script>
-    // Permite somente números no CPF/CNPJ, telefone e CEP
     function somenteNumeros(input) {
         input.value = input.value.replace(/\D/g, '');
     }

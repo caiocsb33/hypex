@@ -1,17 +1,3 @@
-/* =========================================================
-   TELAS DE PEDIDO: FILTRO DE PRODUTOS E PREÇO
-   =========================================================
-
-   A página recebe do servidor TODOS os produtos, cada <option> marcada com o
-   galpão (saída) ou o fornecedor (entrada) a que pertence. Este arquivo apenas
-   esconde as opções que não servem e preenche o preço ao escolher o produto —
-   por isso trocar de galpão ou de fornecedor não recarrega a tela.
-
-   A regra de negócio continua toda no servidor: o preço gravado e a conferência
-   de saldo são feitos na rota, não aqui. Sem JavaScript a tela continua
-   utilizável, apenas mostrando a lista completa de produtos.
-========================================================= */
-
 document.addEventListener("DOMContentLoaded", function () {
 
     var selectProduto = document.getElementById("select-produto");
@@ -25,12 +11,8 @@ document.addEventListener("DOMContentLoaded", function () {
     var campoPreco       = document.getElementById("campo-preco");
     var campoQuantidade  = document.getElementById("campo-quantidade");
 
-    // Campos escondidos do formulário que fecha o pedido
     var galpaoDoPedido     = document.getElementById("galpao-do-pedido");
     var fornecedorDoPedido = document.getElementById("fornecedor-do-pedido");
-
-    // Guarda todas as opções: as escondidas precisam voltar quando o
-    // usuário troca de galpão ou de fornecedor.
     var todasAsOpcoes = [];
 
     Array.prototype.forEach.call(selectProduto.options, function (opcao) {
@@ -45,7 +27,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     function filtrarProdutos() {
 
-        // Na saída o filtro é por galpão; na entrada, por fornecedor
         var filtroGalpao = selectGalpao ? selectGalpao.value : "";
         var filtroFornecedor = selectFornecedor ? selectFornecedor.value : "";
         var chaveAtiva = selectFornecedor ? filtroFornecedor : filtroGalpao;
@@ -58,7 +39,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
             if (selectFornecedor) {
                 var doFornecedor = opcao.getAttribute("data-fornecedor") || "";
-                // Produto sem vínculo serve para qualquer fornecedor
                 serve = !filtroFornecedor
                     || doFornecedor === ""
                     || doFornecedor === filtroFornecedor;
@@ -71,7 +51,6 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         });
 
-        // Remonta a lista
         selectProduto.innerHTML = "";
 
         var vazia = document.createElement("option");
@@ -93,14 +72,12 @@ document.addEventListener("DOMContentLoaded", function () {
             selectProduto.appendChild(opcao);
         });
 
-        // Mantém a escolha anterior, se ela ainda fizer sentido
         if (selecionadoAntes) {
             selectProduto.value = selecionadoAntes;
         }
 
         selectProduto.disabled = !chaveAtiva || !disponiveis.length;
 
-        // Espelha as escolhas no formulário de fechamento
         if (galpaoDoPedido && selectGalpao) {
             galpaoDoPedido.value = selectGalpao.value;
         }
@@ -127,14 +104,11 @@ document.addEventListener("DOMContentLoaded", function () {
         var saldo = opcao.getAttribute("data-saldo");
 
         if (campoPreco && preco !== null) {
-            // Na saída o campo é somente leitura e mostra o valor formatado;
-            // na entrada é editável e recebe o número puro, para poder somar.
             campoPreco.value = campoPreco.readOnly
                 ? parseFloat(preco).toFixed(2).replace(".", ",")
                 : parseFloat(preco).toFixed(2);
         }
 
-        // Na saída o saldo limita a quantidade que pode ser pedida
         if (campoQuantidade && saldo !== null) {
             campoQuantidade.max = saldo;
 
@@ -154,6 +128,5 @@ document.addEventListener("DOMContentLoaded", function () {
 
     selectProduto.addEventListener("change", preencherPreco);
 
-    // Estado inicial (inclusive ao voltar para a página com algo já escolhido)
     filtrarProdutos();
 });

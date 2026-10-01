@@ -3,15 +3,10 @@ from core.crud_base import CrudBase
 from core.database import Database
 from core.empresa import empresa_atual
 
-
-# Classe responsável por representar e manipular movimentações de estoque
 class Movimentacao(CrudBase):
 
-    # Define a tabela associada no banco de dados
     table = "movimentacao"
 
-    # Define os campos utilizados em operações de INSERT e UPDATE
-    # Os nomes seguem exatamente as colunas da tabela `movimentacao` (banco.sql)
     fields = [
         "produto_id",
         "galpao_id",
@@ -23,11 +18,9 @@ class Movimentacao(CrudBase):
         "observacao",
     ]
 
-    # Tipos aceitos pelo ENUM da coluna `tipo`
+
     TIPOS = ("entrada", "saida", "transferencia", "ajuste_inventario")
 
-    # Construtor da classe Movimentacao
-    # Inicializa os atributos da movimentação
     def __init__(self, produto_id, galpao_id, tipo, quantidade,
                  galpao_destino_id=None, funcionario_id=None,
                  data_movimentacao=None, observacao=None):
@@ -38,11 +31,8 @@ class Movimentacao(CrudBase):
         self.tipo = tipo
         self.quantidade = quantidade
         self.observacao = observacao
-
-        # Usa a data/hora atual caso nenhuma seja informada
         self.data_movimentacao = data_movimentacao or datetime.now()
 
-    # Valida os dados antes de gravar no banco
     def validate(self):
         erros = []
 
@@ -57,8 +47,7 @@ class Movimentacao(CrudBase):
 
         try:
             quantidade = float(self.quantidade)
-            # O ajuste de inventário define o saldo e pode zerá-lo;
-            # os outros tipos movimentam pelo menos uma unidade.
+
             if self.tipo == "ajuste_inventario":
                 if quantidade < 0:
                     erros.append("O saldo do ajuste não pode ser negativo.")
@@ -77,8 +66,6 @@ class Movimentacao(CrudBase):
 
         return erros
 
-    # Busca todas as movimentações já com os nomes relacionados resolvidos,
-    # para que o template não precise fazer consultas extras.
     @classmethod
     def find_all_with_product(cls, produto_id=None, galpao_id=None, tipo=None):
         conexao = Database.connect()

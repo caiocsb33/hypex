@@ -1,14 +1,5 @@
-/* =========================================
-   LEITURA POR VOZ
-========================================= */
-
 let leituraVozAtiva =
     localStorage.getItem("leituraVoz") === "true";
-
-
-/* =========================================
-   ATUALIZAR BOTÃO DE VOZ
-========================================= */
 
 function atualizarBotaoVoz() {
 
@@ -58,11 +49,6 @@ function atualizarBotaoVoz() {
 
 }
 
-
-/* =========================================
-   FALAR TEXTO
-========================================= */
-
 function falar(texto) {
 
     if (!leituraVozAtiva) {
@@ -90,11 +76,6 @@ function falar(texto) {
 
     window.speechSynthesis.speak(fala);
 }
-
-
-/* =========================================
-   ATIVAR / DESATIVAR VOZ
-========================================= */
 
 if (btnVoz) {
 
@@ -126,11 +107,6 @@ if (btnVoz) {
     });
 
 }
-
-
-/* =========================================
-   LEITURA AO NAVEGAR COM TAB
-========================================= */
 
 document.addEventListener("focusin", function (event) {
 
@@ -168,11 +144,6 @@ document.addEventListener("focusin", function (event) {
 
 });
 
-
-/* =========================================
-   FALAR AO CLICAR EM BOTÕES
-========================================= */
-
 document.addEventListener("click", function (event) {
 
     if (!leituraVozAtiva) {
@@ -185,7 +156,6 @@ document.addEventListener("click", function (event) {
         return;
     }
 
-    /* O botão de voz já possui comportamento próprio */
     if (elemento.id === "btnVoz") {
         return;
     }

@@ -52,11 +52,6 @@ class Produto(CrudBase):
         self.item_por_caixa = item_por_caixa
         self.imagem = imagem
 
-
-    # ============================================================
-    # INSERIR PRODUTO
-    # ============================================================
-
     def insert(self):
 
         conn = Database.connect()
@@ -130,11 +125,6 @@ class Produto(CrudBase):
             cursor.close()
             conn.close()
 
-
-    # ============================================================
-    # VALIDAR PRODUTO
-    # ============================================================
-
     def validate(self):
 
         erros = [
@@ -166,11 +156,6 @@ class Produto(CrudBase):
             for erro in erros
             if erro
         ]
-
-
-    # ============================================================
-    # ATUALIZAR PRODUTO
-    # ============================================================
 
     @classmethod
     def update(cls, id, dados):
@@ -260,11 +245,6 @@ class Produto(CrudBase):
 
             cursor.close()
             conexao.close()
-
-
-    # ============================================================
-    # BUSCAR PRODUTOS
-    # ============================================================
 
     @classmethod
     def find_all_completo(cls, galpao_id=None):
@@ -367,11 +347,6 @@ class Produto(CrudBase):
             cursor.close()
             conn.close()
 
-
-    # ============================================================
-    # PRODUTOS COM ESTOQUE BAIXO
-    # ============================================================
-
     @classmethod
     def low_stock(cls):
 
@@ -408,11 +383,6 @@ class Produto(CrudBase):
 
             cursor.close()
             conexao.close()
-
-
-    # ============================================================
-    # VERIFICAR REGISTROS RELACIONADOS
-    # ============================================================
 
     @classmethod
     def has_related_records(cls, id):
@@ -463,11 +433,6 @@ class Produto(CrudBase):
             cursor.close()
             conexao.close()
 
-
-    # ============================================================
-    # DESATIVAR
-    # ============================================================
-
     @classmethod
     def desativar(cls, id):
 
@@ -493,11 +458,6 @@ class Produto(CrudBase):
             cursor.close()
             conexao.close()
 
-
-    # ============================================================
-    # REATIVAR
-    # ============================================================
-
     @classmethod
     def reativar(cls, id):
 
@@ -522,11 +482,6 @@ class Produto(CrudBase):
 
             cursor.close()
             conexao.close()
-
-
-    # ============================================================
-    # EXCLUIR PRODUTO
-    # ============================================================
 
     @classmethod
     def safe_delete(cls, id):
@@ -623,11 +578,6 @@ class Produto(CrudBase):
             cursor.close()
             conexao.close()
 
-
-    # ============================================================
-    # PRODUTOS INATIVOS
-    # ============================================================
-
     @classmethod
     def find_inativos(cls):
 
@@ -656,11 +606,6 @@ class Produto(CrudBase):
 
             cursor.close()
             conexao.close()
-
-
-    # ============================================================
-    # TOTAL DO ESTOQUE
-    # ============================================================
 
     @classmethod
     def total_estoque(cls):

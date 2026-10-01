@@ -31,7 +31,7 @@ Software HYPEX - Produto
 
         <div class="grupo-botoes">
 
-            <!-- BOTÃO EXCLUIR -->
+
             {% if pode_gerenciar %}
             {% with id='excluir-produto',
                     form_id='form-excluir',
@@ -44,8 +44,6 @@ Software HYPEX - Produto
             {% endwith %}
             {% endif %}
 
-
-            <!-- BOTÃO SALVAR -->
             <button
                 type="submit"
                 form="form-produto"
@@ -59,11 +57,6 @@ Software HYPEX - Produto
 
     </header>
 
-
-    <!-- ========================================================= -->
-    <!-- FORMULÁRIO DE ATUALIZAÇÃO -->
-    <!-- ========================================================= -->
-
     <form
         id="form-produto"
         method="POST"
@@ -71,12 +64,6 @@ Software HYPEX - Produto
         enctype="multipart/form-data">
 
         <section class="config-grid">
-
-
-            <!-- ================================================= -->
-            <!-- IMAGEM E CÓDIGO DE BARRAS -->
-            <!-- ================================================= -->
-
             <div class="config-card">
 
                 {% with campo_id='imagem-produto', imagem=produto.imagem,
@@ -84,9 +71,6 @@ Software HYPEX - Produto
                         titulo='Imagem do Produto' %}
                     {% include '_imagem_upload.html' %}
                 {% endwith %}
-
-                <!-- CÓDIGO DE BARRAS -->
-
                 <div class="input-resp">
 
                     <label for="codigo_barras">
@@ -104,22 +88,12 @@ Software HYPEX - Produto
                 </div>
 
             </div>
-
-
-            <!-- ================================================= -->
-            <!-- IDENTIFICAÇÃO BÁSICA -->
-            <!-- ================================================= -->
-
             <div class="config-card">
 
                 <h3>
                     <i class="bi bi-info-circle-fill"></i>
                     Identificação Básica
                 </h3>
-
-
-                <!-- NOME -->
-
                 <div class="input-resp">
 
                     <label for="nome">
@@ -135,10 +109,6 @@ Software HYPEX - Produto
                         required>
 
                 </div>
-
-
-                <!-- SKU -->
-
                 <div class="input-resp">
 
                     <label for="sku">
@@ -154,10 +124,6 @@ Software HYPEX - Produto
                         required>
 
                 </div>
-
-
-                <!-- CATEGORIA -->
-
                 <div class="input-resp">
 
                     <label for="categoria">
@@ -172,10 +138,6 @@ Software HYPEX - Produto
                         placeholder="Eletrônicos">
 
                 </div>
-
-
-                <!-- TIPO -->
-
                 <div class="input-resp">
 
                     <label for="tipo">
@@ -215,26 +177,13 @@ Software HYPEX - Produto
                 </div>
 
             </div>
-
-
-            <!-- ================================================= -->
-            <!-- DETALHES FINANCEIROS E FÍSICOS -->
-            <!-- ================================================= -->
-
             <div class="config-card full-width">
 
                 <h3>
                     <i class="bi bi-currency-dollar"></i>
                     Detalhes Financeiros e Físicos
                 </h3>
-
-
-                <!-- PRIMEIRA LINHA -->
-
                 <div class="inputs-empresa">
-
-
-                    <!-- PREÇO DE CUSTO -->
 
                     <div class="input-resp">
 
@@ -253,7 +202,6 @@ Software HYPEX - Produto
                     </div>
 
 
-                    <!-- PREÇO DE VENDA -->
 
                     <div class="input-resp">
 
@@ -272,7 +220,6 @@ Software HYPEX - Produto
                     </div>
 
 
-                    <!-- PESO -->
 
                     <div class="input-resp">
 
@@ -291,7 +238,6 @@ Software HYPEX - Produto
                     </div>
 
 
-                    <!-- VOLUME -->
 
                     <div class="input-resp">
 
@@ -312,12 +258,8 @@ Software HYPEX - Produto
                 </div>
 
 
-                <!-- SEGUNDA LINHA -->
-
                 <div class="inputs-empresa">
 
-
-                    <!-- ESTOQUE MÍNIMO -->
 
                     <div class="input-resp">
 
@@ -336,7 +278,6 @@ Software HYPEX - Produto
                     </div>
 
 
-                    <!-- QUANTIDADE -->
 
                     <div class="input-resp">
 
@@ -354,8 +295,6 @@ Software HYPEX - Produto
                     </div>
 
 
-                    <!-- FORNECEDOR -->
-
                     <div class="input-resp">
 
                         <label for="fornecedor">
@@ -370,9 +309,6 @@ Software HYPEX - Produto
                             title="Definido pelo vínculo entre produto e fornecedores.">
 
                     </div>
-
-
-                    <!-- ITENS POR CAIXA -->
 
                     <div class="input-resp">
 
@@ -392,8 +328,6 @@ Software HYPEX - Produto
 
                 </div>
 
-
-                <!-- DESCRIÇÃO -->
 
                 <div class="input-resp mt-3">
 
@@ -415,14 +349,6 @@ Software HYPEX - Produto
 
     </form>
 
-
-
-    <!-- ========================================================= -->
-    <!-- SALDO POR GALPÃO -->
-    <!-- ========================================================= -->
-    <!-- A quantidade não é editada junto com os dados do produto: o saldo é
-         por galpão e todo acerto vira uma movimentação de ajuste de
-         inventário, para o histórico continuar batendo. -->
 
     <section class="config-card full-width mt-4">
 
@@ -478,7 +404,6 @@ Software HYPEX - Produto
             </table>
         </div>
 
-        <!-- Primeira entrada do produto em um galpão onde ele ainda não existe -->
         <div class="mt-3">
             <h6>Lançar saldo em outro galpão</h6>
             <form method="POST" action="{{ url_for('ajustar_estoque_produto', id=produto.id) }}"
@@ -498,22 +423,11 @@ Software HYPEX - Produto
         </div>
 
     </section>
-
-    <!-- ========================================================= -->
-    <!-- FORMULÁRIO DE EXCLUSÃO -->
-    <!-- ========================================================= -->
-
     <form
         id="form-excluir"
         method="POST"
         action="{{ url_for('excluir_produto', id=produto.id) }}">
     </form>
-
-
-    <!-- ========================================================= -->
-    <!-- HISTÓRICO DE ALTERAÇÕES -->
-    <!-- ========================================================= -->
-
     <section class="config-card full-width ativar-sensor mt-4">
 
         <h3>
@@ -638,8 +552,4 @@ Software HYPEX - Produto
 
 </main>
 
-
-<!-- ============================================================= -->
-<!-- JAVASCRIPT DA IMAGEM -->
-<!-- ============================================================= -->
 {% endblock %}

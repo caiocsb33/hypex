@@ -72,7 +72,7 @@ Software HYPEX - Fornecedores
                         <td class="ordem-id">#{{ pedido.id }}</td>
 
                         <td class="produto-info">
-                            <!-- CORREÇÃO 6: cliente_nome e cliente_email vêm do JOIN na query -->
+                             
                             <strong>{{ pedido.cliente_nome }}<br></strong>
                             <span class="cliente-pedido">E-mail: {{ pedido.cliente_email }}</span>
                         </td>
@@ -95,9 +95,6 @@ Software HYPEX - Fornecedores
                                 class="acao-btn btn-visualizar" title="Visualizar">
                                 <i class="bi bi-eye-fill"></i>
                             </a>
-
-                            <!-- Era <button href=...>, que não navega, e apontava para
-                                 editar_pedido — rota de pedido de FORNECEDOR. -->
                             <a href="{{ url_for('editar_pedido_cliente', pedido_id=pedido.id) }}"
                                 class="acao-btn btn-editar" title="Editar">
                                 <i class="bi bi-pen-fill"></i>
