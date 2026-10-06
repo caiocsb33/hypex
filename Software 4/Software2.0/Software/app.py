@@ -26,7 +26,9 @@ app = Flask(__name__)
 
 
 class SessaoBanco(CallbackDict, SessionMixin):
+    # Inicializa a sessão do banco.
     def __init__(self, dados=None, sid=None, nova=False):
+        # Marca a sessão como modificada.
         def ao_mudar(sessao):
             sessao.modified = True
         CallbackDict.__init__(self, dados, ao_mudar)
@@ -38,6 +40,7 @@ class SessaoBanco(CallbackDict, SessionMixin):
 class SessoesNoBanco(SessionInterface):
     duracao = timedelta(days=7)
 
+    # Abre a sessão do usuário.
     def open_session(self, app, request):
         sid = request.cookies.get(app.config["SESSION_COOKIE_NAME"])
         if sid:
@@ -55,6 +58,7 @@ class SessoesNoBanco(SessionInterface):
                 return SessaoBanco(json.loads(linha[0]), sid)
         return SessaoBanco(sid=secrets.token_urlsafe(32), nova=True)
 
+    # Salva a sessão no banco de dados.
     def save_session(self, app, sessao, resposta):
         nome = app.config["SESSION_COOKIE_NAME"]
         conexao = Database.connect()
@@ -80,6 +84,7 @@ class SessoesNoBanco(SessionInterface):
         resposta.set_cookie(nome, sessao.sid, expires=expira, httponly=True, samesite="Lax")
 
 
+# Cria a tabela de sessões caso ela não exista.
 def criar_tabela_sessao():
     try:
         conexao = Database.connect()
@@ -115,6 +120,7 @@ PREFERENCIAS_NOTIFICACAO = {
 MARGEM_PADRAO = 0
 
 
+# Busca as preferências de notificações da empresa.
 def preferencias_notificacao(cursor, empresa_id):
     colunas = ", ".join(list(PREFERENCIAS_NOTIFICACAO) + ["notif_margem"])
     try:
@@ -128,6 +134,7 @@ def preferencias_notificacao(cursor, empresa_id):
     return prefs
 
 
+# Busca os alertas de estoque da empresa.
 def alertas_estoque(cursor, empresa_id, prefs=None, limite=None):
     prefs = prefs or preferencias_notificacao(cursor, empresa_id)
     condicoes = []
@@ -164,6 +171,7 @@ def alertas_estoque(cursor, empresa_id, prefs=None, limite=None):
     return cursor.fetchall()
 
 
+# Monta a lista de notificações do sistema.
 def montar_notificacoes(cursor, empresa_id):
     prefs = preferencias_notificacao(cursor, empresa_id)
     itens = []
@@ -203,15 +211,18 @@ def montar_notificacoes(cursor, empresa_id):
     return itens
 
 
+# Formata uma quantidade para exibição.
 def fmt_quantidade(valor):
     numero = to_float(valor)
     return str(int(numero)) if numero == int(numero) else f"{numero:.3f}".rstrip("0").replace(".", ",")
 
 
+# Formata um valor em dinheiro.
 def fmt_moeda(valor):
     return f"{to_float(valor):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+# Carrega os dados usados nas páginas do sistema.
 @app.context_processor
 def dados_globais():
     empresa_nome = ""
@@ -316,6 +327,7 @@ MODULOS = {
 }
 
 
+# Identifica o módulo da rota atual.
 def modulo_do_endpoint(endpoint):
     for modulo, rotas in MODULOS.items():
         if endpoint in rotas:
@@ -324,6 +336,7 @@ def modulo_do_endpoint(endpoint):
 
 # ---------------- PREFERÊNCIAS DE INTERFACE ---------------- #
 
+# Volta para a página informada.
 def voltar_para(padrao="dashboard"):
     destino = (request.form.get("voltar_para") or "").strip()
 
@@ -333,12 +346,14 @@ def voltar_para(padrao="dashboard"):
     return redirect(url_for(padrao))
 
 
+# Volta para a página do galpão.
 def voltar_galpao(galpao_id):
     if str(galpao_id or "").strip().isdigit():
         return redirect(url_for("info_galpao", galpao_id=int(galpao_id)))
     return redirect(url_for("galpao"))
 
 
+# Alterna o tema da interface.
 @app.route("/tema/alternar", methods=["POST"])
 def alternar_tema():
     escolhido = request.form.get("tema")
@@ -349,6 +364,7 @@ def alternar_tema():
     return voltar_para()
 
 
+# Alterna o estado do menu lateral.
 @app.route("/menu/alternar", methods=["POST"])
 def alternar_menu():
     session["sidebar_minimizada"] = not session.get("sidebar_minimizada", False)
@@ -356,6 +372,7 @@ def alternar_menu():
 
 # ---------------- FUNÇÕES AUXILIARES ---------------- #
 
+# Converte um valor para número decimal.
 def to_float(value, default=0.0):
     if value is None:
         return default
@@ -375,6 +392,7 @@ def to_float(value, default=0.0):
         return default
 
 
+# Converte um valor para número inteiro.
 def to_int(value, default=0):
     numero = to_float(value, None)
     if numero is None:
@@ -383,11 +401,13 @@ def to_int(value, default=0):
 
 # ------------VALIDAÇÕES----------#
 
+# Verifica se o telefone é válido.
 def telefone_valido(telefone):
     numeros = re.sub(r'\D', '', telefone)
     return len(numeros) in (10, 11)
 
 
+# Formata o telefone para exibição.
 def formatar_telefone(telefone):
     numeros = re.sub(r'\D', '', telefone)
 
@@ -400,6 +420,7 @@ def formatar_telefone(telefone):
     return telefone
 
 
+# Verifica se a área informada é válida.
 def area_valida(area):
     try:
         valor = float(area)
@@ -408,19 +429,23 @@ def area_valida(area):
         return False
 
 
+# Verifica se o nome contém apenas letras.
 def nome_valido(nome):
     return nome.replace(" ", "").isalpha()
 
 
+# Verifica se o e-mail é válido.
 def email_valido(email):
     padrao = r'^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'
     return re.match(padrao, email) is not None
 
 
+# Remove os caracteres que não são números.
 def somente_numeros(valor):
     return re.sub(r"\D", "", valor or "")
 
 
+# Formata CPF ou CNPJ para exibição.
 def formatar_documento(valor):
     numeros = somente_numeros(valor)
 
@@ -434,11 +459,13 @@ def formatar_documento(valor):
     return valor or ""
 
 
+# Formata o CEP para exibição.
 def formatar_cep(valor):
     numeros = somente_numeros(valor)
     return f"{numeros[:5]}-{numeros[5:]}" if len(numeros) == 8 else (valor or "")
 
 
+# Valida o CPF ou CNPJ informado.
 def validar_documento(valor, obrigatorio=True):
     numeros = somente_numeros(valor)
 
@@ -460,6 +487,7 @@ def validar_documento(valor, obrigatorio=True):
     return numeros, "O CPF deve ter 11 números e o CNPJ, 14."
 
 
+# Valida o telefone de um campo.
 def validar_telefone_campo(valor, obrigatorio=False):
     numeros = somente_numeros(valor)
 
@@ -474,6 +502,7 @@ def validar_telefone_campo(valor, obrigatorio=False):
     return numeros, None
 
 
+# Valida o CEP de um campo.
 def validar_cep_campo(valor, obrigatorio=False):
     numeros = somente_numeros(valor)
 
@@ -488,6 +517,7 @@ def validar_cep_campo(valor, obrigatorio=False):
     return numeros, None
 
 
+# Verifica se o documento já está cadastrado.
 def documento_ja_usado(tabela, numeros, ignorar_id=None):
     if not numeros:
         return False
@@ -516,16 +546,19 @@ def documento_ja_usado(tabela, numeros, ignorar_id=None):
         conexao.close()
 
 
+# Aplica o formato de documento nos templates.
 @app.template_filter("documento")
 def filtro_documento(valor):
     return formatar_documento(valor) or "—"
 
 
+# Aplica o formato de CEP nos templates.
 @app.template_filter("cep")
 def filtro_cep(valor):
     return formatar_cep(valor) or "—"
 
 
+# Valida um CPF.
 def validar_cpf(cpf):
     cpf = somente_numeros(cpf)
 
@@ -545,6 +578,7 @@ def validar_cpf(cpf):
 
     return digito2 == int(cpf[10])
 
+# Valida um CNPJ.
 def validar_cnpj(cnpj):
     cnpj = somente_numeros(cnpj)
 
@@ -603,6 +637,7 @@ UNICOS_POR_EMPRESA = {
 }
 
 
+# Atualiza o banco para o funcionamento multiempresa.
 def migrar_multiempresa():
     try:
         conexao = Database.connect()
@@ -675,6 +710,7 @@ ESTRUTURAS_NECESSARIAS += [("coluna", t, "empresa_id") for t in TABELAS_DA_EMPRE
 migrar_multiempresa()
 
 
+# Retorna a empresa atual da sessão.
 def empresa_atual():
     return session.get("empresa_id")
 IDS_POR_PARAMETRO = {
@@ -724,14 +760,17 @@ ENDPOINTS_ADMIN = {
 }
 
 
+# Retorna o perfil do usuário atual.
 def perfil_atual():
     return session.get("tipo") or "operador"
 
 
+# Verifica se o usuário pode gerenciar dados.
 def pode_gerenciar():
     return perfil_atual() in ("admin", "gerente")
 
 
+# Verifica o perfil e o acesso do usuário.
 @app.before_request
 def verificar_perfil():
     if "usuario_id" not in session or request.endpoint in (None, "static"):
@@ -774,6 +813,7 @@ IDS_NO_FORMULARIO = {
 }
 
 
+# Verifica se um registro pertence à empresa atual.
 def registro_da_empresa(tabela, registro_id):
     conexao = Database.connect()
     cursor = conexao.cursor()
@@ -788,6 +828,7 @@ def registro_da_empresa(tabela, registro_id):
         conexao.close()
 
 
+# Protege os registros de outras empresas.
 @app.before_request
 def proteger_dados_da_empresa():
     if not empresa_atual() or request.endpoint in (None, "static"):
@@ -826,6 +867,7 @@ def proteger_dados_da_empresa():
 _estruturas_faltando = None
 
 
+# Verifica se a estrutura do banco está atualizada.
 def verificar_banco(forcar=False):
     global _estruturas_faltando
 
@@ -860,6 +902,7 @@ def verificar_banco(forcar=False):
     return faltando
 
 
+# Verifica se é necessário avisar sobre o banco.
 @app.before_request
 def avisar_banco_desatualizado():
     if request.endpoint in ("static", "banco_desatualizado"):
@@ -871,6 +914,7 @@ def avisar_banco_desatualizado():
     return None
 
 
+# Mostra a página de banco desatualizado.
 @app.route("/banco-desatualizado")
 def banco_desatualizado():
     faltando = verificar_banco()
@@ -890,6 +934,7 @@ TAMANHO_MAXIMO_IMAGEM = 5 * 1024 * 1024
 PASTA_IMAGENS = os.path.join("static", "imagem")
 
 
+# Salva uma imagem no sistema.
 def salvar_imagem(arquivo, prefixo, identificador):
     if not arquivo or not arquivo.filename:
         return None
@@ -924,6 +969,7 @@ def salvar_imagem(arquivo, prefixo, identificador):
     return nome_imagem
 
 
+# Atualiza a imagem de um registro.
 def atualizar_imagem(tabela, registro_id, arquivo, prefixo):
     nome_imagem = salvar_imagem(arquivo, prefixo, registro_id)
 
@@ -945,6 +991,7 @@ def atualizar_imagem(tabela, registro_id, arquivo, prefixo):
     return nome_imagem
 
 
+# Define a imagem padrão quando necessário.
 @app.template_filter("imagem_ou")
 def filtro_imagem_ou(nome_imagem, padrao="imagemproduto.png"):
     if nome_imagem:
@@ -957,6 +1004,7 @@ def filtro_imagem_ou(nome_imagem, padrao="imagemproduto.png"):
 
 # ------------ FORMATAÇÃO ----------#
 
+# Formata um valor em dinheiro.
 @app.template_filter("moeda")
 def formatar_moeda(valor):
     try:
@@ -968,11 +1016,13 @@ def formatar_moeda(valor):
     return texto.replace(",", "X").replace(".", ",").replace("X", ".")
 
 
+# Aplica o formato de telefone nos templates.
 @app.template_filter("telefone")
 def filtro_telefone(valor):
     return formatar_telefone(valor or "")
 
 
+# Formata uma quantidade para exibição.
 @app.template_filter("quantidade")
 def formatar_quantidade(valor):
     try:
@@ -998,6 +1048,7 @@ CAMPOS_UNICOS = {
 }
 
 
+# Monta uma mensagem para os erros do banco.
 def mensagem_erro(e):
 
     texto = str(e)
@@ -1024,14 +1075,17 @@ def mensagem_erro(e):
 
 # ---------------- ORDENAÇÃO E FILTROS DAS LISTAGENS ---------------- #
 
+# Converte um valor para texto em minúsculas.
 def _texto(valor):
     return str(valor or "").strip().lower()
 
 
+# Converte um valor para número.
 def _num(valor):
     return to_float(valor)
 
 
+# Retorna uma data ou um valor padrão.
 def _data(valor):
     return valor or datetime.min
 
@@ -1111,6 +1165,7 @@ SITUACOES = {
 }
 
 
+# Aplica os filtros e a ordenação das listas.
 def ordenar_e_filtrar(itens, tela):
     ordens = ORDENS.get(tela, [])
     situacoes = SITUACOES.get(tela, [])
@@ -1138,6 +1193,7 @@ def ordenar_e_filtrar(itens, tela):
     return list(itens), menu
 
 
+# Busca a quantidade vendida de cada produto.
 def vendas_por_produto():
     conexao = Database.connect()
     cursor = conexao.cursor()
@@ -1155,6 +1211,7 @@ def vendas_por_produto():
         conexao.close()
 
 
+# Adiciona as vendas aos produtos.
 def com_vendas(produtos):
     vendas = vendas_por_produto()
     for produto in produtos:
@@ -1162,12 +1219,14 @@ def com_vendas(produtos):
     return produtos
 
 
+# Filtra os produtos pela busca informada.
 def filtrar_produtos(produtos, busca):
     termo = (busca or "").strip().lower()
 
     if not termo:
         return produtos
 
+    # Verifica se o item corresponde ao termo da busca.
     def combina(produto):
         campos = (
             produto.get("nome"),
@@ -1181,6 +1240,7 @@ def filtrar_produtos(produtos, busca):
     return [produto for produto in produtos if combina(produto)]
 
 
+# Agrupa os produtos pelo ID.
 def agrupar_produtos_por_id(produtos):
     agrupados = {}
 
@@ -1206,10 +1266,12 @@ def agrupar_produtos_por_id(produtos):
 
 # ------------- LANDINGPAGE ------------- #
 
+# Exibe a página inicial do sistema.
 @app.route('/')
 def landing():
     return render_template('landing.html')
 
+# Redireciona o usuário para a página inicial correta.
 @app.route('/home')
 def home():
     if "usuario_id" in session:
@@ -1218,7 +1280,9 @@ def home():
 
 # ---------------- LOGIN OBRIGATÓRIO ---------------- #
 
+# Verifica se o usuário está logado.
 def login_obrigatorio(f):
+    # Executa a verificação de login antes da rota.
     @wraps(f)
     def wrap(*args, **kwargs):
         if "usuario_id" not in session:
@@ -1231,6 +1295,7 @@ def login_obrigatorio(f):
 
 # ---------------- INDEX ---------------- #
 
+# Carrega os dados do painel principal.
 @app.route("/dashboard")
 @login_obrigatorio
 def dashboard():
@@ -1404,6 +1469,7 @@ def dashboard():
 
 # ---------------- LOGIN ---------------- #
 
+# Realiza o login do usuário.
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -1462,6 +1528,7 @@ def login():
 
 # ---------------- REDEFINIR SENHA ---------------- #
 
+# Permite redefinir a senha do usuário.
 @app.route("/redefinir-senha/<token>", methods=["GET", "POST"])
 def redefinir_senha(token):
 
@@ -1574,6 +1641,7 @@ def redefinir_senha(token):
 
 # ---------------- RECUPERAÇÃO DE SENHA ---------------- #
 
+# Inicia a recuperação de senha.
 @app.route("/esqueci-senha", methods=["GET", "POST"])
 def esqueci_senha():
 
@@ -1657,6 +1725,7 @@ def esqueci_senha():
     return render_template("esqueci_senha.html")
 
 # ---------------- CONFIG ---------------- #
+# Exibe as configurações da conta.
 @app.route('/config')
 @login_obrigatorio
 def config():
@@ -1689,6 +1758,7 @@ def config():
                            opcoes_notificacao=PREFERENCIAS_NOTIFICACAO)
 
 
+# Salva as preferências de notificações.
 @app.route('/config/notificacoes', methods=["POST"])
 @login_obrigatorio
 def salvar_notificacoes():
@@ -1715,6 +1785,7 @@ def salvar_notificacoes():
     return redirect(url_for("config") + "#notificacoes")
 
 
+# Salva as alterações do perfil.
 @app.route('/config/perfil', methods=["POST"])
 @login_obrigatorio
 def salvar_perfil():
@@ -1760,6 +1831,7 @@ def salvar_perfil():
     return redirect(url_for("config"))
 
 
+# Altera a senha do usuário.
 @app.route('/config/senha', methods=["POST"])
 @login_obrigatorio
 def alterar_senha():
@@ -1805,6 +1877,7 @@ def alterar_senha():
     return redirect(url_for("config"))
 
 
+# Salva as informações da empresa.
 @app.route('/config/empresa', methods=["POST"])
 @login_obrigatorio
 def salvar_empresa():
@@ -1848,6 +1921,7 @@ def salvar_empresa():
 
 # ---------------- USUÁRIOS DA EMPRESA (equipe) ---------------- #
 
+# Lista os usuários da empresa.
 @app.route("/usuarios")
 @login_obrigatorio
 def usuarios():
@@ -1868,6 +1942,7 @@ def usuarios():
     return render_template("usuarios.html", usuarios_empresa=lista, perfis=PERFIS)
 
 
+# Cadastra um novo usuário.
 @app.route("/usuarios/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_usuario():
@@ -1917,6 +1992,7 @@ def salvar_usuario():
 
     return redirect(url_for("usuarios"))
 
+# Altera os dados de um usuário.
 def _alterar_usuario(usuario_id, campo, valor, mensagem):
     if usuario_id == session.get("usuario_id"):
         flash("Você não pode alterar o próprio perfil ou desativar a própria conta.", "erro")
@@ -1938,6 +2014,7 @@ def _alterar_usuario(usuario_id, campo, valor, mensagem):
     return redirect(url_for("usuarios"))
 
 
+# Ativa ou desativa um usuário.
 @app.route("/usuarios/<int:usuario_id>/ativo", methods=["POST"])
 @login_obrigatorio
 def alternar_usuario_ativo(usuario_id):
@@ -1948,6 +2025,7 @@ def alternar_usuario_ativo(usuario_id):
     )
 
 
+# Altera o perfil de um usuário.
 @app.route("/usuarios/<int:usuario_id>/perfil", methods=["POST"])
 @login_obrigatorio
 def alterar_perfil_usuario(usuario_id):
@@ -1957,6 +2035,7 @@ def alterar_perfil_usuario(usuario_id):
         return redirect(url_for("usuarios"))
     return _alterar_usuario(usuario_id, "tipo", tipo, f"Perfil alterado para {PERFIS[tipo]}.")
 
+# Encerra a sessão do usuário.
 @app.route('/logout', methods=["POST"])
 def logout():
     session.clear()
@@ -1965,6 +2044,7 @@ def logout():
 
 # ---------------- CADASTRO DE EMPRESA ---------------- #
 
+# Realiza o cadastro da empresa e do usuário.
 @app.route("/cadastro", methods=["GET", "POST"])
 def cadastro_emp():
 
@@ -2082,6 +2162,7 @@ def cadastro_emp():
 
 # ---------------- ESTOQUE ---------------- #
 
+# Exibe o estoque geral.
 @app.route("/estoque")
 @login_obrigatorio
 def estoque():
@@ -2101,6 +2182,7 @@ def estoque():
     )
 
 
+# Exibe o estoque de um galpão.
 @app.route("/estoque/<int:galpao_id>")
 @login_obrigatorio
 def estoque_galpao(galpao_id):
@@ -2127,6 +2209,7 @@ def estoque_galpao(galpao_id):
     )
 
 
+# Realiza uma movimentação de estoque.
 @app.route("/estoque/movimentar", methods=["POST"])
 @login_obrigatorio
 def movimentar_estoque():
@@ -2146,6 +2229,7 @@ def movimentar_estoque():
 
 # ---------------- INFO GALPAO ---------------- #
 
+# Exibe as informações do galpão.
 @app.route("/info_galpao/<int:galpao_id>")
 @login_obrigatorio
 def info_galpao(galpao_id):
@@ -2166,6 +2250,7 @@ def info_galpao(galpao_id):
         empilhadeiras=empilhadeiras
     )
 
+# Atualiza os dados do galpão.
 @app.route("/galpao/atualizar/<int:galpao_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_galpao(galpao_id):
@@ -2281,6 +2366,7 @@ def atualizar_galpao(galpao_id):
         )
     )
 
+# Exclui um galpão.
 @app.route("/galpao/deletar/<int:galpao_id>", methods=["POST"])
 @login_obrigatorio
 def deletar_galpao(galpao_id):
@@ -2310,6 +2396,7 @@ def deletar_galpao(galpao_id):
 
 # ---------------- EMPILHADEIRAS ---------------- #
 
+# Cadastra uma empilhadeira.
 @app.route("/empilhadeira/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_empilhadeira():
@@ -2332,6 +2419,7 @@ def salvar_empilhadeira():
 
     return voltar_galpao(request.form.get("galpao_id"))
 
+# Atualiza os dados da empilhadeira.
 @app.route("/empilhadeira/atualizar/<int:empilhadeira_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_empilhadeira(empilhadeira_id):
@@ -2356,6 +2444,7 @@ def atualizar_empilhadeira(empilhadeira_id):
     return voltar_galpao(galpao_id)
 
 
+# Exclui uma empilhadeira.
 @app.route("/empilhadeira/deletar/<int:empilhadeira_id>", methods=["POST"])
 @login_obrigatorio
 def deletar_empilhadeira(empilhadeira_id):
@@ -2373,6 +2462,7 @@ def deletar_empilhadeira(empilhadeira_id):
 
 # ---------------- PRODUTOS ---------------- #
 
+# Lista os produtos cadastrados.
 @app.route("/produtos")
 @login_obrigatorio
 def produtos():
@@ -2391,6 +2481,7 @@ def produtos():
         busca=busca
     )
 
+# Cadastra um novo produto.
 @app.route("/produto/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_produto():
@@ -2465,11 +2556,13 @@ def salvar_produto():
     return redirect(url_for("produtos"))
 
 
+# Exibe os dados para edição do produto.
 @app.route("/produto/editar/<int:id>")
 @login_obrigatorio
 def editar_produto(id):
     return redirect(url_for("info_produtos", id=id))
 
+# Atualiza os dados do produto.
 @app.route("/produto/atualizar/<int:id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_produto(id):
@@ -2541,6 +2634,7 @@ def atualizar_produto(id):
     return redirect(url_for("info_produtos", id=id))
 
 
+# Ajusta o estoque de um produto.
 @app.route("/produto/ajustar_estoque/<int:id>", methods=["POST"])
 @login_obrigatorio
 def ajustar_estoque_produto(id):
@@ -2584,6 +2678,7 @@ def ajustar_estoque_produto(id):
 
     return redirect(url_for("info_produtos", id=id))
 
+# Volta para a página do produto.
 def voltar_para_produto(produto_id, padrao="info_produtos"):
 
     destino = (request.form.get("voltar_para") or "").strip()
@@ -2597,6 +2692,7 @@ def voltar_para_produto(produto_id, padrao="info_produtos"):
     return redirect(url_for(padrao))
 
 
+# Desativa um produto.
 @app.route("/produto/desativar/<int:id>", methods=["POST"])
 @login_obrigatorio
 def desativar_produto(id):
@@ -2608,6 +2704,7 @@ def desativar_produto(id):
 
     return voltar_para_produto(id)
 
+# Reativa um produto.
 @app.route("/produto/reativar/<int:id>", methods=["POST"])
 @login_obrigatorio
 def reativar_produto(id):
@@ -2619,12 +2716,14 @@ def reativar_produto(id):
 
     return voltar_para_produto(id, padrao="produtos_inativos")
 
+# Lista os produtos inativos.
 @app.route("/produtos/inativos")
 @login_obrigatorio
 def produtos_inativos():
     lista = Produto.find_inativos()
     return render_template("produtos_inativos.html", produtos=lista)
 
+# Exclui um produto.
 @app.route("/produto/excluir/<int:id>", methods=["POST"])
 @login_obrigatorio
 def excluir_produto(id):
@@ -2642,6 +2741,7 @@ def excluir_produto(id):
 
 # ---------------- INFO PRODUTO ---------------- #
 
+# Exibe as informações do produto.
 @app.route("/info_produto/<int:id>")
 @login_obrigatorio
 def info_produtos(id):
@@ -2698,6 +2798,7 @@ def info_produtos(id):
 
 # ---------------- BUSCA - header ---------------- #
 
+# Busca produtos conforme o termo informado.
 @app.route("/buscar")
 @login_obrigatorio
 def buscar():
@@ -2750,6 +2851,7 @@ def buscar():
     return render_template("busca.html", q=q, total=total, **resultados)
 
 
+# Lista os galpões cadastrados.
 @app.route("/galpao")
 @login_obrigatorio
 def galpao():
@@ -2759,6 +2861,7 @@ def galpao():
     if busca:
         termo = busca.lower()
 
+        # Verifica se o item corresponde ao termo da busca.
         def combina(g):
             campos = (g.get("nome"), g.get("cidade"), g.get("estado"),
                       g.get("nome_resp"), g.get("endereco"), g.get("stats"))
@@ -2769,11 +2872,13 @@ def galpao():
     galpoes, menu = ordenar_e_filtrar(galpoes, "galpoes")
     return render_template("galpao.html", galpoes=galpoes, busca=busca, menu_filtros=menu)
 
+# Exibe o formulário de novo galpão.
 @app.route("/galpao/novo")
 @login_obrigatorio
 def novo_galpao():
     return redirect(url_for("galpao"))
 
+# Salva um novo galpão.
 @app.route("/galpao/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_galpao():
@@ -2894,6 +2999,7 @@ def salvar_galpao():
 
 # ---------------- FORNECEDORES ---------------- #
 
+# Lista os fornecedores cadastrados.
 @app.route("/fornecedores")
 @login_obrigatorio
 def fornecedores():
@@ -2967,6 +3073,7 @@ def fornecedores():
     if busca:
         termo = busca.lower()
 
+        # Verifica se o item corresponde ao termo da busca.
         def combina(fornecedor):
             campos = (fornecedor.get("nome"), fornecedor.get("nome_ctt"),
                       fornecedor.get("email"), fornecedor.get("cnpj"),
@@ -2988,12 +3095,14 @@ def fornecedores():
     )
 
 
+# Exibe o formulário de novo fornecedor.
 @app.route("/fornecedor/novo")
 @login_obrigatorio
 def novo_fornecedor():
     return render_template("form_fornecedor.html")
 
 
+# Cadastra um novo fornecedor.
 @app.route("/fornecedor/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_fornecedor():
@@ -3038,6 +3147,7 @@ def salvar_fornecedor():
     return redirect(url_for("fornecedores"))
 
 
+# Atualiza os dados do fornecedor.
 @app.route("/fornecedor/atualizar/<int:fornecedor_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_fornecedor(fornecedor_id):
@@ -3101,6 +3211,7 @@ def atualizar_fornecedor(fornecedor_id):
     return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
 
+# Exclui um fornecedor.
 @app.route("/fornecedor/deletar/<int:fornecedor_id>", methods=["POST"])
 @login_obrigatorio
 def deletar_fornecedor(fornecedor_id):
@@ -3122,6 +3233,7 @@ def deletar_fornecedor(fornecedor_id):
     return redirect(url_for("fornecedores"))
 
 
+# Vincula um produto a um fornecedor.
 @app.route("/fornecedores/vincular_produto", methods=["POST"])
 @login_obrigatorio
 def vincular_fornecedor_produto():
@@ -3160,6 +3272,7 @@ def vincular_fornecedor_produto():
     return redirect(url_for("fornecedores"))
 
 # ---------------- INFO FORNECEDOR ---------------- #
+# Exibe as informações do fornecedor.
 @app.route("/info_fornecedor/<int:fornecedor_id>")
 @login_obrigatorio
 def info_fornecedor(fornecedor_id):
@@ -3182,6 +3295,7 @@ def info_fornecedor(fornecedor_id):
 
 # ---------------- ITENS FORNECEDOR ---------------- #
 
+# Lista os itens do fornecedor.
 @app.route("/itens_fornecedores/<int:fornecedor_id>")
 @login_obrigatorio
 def itens_fornecedor(fornecedor_id):
@@ -3219,6 +3333,7 @@ def itens_fornecedor(fornecedor_id):
         conexao.close()
 
 
+# Busca os itens vinculados ao fornecedor.
 def itens_do_fornecedor(cursor, fornecedor_id):
     cursor.execute("""
         SELECT
@@ -3242,6 +3357,7 @@ def itens_do_fornecedor(cursor, fornecedor_id):
     return cursor.fetchall()
 
 
+# Exporta os itens do fornecedor.
 @app.route("/itens_fornecedores/<int:fornecedor_id>/exportar")
 @login_obrigatorio
 def exportar_itens_fornecedor(fornecedor_id):
@@ -3278,6 +3394,7 @@ def exportar_itens_fornecedor(fornecedor_id):
     )
 
 
+# Salva um item do fornecedor.
 @app.route("/fornecedor/<int:fornecedor_id>/salvar_item", methods=["POST"])
 @login_obrigatorio
 def salvar_item_fornecedor(fornecedor_id):
@@ -3347,6 +3464,7 @@ def salvar_item_fornecedor(fornecedor_id):
 
 # ---------------- CLIENTES ---------------- #
 
+# Lista os clientes cadastrados.
 @app.route("/clientes")
 @login_obrigatorio
 def cliente():
@@ -3394,11 +3512,13 @@ def cliente():
         busca=busca
     )
 
+# Exibe o formulário de novo cliente.
 @app.route("/cliente/novo")
 @login_obrigatorio
 def novo_cliente():
     return redirect(url_for("cliente"))
 
+# Cadastra um novo cliente.
 @app.route("/cliente/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_cliente():
@@ -3463,6 +3583,7 @@ def salvar_cliente():
 
 # ---------------- FUNCIONÁRIOS ---------------- #
 
+# Valida o CPF do funcionário.
 def validar_cpf_funcionario(valor, ignorar_id=None):
 
     numeros, erro = validar_documento(valor, obrigatorio=False)
@@ -3493,6 +3614,7 @@ def validar_cpf_funcionario(valor, ignorar_id=None):
     return numeros, None
 
 
+# Cadastra um novo funcionário.
 @app.route("/funcionario/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_funcionario():
@@ -3524,6 +3646,7 @@ def salvar_funcionario():
 
     return voltar_galpao(request.form.get("galpao_id"))
 
+# Atualiza os dados do funcionário.
 @app.route("/funcionario/atualizar", methods=["POST"])
 @login_obrigatorio
 def atualizar_funcionario():
@@ -3572,6 +3695,7 @@ def atualizar_funcionario():
 
     return voltar_galpao(galpao_id)
 
+# Exclui um funcionário.
 @app.route("/funcionario/deletar/<int:funcionario_id>", methods=["POST"])
 @login_obrigatorio
 def deletar_funcionario(funcionario_id):
@@ -3589,6 +3713,7 @@ def deletar_funcionario(funcionario_id):
 
 # ---------------- MOVIMENTAÇÕES ---------------- #
 
+# Lista as movimentações do estoque.
 @app.route("/movimentacoes")
 @login_obrigatorio
 def movimentacoes():
@@ -3607,6 +3732,7 @@ def movimentacoes():
         filtro_tipo=tipo
     )
 
+# Exibe o formulário de nova movimentação.
 @app.route("/movimentacao/nova")
 @login_obrigatorio
 def nova_movimentacao():
@@ -3618,6 +3744,7 @@ def nova_movimentacao():
         tipos=Movimentacao.TIPOS
     )
 
+# Salva uma movimentação de estoque.
 @app.route("/movimentacao/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_movimentacao():
@@ -3715,6 +3842,7 @@ def salvar_movimentacao():
 
 # ---------------- INFO CLIENTES ---------------- #
 
+# Exibe as informações do cliente.
 @app.route("/info_cliente/<int:cliente_id>")
 @login_obrigatorio
 def info_cliente(cliente_id):
@@ -3726,6 +3854,7 @@ def info_cliente(cliente_id):
     return render_template("info_cliente.html", cliente=c, pedidos=pedidos)
 
 
+# Atualiza os dados do cliente.
 @app.route("/cliente/atualizar/<int:cliente_id>", methods=["POST"])
 @login_obrigatorio
 def atualizar_cliente(cliente_id):
@@ -3784,6 +3913,7 @@ def atualizar_cliente(cliente_id):
     return redirect(url_for("info_cliente", cliente_id=cliente_id))
 
 
+# Exclui um cliente.
 @app.route("/cliente/deletar/<int:cliente_id>", methods=["POST"])
 @login_obrigatorio
 def deletar_cliente(cliente_id):
@@ -3795,6 +3925,7 @@ def deletar_cliente(cliente_id):
     return redirect(url_for("cliente"))
 
 
+# Busca pedidos de entrada.
 def buscar_pedidos_entrada(busca=""):
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
@@ -3821,6 +3952,7 @@ def buscar_pedidos_entrada(busca=""):
         conn.close()
 
 
+# Busca pedidos de saída.
 def buscar_pedidos_saida(busca=""):
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
@@ -3847,24 +3979,29 @@ def buscar_pedidos_saida(busca=""):
         conn.close()
 
 
+# Obtém os itens do carrinho.
 def carrinho_obter(chave):
     return session.get(chave, [])
 
 
+# Salva os itens do carrinho.
 def carrinho_salvar(chave, itens):
     session[chave] = itens
     session.modified = True
 
 
+# Limpa o carrinho.
 def carrinho_limpar(chave):
     session.pop(chave, None)
     session.modified = True
 
 
+# Calcula o total do carrinho.
 def carrinho_total(itens):
     return sum(item["quantidade"] * item["preco_unitario"] for item in itens)
 
 
+# Adiciona um item ao carrinho.
 def carrinho_adicionar(chave, produto, quantidade, preco_unitario):
     itens = carrinho_obter(chave)
 
@@ -3885,6 +4022,7 @@ def carrinho_adicionar(chave, produto, quantidade, preco_unitario):
     carrinho_salvar(chave, itens)
 
 
+# Remove um item do carrinho.
 def carrinho_remover(chave, indice):
     itens = carrinho_obter(chave)
 
@@ -3893,6 +4031,7 @@ def carrinho_remover(chave, indice):
         carrinho_salvar(chave, itens)
 
 
+# Busca produtos por galpão.
 def produtos_por_galpao():
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
@@ -3922,6 +4061,7 @@ def produtos_por_galpao():
         conn.close()
 
 
+# Busca produtos por fornecedor.
 def produtos_por_fornecedor():
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
@@ -3951,6 +4091,7 @@ def produtos_por_fornecedor():
         conn.close()
 
 
+# Busca os produtos de um fornecedor.
 def produtos_do_fornecedor(fornecedor_id):
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
@@ -3982,6 +4123,7 @@ def produtos_do_fornecedor(fornecedor_id):
         conn.close()
 
 
+# Busca os produtos de um galpão.
 def produtos_do_galpao(galpao_id):
     conn = Database.connect()
     cursor = conn.cursor(dictionary=True)
@@ -4009,6 +4151,7 @@ def produtos_do_galpao(galpao_id):
         cursor.close()
         conn.close()
 
+# Retorna os produtos do galpão pela API.
 @app.route("/api/produtos_do_galpao/<int:galpao_id>")
 @login_obrigatorio
 def api_produtos_do_galpao(galpao_id):
@@ -4031,6 +4174,7 @@ def api_produtos_do_galpao(galpao_id):
         conn.close()
 
 
+# Retorna todos os produtos pela API.
 @app.route("/api/todos_produtos")
 @login_obrigatorio
 def api_todos_produtos():
@@ -4051,6 +4195,7 @@ def api_todos_produtos():
         conn.close()
 
 
+# Retorna os produtos do fornecedor pela API.
 @app.route("/api/produtos_do_fornecedor/<int:fornecedor_id>")
 @login_obrigatorio
 def api_produtos_do_fornecedor(fornecedor_id):
@@ -4085,6 +4230,7 @@ def api_produtos_do_fornecedor(fornecedor_id):
 CARRINHO_ENTRADA = "carrinho_entrada"
 
 
+# Exibe o cadastro de pedido de entrada.
 @app.route("/cadastro_pedido_entrada")
 @login_obrigatorio
 def cadastro_pedido_entrada():
@@ -4107,6 +4253,7 @@ def cadastro_pedido_entrada():
     )
 
 
+# Adiciona um item ao pedido de entrada.
 @app.route("/pedido_entrada/item/adicionar", methods=["POST"])
 @login_obrigatorio
 def adicionar_item_entrada():
@@ -4149,6 +4296,7 @@ def adicionar_item_entrada():
     return redirect(destino)
 
 
+# Remove um item do pedido de entrada.
 @app.route("/pedido_entrada/item/remover/<int:indice>", methods=["POST"])
 @login_obrigatorio
 def remover_item_entrada(indice):
@@ -4160,6 +4308,7 @@ def remover_item_entrada(indice):
     ))
 
 
+# Limpa o pedido de entrada.
 @app.route("/pedido_entrada/limpar", methods=["POST"])
 @login_obrigatorio
 def limpar_pedido_entrada():
@@ -4168,17 +4317,20 @@ def limpar_pedido_entrada():
     return redirect(url_for("cadastro_pedido_entrada"))
 
 
+# Lista os pedidos de entrada.
 @app.route("/pedidos_entrada")
 @login_obrigatorio
 def listar_pedidos_entrada():
     return redirect(url_for("pedidos", busca=request.args.get("busca") or None))
 
+# Inicia um novo pedido de entrada.
 @app.route("/pedidos_entrada/novo")
 @login_obrigatorio
 def novo_pedido_entrada():
     return redirect(url_for("cadastro_pedido_entrada"))
 
 
+# Salva o pedido de entrada.
 @app.route("/salvar_pedido_entrada", methods=["POST"])
 @login_obrigatorio
 def salvar_pedido_entrada():
@@ -4260,6 +4412,7 @@ def salvar_pedido_entrada():
         conn.close()
 
 
+# Exibe um pedido de entrada.
 @app.route("/pedidos_entrada/visualizar/<int:pedido_id>")
 @login_obrigatorio
 def visualizar_pedido_entrada(pedido_id):
@@ -4297,6 +4450,7 @@ def visualizar_pedido_entrada(pedido_id):
 CARRINHO_SAIDA = "carrinho_saida"
 
 
+# Exibe o cadastro de pedido.
 @app.route("/cadastro_pedido/<int:cliente_id>")
 @login_obrigatorio
 def cadastro_pedido(cliente_id):
@@ -4324,6 +4478,7 @@ def cadastro_pedido(cliente_id):
     )
 
 
+# Exibe o cadastro de pedido de saída.
 @app.route("/cadastro_pedido_saida")
 @login_obrigatorio
 def cadastro_pedido_saida():
@@ -4345,12 +4500,14 @@ def cadastro_pedido_saida():
     )
 
 
+# Define o destino do pedido de saída.
 def destino_pedido_saida(cliente_id, galpao_id):
     if cliente_id:
         return url_for("cadastro_pedido", cliente_id=cliente_id, galpao_id=galpao_id)
     return url_for("cadastro_pedido_saida", galpao_id=galpao_id)
 
 
+# Adiciona um item ao pedido de saída.
 @app.route("/pedido_saida/item/adicionar", methods=["POST"])
 @login_obrigatorio
 def adicionar_item_saida():
@@ -4402,6 +4559,7 @@ def adicionar_item_saida():
     return redirect(destino)
 
 
+# Remove um item do pedido de saída.
 @app.route("/pedido_saida/item/remover/<int:indice>", methods=["POST"])
 @login_obrigatorio
 def remover_item_saida(indice):
@@ -4412,6 +4570,7 @@ def remover_item_saida(indice):
     ))
 
 
+# Limpa o pedido de saída.
 @app.route("/pedido_saida/limpar", methods=["POST"])
 @login_obrigatorio
 def limpar_pedido_saida():
@@ -4422,6 +4581,7 @@ def limpar_pedido_saida():
     ))
 
 
+# Lista os pedidos de saída.
 @app.route("/pedidos_saida")
 @login_obrigatorio
 def listar_pedidos_saida():
@@ -4429,6 +4589,7 @@ def listar_pedidos_saida():
     return redirect(url_for("cliente"))
 
 
+# Salva o pedido de saída.
 @app.route("/salvar_pedido_saida", methods=["POST"])
 @login_obrigatorio
 def salvar_pedido_saida():
@@ -4525,6 +4686,7 @@ def salvar_pedido_saida():
         conn.close()
 
 
+# Exibe um pedido de saída.
 @app.route("/pedidos_saida/visualizar/<int:pedido_id>")
 @login_obrigatorio
 def visualizar_pedido_saida(pedido_id):
@@ -4561,6 +4723,7 @@ def visualizar_pedido_saida(pedido_id):
 STATUS_PEDIDO_CLIENTE = ["pendente", "pago", "enviado", "concluido", "cancelado"]
 
 
+# Exibe o pedido do cliente para edição.
 @app.route("/pedido_cliente/<int:pedido_id>/editar")
 @login_obrigatorio
 def editar_pedido_cliente(pedido_id):
@@ -4601,6 +4764,7 @@ def editar_pedido_cliente(pedido_id):
     )
 
 
+# Atualiza o pedido do cliente.
 @app.route("/pedido_cliente/<int:pedido_id>/atualizar", methods=["POST"])
 @login_obrigatorio
 def atualizar_pedido_cliente(pedido_id):
@@ -4663,11 +4827,13 @@ def atualizar_pedido_cliente(pedido_id):
     return redirect(url_for("listar_pedidos_saida"))
 
 
+# Exibe o pedido para edição.
 @app.route("/editar_pedido/<int:id>")
 @login_obrigatorio
 def editar_pedido(id):
     return redirect(url_for("visualizar_pedido_entrada", pedido_id=id))
 
+# Exclui um pedido.
 @app.route("/deletar_pedido/<int:id>", methods=["POST"])
 @login_obrigatorio
 def deletar_pedido(id):
@@ -4711,6 +4877,7 @@ def deletar_pedido(id):
     return redirect(url_for("listar_pedidos_entrada"))
 
 
+# Exclui um pedido de saída.
 @app.route("/deletar_pedido_saida/<int:id>", methods=["POST"])
 @login_obrigatorio
 def deletar_pedido_saida(id):
@@ -4765,6 +4932,7 @@ def deletar_pedido_saida(id):
 
 # ---------------- PEDIDOS CLIENTES ---------------- #
 
+# Lista os pedidos de um cliente.
 @app.route("/pedidos_cliente/<int:cliente_id>")
 @login_obrigatorio
 def pedidos_clientes(cliente_id):
@@ -4819,6 +4987,7 @@ def pedidos_clientes(cliente_id):
         
 # ---------------- INFO PEDIDOS ------------#
 
+# Exibe as informações do pedido do cliente.
 @app.route("/pedido-cliente/<int:pedido_id>")
 @login_obrigatorio
 def info_pedido_cliente(pedido_id):
@@ -4881,6 +5050,7 @@ def info_pedido_cliente(pedido_id):
         conexao.close()
 # ---------------- PEDIDOS ---------------- #
 
+# Lista os pedidos de entrada.
 @app.route("/pedidos")
 @login_obrigatorio
 def pedidos():
@@ -4896,6 +5066,7 @@ def pedidos():
     )
 
 
+# Salva um pedido.
 @app.route("/pedido/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_pedido():
@@ -4915,6 +5086,7 @@ def salvar_pedido():
         return redirect(url_for("produtos"))
 
 
+# Processa um pedido.
 @app.route("/pedido/processar/<int:id>", methods=["POST"])
 @login_obrigatorio
 def processar_pedido(id):
@@ -4950,6 +5122,7 @@ def processar_pedido(id):
 
     return redirect(url_for("pedidos"))
 
+# Cancela um pedido.
 @app.route("/pedido/cancelar/<int:id>", methods=["POST"])
 @login_obrigatorio
 def cancelar_pedido(id):
@@ -4962,6 +5135,7 @@ def cancelar_pedido(id):
 
 # ---------------- ERRO 404 ---------------- #
 
+# Exibe a página de erro 404.
 @app.errorhandler(404)
 def pagina_nao_encontrada(error):
     return render_template("404.html"), 404

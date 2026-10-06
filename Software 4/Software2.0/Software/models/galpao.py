@@ -4,6 +4,7 @@ from core.empresa import empresa_atual
 
 class Galpao:
 
+    # Inicializa os dados do galpão.
     def __init__(self, nome, stats, email_resp, nome_resp, endereco, referencia, cidade, estado, area_total, telefone, cep,
                  total_prateleiras, niveis_por_prateleira, caixas_por_nivel, capacidade_total):
         self.nome = nome
@@ -22,6 +23,7 @@ class Galpao:
         self.caixas_por_nivel = caixas_por_nivel
         self.capacidade_total = capacidade_total
 
+    # Cadastra um novo galpão.
     def insert(self):
         conn = Database.connect()
         cursor = conn.cursor()
@@ -39,6 +41,7 @@ class Galpao:
         conn.commit()
         conn.close()
 
+    # Lista todos os galpões da empresa.
     @staticmethod
     def find_all():
         conn = Database.connect()
@@ -75,6 +78,7 @@ class Galpao:
 
         return result
 
+    # Busca um galpão pelo ID.
     @staticmethod
     def find_by_id(id):
         conn = Database.connect()
@@ -86,6 +90,7 @@ class Galpao:
         conn.close()
         return galpao
 
+    # Atualiza os dados do galpão.
     @staticmethod
     def update(galpao_id, dados):
         conn = Database.connect()
@@ -120,6 +125,7 @@ class Galpao:
             cursor.close()
             conn.close()
 
+    # Exclui um galpão.
     @staticmethod
     def delete(galpao_id):
         conn = Database.connect()

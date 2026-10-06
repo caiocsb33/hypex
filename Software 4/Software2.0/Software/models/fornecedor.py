@@ -4,6 +4,7 @@ from core.empresa import empresa_atual
 
 class Fornecedor:
 
+    # Inicializa os dados do fornecedor.
     def __init__(self, nome, telefone, email, ativo, cnpj, nome_ctt):
         self.nome = nome
         self.cnpj = cnpj
@@ -12,6 +13,7 @@ class Fornecedor:
         self.telefone = telefone
         self.email = email
 
+    # Cadastra um novo fornecedor.
     def insert(self):
         conn = Database.connect()
         cursor = conn.cursor()
@@ -26,6 +28,7 @@ class Fornecedor:
             cursor.close()
             conn.close()
 
+    # Lista todos os fornecedores da empresa.
     @staticmethod
     def find_all():
         conn = Database.connect()
@@ -38,6 +41,7 @@ class Fornecedor:
             cursor.close()
             conn.close()
 
+    # Busca um fornecedor pelo ID.
     @staticmethod
     def find_by_id(fornecedor_id):
         conn = Database.connect()
@@ -50,6 +54,7 @@ class Fornecedor:
             cursor.close()
             conn.close()
 
+    # Lista os produtos de um fornecedor.
     @staticmethod
     def find_produtos(fornecedor_id):
         conn = Database.connect()

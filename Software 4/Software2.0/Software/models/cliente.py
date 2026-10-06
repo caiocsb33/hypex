@@ -4,6 +4,7 @@ from core.empresa import empresa_atual
 
 class Cliente:
 
+    # Inicializa os dados do cliente.
     def __init__(self, nome, empresa, ativo, cidade, estado,
                  cpf_cnpj, cep, email, telefone):
         self.nome = nome
@@ -16,6 +17,7 @@ class Cliente:
         self.email = email
         self.telefone = telefone
 
+    # Cadastra um novo cliente.
     def insert(self):
         conn = Database.connect()
         cursor = conn.cursor()
@@ -33,6 +35,7 @@ class Cliente:
             cursor.close()
             conn.close()
 
+    # Lista todos os clientes da empresa.
     @staticmethod
     def find_all():
         conn = Database.connect()
@@ -45,6 +48,7 @@ class Cliente:
             cursor.close()
             conn.close()
 
+    # Busca um cliente pelo ID.
     @staticmethod
     def find_by_id(id):
         conn = Database.connect()
@@ -57,6 +61,7 @@ class Cliente:
             cursor.close()
             conn.close()
 
+    # Atualiza os dados do cliente.
     @staticmethod
     def update(cliente_id, dados):
         conn = Database.connect()
@@ -86,6 +91,7 @@ class Cliente:
             cursor.close()
             conn.close()
 
+    # Exclui um cliente.
     @staticmethod
     def delete(cliente_id):
         conn = Database.connect()

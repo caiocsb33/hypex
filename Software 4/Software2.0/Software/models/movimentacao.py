@@ -21,6 +21,7 @@ class Movimentacao(CrudBase):
 
     TIPOS = ("entrada", "saida", "transferencia", "ajuste_inventario")
 
+    # Inicializa os dados da movimentação.
     def __init__(self, produto_id, galpao_id, tipo, quantidade,
                  galpao_destino_id=None, funcionario_id=None,
                  data_movimentacao=None, observacao=None):
@@ -33,6 +34,7 @@ class Movimentacao(CrudBase):
         self.observacao = observacao
         self.data_movimentacao = data_movimentacao or datetime.now()
 
+    # Valida os dados da movimentação.
     def validate(self):
         erros = []
 
@@ -66,6 +68,7 @@ class Movimentacao(CrudBase):
 
         return erros
 
+    # Lista as movimentações com informações dos produtos.
     @classmethod
     def find_all_with_product(cls, produto_id=None, galpao_id=None, tipo=None):
         conexao = Database.connect()

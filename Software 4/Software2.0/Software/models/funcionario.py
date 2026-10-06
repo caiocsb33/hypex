@@ -4,6 +4,7 @@ from core.empresa import empresa_atual
  
 class Funcionario:
  
+    # Inicializa os dados do funcionário.
     def __init__(self, nome, cpf, salario, data_nascimento, data_admissao, email, telefone, cargo, galpao_id, ativo):
         self.nome = nome
         self.cpf = cpf
@@ -16,6 +17,7 @@ class Funcionario:
         self.galpao_id = galpao_id
         self.ativo = ativo
  
+    # Cadastra um novo funcionário.
     def insert(self):
         conn = Database.connect()
         cursor = conn.cursor()
@@ -40,6 +42,7 @@ class Funcionario:
         conn.commit()
         conn.close()
  
+    # Busca os funcionários de um galpão.
     @staticmethod
     def find_by_galpao(galpao_id):
         conn = Database.connect()
@@ -62,6 +65,8 @@ class Funcionario:
         finally:
             cursor.close()
             conn.close()
+
+    # Lista todos os funcionários da empresa.
     @staticmethod
     def find_all():
         conn = Database.connect()
