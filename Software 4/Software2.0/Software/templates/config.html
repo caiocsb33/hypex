@@ -7,40 +7,39 @@ Software HYPEX - Configurações
 <!-- Folha de estilo para a página de configurações -->
 {% block css %}
 
-<link rel="stylesheet"
-      href="{{ url_for('static', filename='style_config.css') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='style_config.css') }}">
 
 {% endblock %}
 
 {% block content %}
 
-    <!-- Conteúdo principal do painel de configurações -->
-    <main id="config-conteudo">
-        <!-- Cabeçalho da página de configurações -->
-        <header class="config-texto">
-            <div class="config-info">
-                <h1><i class="bi bi-gear-fill"></i> CONFIGURAÇÕES</h1>
-                <p>Gerencie as preferências da sua conta e do sistema</p>
-            </div>
-        </header>
+<!-- Conteúdo principal do painel de configurações -->
+<main id="config-conteudo">
+    <!-- Cabeçalho da página de configurações -->
+    <header class="config-texto">
+        <div class="config-info">
+            <h1><i class="bi bi-gear-fill"></i> CONFIGURAÇÕES</h1>
+            <p>Gerencie as preferências da sua conta e do sistema</p>
+        </div>
+    </header>
 
 
-        <!-- Grid com os cards de configurações divididos por seções -->
-        <section class="config-grid">
+    <!-- Grid com os cards de configurações divididos por seções -->
+    <section class="config-grid">
 
-            <!-- Card de gerenciamento dos dados e logo da empresa -->
-            <div class="config-card full-width">
-                <h3><i class="bi bi-building-fill"></i> Dados da Empresa</h3>
+        <!-- Card de gerenciamento dos dados e logo da empresa -->
+        <div class="config-card full-width">
+            <h3><i class="bi bi-building-fill"></i> Dados da Empresa</h3>
 
-                <!-- Mensagem informativa sobre restrição de permissão -->
-                {% if not pode_gerenciar %}
-                <p class="config-dica">Somente administradores e gerentes alteram os dados da empresa.</p>
-                {% endif %}
-                
-                <!-- Formulário para upload do logo e dados cadastrais da empresa -->
-                <form method="POST" enctype="multipart/form-data" class="empresa-form"
-                    action="{{ url_for('salvar_empresa') }}">
-                    <fieldset class="empresa-fieldset" {{ 'disabled' if not pode_gerenciar }}>
+            <!-- Mensagem informativa sobre restrição de permissão -->
+            {% if not pode_gerenciar %}
+            <p class="config-dica">Somente administradores e gerentes alteram os dados da empresa.</p>
+            {% endif %}
+
+            <!-- Formulário para upload do logo e dados cadastrais da empresa -->
+            <form method="POST" enctype="multipart/form-data" class="empresa-form"
+                action="{{ url_for('salvar_empresa') }}">
+                <fieldset class="empresa-fieldset" {{ 'disabled' if not pode_gerenciar }}>
 
                     <!-- Campo de pré-visualização e seleção da imagem de perfil/logo da empresa -->
                     <div class="empresa-foto campo-imagem">
@@ -65,7 +64,8 @@ Software HYPEX - Configurações
 
                         <div class="input-resp">
                             <label>CNPJ</label>
-                            <input type="text" name="cnpj" value="{{ empresa.cnpj | documento if empresa.cnpj else '' }}"
+                            <input type="text" name="cnpj"
+                                value="{{ empresa.cnpj | documento if empresa.cnpj else '' }}"
                                 placeholder="00.000.000/0001-00">
                         </div>
 
@@ -76,105 +76,108 @@ Software HYPEX - Configurações
                             </button>
                         </div>
                     </div>
-                    </fieldset>
-                </form>
-            </div>
+                </fieldset>
+            </form>
+        </div>
 
-            <!-- Card de edição de dados do perfil do usuário logado -->
-            <div class="config-card">
-                <h3><i class="bi bi-person-fill-gear"></i> Meu Perfil</h3>
+        <!-- Card de edição de dados do perfil do usuário logado -->
+        <div class="config-card">
+            <h3><i class="bi bi-person-fill-gear"></i> Meu Perfil</h3>
 
-                <!-- Formulário de dados pessoais do usuário -->
-                <form method="POST" action="{{ url_for('salvar_perfil') }}">
-                    <div class="input-resp">
-                        <label>Nome</label>
-                        <input type="text" name="nome" value="{{ usuario.nome or '' }}" required>
-                    </div>
-
-                    <div class="input-resp">
-                        <label>E-mail</label>
-                        <input type="email" name="email" value="{{ usuario.email or '' }}" required>
-                    </div>
-
-                    <div class="config-duas-colunas">
-                        <div class="input-resp">
-                            <label>Telefone</label>
-                            <input type="tel" name="telefone" value="{{ usuario.telefone | telefone if usuario.telefone else '' }}"
-                                placeholder="(11) 90000-0000">
-                        </div>
-
-                        <!-- Exibição somente leitura do perfil de acesso do usuário -->
-                        <div class="input-resp">
-                            <label>Perfil de Acesso</label>
-                            <input type="text" value="{{ usuario_tipo }}" readonly>
-                        </div>
-                    </div>
-
-                    <!-- Botão para salvar dados do perfil -->
-                    <div class="config-acoes">
-                        <button type="submit" class="salvar-btn">
-                            <i class="bi bi-check-lg"></i> Salvar Perfil
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Card para alteração de senha de acesso -->
-            <div class="config-card">
-                <h3><i class="bi bi-lock-fill"></i> Alterar Senha</h3>
-
-                <!-- Formulário de alteração de senha -->
-                <form method="POST" action="{{ url_for('alterar_senha') }}">
-                    <div class="input-resp">
-                        <label>Senha Atual</label>
-                        <input type="password" name="senha_atual" autocomplete="current-password" required>
-                    </div>
-
-                    <div class="config-duas-colunas">
-                        <div class="input-resp">
-                            <label>Nova Senha</label>
-                            <input type="password" name="nova_senha" minlength="6" autocomplete="new-password" required>
-                        </div>
-
-                        <div class="input-resp">
-                            <label>Confirmar Nova Senha</label>
-                            <input type="password" name="confirmar_senha" minlength="6" autocomplete="new-password" required>
-                        </div>
-                    </div>
-
-                    <small class="config-dica">Mínimo de 6 caracteres.</small>
-
-                    <!-- Botão para salvar nova senha -->
-                    <div class="config-acoes">
-                        <button type="submit" class="senha-btn">
-                            <i class="bi bi-lock-fill"></i> Alterar Senha
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Card com atalho para gerenciamento de usuários (visível apenas para administradores) -->
-            {% if perfil == 'admin' %}
-            <div class="config-card full-width">
-                <h3><i class="bi bi-people-fill"></i> Equipe e Usuários</h3>
-                <div class="equipe-atalho">
-                    <p>Crie acessos para sua equipe e defina quem é administrador, gerente ou operador.</p>
-                    <a href="{{ url_for('usuarios') }}" class="salvar-btn"><i class="bi bi-people-fill"></i> Gerenciar Usuários</a>
+            <!-- Formulário de dados pessoais do usuário -->
+            <form method="POST" action="{{ url_for('salvar_perfil') }}">
+                <div class="input-resp">
+                    <label>Nome</label>
+                    <input type="text" name="nome" value="{{ usuario.nome or '' }}" required>
                 </div>
+
+                <div class="input-resp">
+                    <label>E-mail</label>
+                    <input type="email" name="email" value="{{ usuario.email or '' }}" required>
+                </div>
+
+                <div class="config-duas-colunas">
+                    <div class="input-resp">
+                        <label>Telefone</label>
+                        <input type="tel" name="telefone"
+                            value="{{ usuario.telefone | telefone if usuario.telefone else '' }}"
+                            placeholder="(11) 90000-0000">
+                    </div>
+
+                    <!-- Exibição somente leitura do perfil de acesso do usuário -->
+                    <div class="input-resp">
+                        <label>Perfil de Acesso</label>
+                        <input type="text" value="{{ usuario_tipo }}" readonly>
+                    </div>
+                </div>
+
+                <!-- Botão para salvar dados do perfil -->
+                <div class="config-acoes">
+                    <button type="submit" class="salvar-btn">
+                        <i class="bi bi-check-lg"></i> Salvar Perfil
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Card para alteração de senha de acesso -->
+        <div class="config-card">
+            <h3><i class="bi bi-lock-fill"></i> Alterar Senha</h3>
+
+            <!-- Formulário de alteração de senha -->
+            <form method="POST" action="{{ url_for('alterar_senha') }}">
+                <div class="input-resp">
+                    <label>Senha Atual</label>
+                    <input type="password" name="senha_atual" autocomplete="current-password" required>
+                </div>
+
+                <div class="config-duas-colunas">
+                    <div class="input-resp">
+                        <label>Nova Senha</label>
+                        <input type="password" name="nova_senha" minlength="6" autocomplete="new-password" required>
+                    </div>
+
+                    <div class="input-resp">
+                        <label>Confirmar Nova Senha</label>
+                        <input type="password" name="confirmar_senha" minlength="6" autocomplete="new-password"
+                            required>
+                    </div>
+                </div>
+
+                <small class="config-dica">Mínimo de 6 caracteres.</small>
+
+                <!-- Botão para salvar nova senha -->
+                <div class="config-acoes">
+                    <button type="submit" class="senha-btn">
+                        <i class="bi bi-lock-fill"></i> Alterar Senha
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Card com atalho para gerenciamento de usuários (visível apenas para administradores) -->
+        {% if perfil == 'admin' %}
+        <div class="config-card full-width">
+            <h3><i class="bi bi-people-fill"></i> Equipe e Usuários</h3>
+            <div class="equipe-atalho">
+                <p>Crie acessos para sua equipe e defina quem é administrador, gerente ou operador.</p>
+                <a href="{{ url_for('usuarios') }}" class="salvar-btn"><i class="bi bi-people-fill"></i> Gerenciar
+                    Usuários</a>
             </div>
-            {% endif %}
+        </div>
+        {% endif %}
 
-            <!-- Card de preferências globais para notificações do sistema -->
-            <div class="config-card full-width" id="notificacoes">
-                <h3><i class="bi bi-bell-fill"></i> Notificações</h3>
-                <p class="config-dica">
-                    Define o que aparece no sininho do topo e nos alertas do dashboard. Vale para toda a equipe.
-                    {% if not pode_gerenciar %}Somente administradores e gerentes podem alterar.{% endif %}
-                </p>
+        <!-- Card de preferências globais para notificações do sistema -->
+        <div class="config-card full-width" id="notificacoes">
+            <h3><i class="bi bi-bell-fill"></i> Notificações</h3>
+            <p class="config-dica">
+                Define o que aparece no sininho do topo e nos alertas do dashboard. Vale para toda a equipe.
+                {% if not pode_gerenciar %}Somente administradores e gerentes podem alterar.{% endif %}
+            </p>
 
-                <!-- Formulário para configurar tipos de notificações e margem de alerta -->
-                <form method="POST" action="{{ url_for('salvar_notificacoes') }}">
-                    <fieldset class="empresa-fieldset" {{ 'disabled' if not pode_gerenciar }}>
+            <!-- Formulário para configurar tipos de notificações e margem de alerta -->
+            <form method="POST" action="{{ url_for('salvar_notificacoes') }}">
+                <fieldset class="empresa-fieldset" {{ 'disabled' if not pode_gerenciar }}>
                     <div class="preferencias">
                         <!-- Iteração sobre os tipos de notificação configuráveis -->
                         {% for coluna, (padrao, rotulo, explicacao) in opcoes_notificacao.items() %}
@@ -183,8 +186,8 @@ Software HYPEX - Configurações
                                 <strong>{{ rotulo }}</strong>
                                 <small>{{ explicacao }}</small>
                             </span>
-                            <input type="checkbox" name="{{ coluna }}" value="1" class="notif-check"
-                                {{ 'checked' if notificacoes[coluna] }}>
+                            <input type="checkbox" name="{{ coluna }}" value="1" class="notif-check" {{ 'checked' if
+                                notificacoes[coluna] }}>
                             <span class="notif-switch" aria-hidden="true"></span>
                         </label>
                         {% endfor %}
@@ -193,7 +196,8 @@ Software HYPEX - Configurações
                         <label class="modo-escolha notif-opcao">
                             <span>
                                 <strong>Aviso antecipado</strong>
-                                <small>Avisar quando o saldo estiver até esta porcentagem acima do mínimo (0 = só no mínimo)</small>
+                                <small>Avisar quando o saldo estiver até esta porcentagem acima do mínimo (0 = só no
+                                    mínimo)</small>
                             </span>
                             <span class="notif-margem">
                                 <input type="number" name="notif_margem" min="0" max="200" step="5"
@@ -204,11 +208,16 @@ Software HYPEX - Configurações
 
                     <!-- Botão para salvar preferências de notificações -->
                     <div class="config-acoes">
-                        <button type="submit" class="salvar-btn"><i class="bi bi-check-lg"></i> Salvar Notificações</button>
+                        <button type="submit" class="salvar-btn"><i class="bi bi-check-lg"></i> Salvar
+                            Notificações</button>
                     </div>
-                    </fieldset>
-                </form>
-            </div>
+                </fieldset>
+            </form>
+        </div>
 
-            <!-- Card de preferências de interface (Tema escuro e Menu lateral) -->
-            <div class="config-card full-width">
+        <!-- Card de preferências de interface (Tema escuro e Menu lateral) -->
+        <div class="config-card full-width">
+    </section>
+</main>
+
+{% endblock %}
