@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
 {% block title %}
-Software HYPEX - Fornecedores
+Software HYPEX - Pedidos do Cliente
 {% endblock %}
 
+<!-- Folha de estilo para a página de pedidos de saída do cliente -->
 {% block css %}
 
 <link rel="stylesheet"
@@ -13,7 +14,9 @@ Software HYPEX - Fornecedores
 
 {% block content %}
 
+    <!-- Conteúdo principal da listagem de pedidos vinculados a um cliente -->
     <main id="orders-content">
+        <!-- Cabeçalho com título, botão de atalho para perfil e criação de novo pedido -->
         <header class="orders-header">
             <div class="header-info">
                 <h1><i class="bi bi-basket2-fill"></i> GESTÃO DE PEDIDOS</h1>
@@ -31,6 +34,7 @@ Software HYPEX - Fornecedores
             </a>
         </header>
 
+        <!-- Formulário da barra de pesquisa por número de documento -->
         <form method="GET" class="barra-pesquisa"
             action="{{ url_for('pedidos_clientes', cliente_id=cliente.id) }}">
 
@@ -53,6 +57,7 @@ Software HYPEX - Fornecedores
             </div>
         </form>
 
+        <!-- Tabela de listagem dos pedidos do cliente e ações rápidas (visualizar, editar, cancelar, excluir) -->
         <section class="lista-inventario">
             <table>
                 <thead>
@@ -67,6 +72,7 @@ Software HYPEX - Fornecedores
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- Iteração sobre a lista de pedidos do cliente -->
                     {% for pedido in pedidos %}
                     <tr>
                         <td class="ordem-id">#{{ pedido.id }}</td>
@@ -100,6 +106,7 @@ Software HYPEX - Fornecedores
                                 <i class="bi bi-pen-fill"></i>
                             </a>
 
+                            <!-- Modal e formulário para cancelamento do pedido -->
                             {% if pedido.status_pedido not in ('cancelado', 'concluido') %}
                             <form method="POST" id="cancelar-pedido-{{ pedido.id }}"
                                 action="{{ url_for('cancelar_pedido', id=pedido.id) }}"></form>
@@ -115,6 +122,7 @@ Software HYPEX - Fornecedores
                             {% endwith %}
                             {% endif %}
 
+                            <!-- Modal e formulário para exclusão definitiva do pedido -->
                             {% if pode_gerenciar %}
                             <form method="POST" id="excluir-pedido-{{ pedido.id }}"
                                 action="{{ url_for('deletar_pedido_saida', id=pedido.id) }}"></form>
@@ -132,6 +140,13 @@ Software HYPEX - Fornecedores
                             </div>
                         </td>
 
+                    </tr>
+                    {% else %}
+                    <!-- Estado vazio exibido caso o cliente não possua pedidos -->
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-4">
+                            Nenhum pedido encontrado para este cliente.
+                        </td>
                     </tr>
                     {% endfor %}
                 </tbody>

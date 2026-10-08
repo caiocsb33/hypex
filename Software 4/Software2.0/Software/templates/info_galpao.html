@@ -4,6 +4,7 @@
 Software HYPEX - Fornecedores
 {% endblock %}
 
+<!-- Folha de estilo para a página de perfil e edição do galpão -->
 {% block css %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='style_info_galpao.css') }}">
@@ -12,7 +13,9 @@ Software HYPEX - Fornecedores
 
 {% block content %}
 
+<!-- Conteúdo principal do formulário de perfil, gestão de funcionários e empilhadeiras do galpão -->
 <main id="config-conteudo">
+    <!-- Cabeçalho com título e grupo de botões de confirmação de ações -->
     <header class="config-texto">
         <div class="config-info">
             <h1><i class="bi-solid bi-house-gear-fill"></i> Informações do Galpão</h1>
@@ -20,7 +23,9 @@ Software HYPEX - Fornecedores
         </div>
 
 
+        <!-- Grupo de botões para exclusão e salvamento das alterações do galpão -->
         <div class="grupo-botoes">
+            <!-- Modal de confirmação para exclusão do galpão (restrito a administradores e gerentes) -->
             {% if pode_gerenciar %}
             <form method="POST" id="excluir-galpao" action="{{ url_for('deletar_galpao', galpao_id=galpao.id) }}"></form>
             {% with id='excluir-galpao', form_id='excluir-galpao',
@@ -32,6 +37,7 @@ Software HYPEX - Fornecedores
             {% include '_confirmar.html' %}
             {% endwith %}
             {% endif %}
+            <!-- Modal de confirmação para salvar as edições do formulário do galpão -->
             {% with id='salvar-galpao', form_id='form-galpao',
                     titulo='Salvar alterações',
                     texto='Salvar as alterações feitas no galpão ' ~ galpao.nome ~ '?',
@@ -43,38 +49,47 @@ Software HYPEX - Fornecedores
         </div>
     </header>
 
+    <!-- Formulário principal para alteração dos dados do galpão, localização e capacidade -->
     <form id="form-galpao" method="POST" enctype="multipart/form-data"
         action="{{ url_for('atualizar_galpao', galpao_id=galpao.id) }}">
 
         <section class="config-grid">
 
+            <!-- Card para upload e alteração da imagem do galpão e nome principal -->
             <div class="config-card">
+                <!-- Componente reutilizável para upload e visualização da foto do galpão -->
                 {% with campo_id='imagem-galpao', imagem=galpao.imagem,
                 padrao='imagemgalpao.png', alt=galpao.nome,
                 titulo='Imagem do Galpão' %}
                 {% include '_imagem_upload.html' %}
                 {% endwith %}
 
+                <!-- Campo: Nome do Galpão -->
                 <div class="input-resp mt-2">
                     <label>Nome do Galpão</label>
                     <input type="text" name="nome" value="{{ galpao.nome }}" placeholder="Nome do Galpão" required>
                 </div>
             </div>
 
+            <!-- Card de dados do responsável e status operacional do galpão -->
             <div class="config-card">
                 <h3><i class="bi-solid bi-person-fill-gear"></i> Perfil Administrador do Galpão</h3>
+                <!-- Campo: Nome do responsável -->
                 <div class="input-resp">
                     <label>Nome do Responsável</label>
                     <input type="text" name="nome_resp" value="{{ galpao.nome_resp }}">
                 </div>
+                <!-- Campo: E-mail do responsável -->
                 <div class="input-resp">
                     <label>E-mail de Contato</label>
                     <input type="email" name="email_resp" value="{{ galpao.email_resp }}">
                 </div>
+                <!-- Campo: Telefone de contato -->
                 <div class="input-resp">
                     <label>Telefone de Contato</label>
                     <input type="tel" name="telefone" value="{{ galpao.telefone | telefone if galpao.telefone else '' }}">
                 </div>
+                <!-- Campo: Seleção do status operacional do galpão -->
                 <div class="input-resp">
                     <label>Status do Galpão</label>
                     <select class="form-select" name="stats">
@@ -85,8 +100,10 @@ Software HYPEX - Fornecedores
                 </div>
             </div>
 
+            <!-- Card de endereço e configurações de capacidade física da estrutura -->
             <div class="config-card full-width">
                 <h3><i class="bi-solid bi-geo-alt-fill"></i> Localização e Estrutura</h3>
+                <!-- Campo: CEP com máscara para aceitar apenas dígitos -->
                 <div class="inputs-empresa">
                     <div class="input-resp">
                         <label>CEP</label>
@@ -95,6 +112,7 @@ Software HYPEX - Fornecedores
                             oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 8)" required>
                     </div>
                 </div>
+                <!-- Campos: Endereço, ponto de referência e área total em m² -->
                 <div class="inputs-empresa">
                     <div class="input-resp">
                         <label>Endereço</label>
@@ -109,6 +127,7 @@ Software HYPEX - Fornecedores
                         <input type="number" name="area_total" step="0.01" value="{{ galpao.area_total }}">
                     </div>
                 </div>
+                <!-- Campos: Métricas de capacidade física e indicador do total calculado -->
                 <div class="inputs-empresa">
                     <div class="input-resp">
                         <label>Caixas por Nível</label>
@@ -132,10 +151,12 @@ Software HYPEX - Fornecedores
         </section>
     </form>
 
+    <!-- Formulário para cadastro de nova empilhadeira vinculada ao galpão -->
     <form method="POST" action="{{ url_for('salvar_empilhadeira') }}">
         <input type="hidden" name="galpao_id" value="{{ galpao.id }}">
         <div class="cad-empilhadeira full-width sensor-conteudo">
             <h3><i class="bi-solid bi-car-front-fill"></i> Cadastrar Nova Empilhadeira</h3>
+            <!-- Grid de inputs com especificações da empilhadeira -->
             <div class="sensor-grid">
                 <div class="input-resp">
                     <label>Marca da Empilhadeira</label>
@@ -186,10 +207,12 @@ Software HYPEX - Fornecedores
         </div>
     </form>
 
+    <!-- Formulário para cadastro de novo funcionário vinculado ao galpão -->
     <form method="POST" action="{{ url_for('salvar_funcionario') }}">
         <input type="hidden" name="galpao_id" value="{{ galpao.id }}">
         <div class="config-card full-width sensor-conteudo">
             <h3><i class="bi-solid bi-person-vcard-fill"></i> Cadastrar Novo Funcionário para este Galpão</h3>
+            <!-- Grid de inputs com dados pessoais e contratuais do funcionário -->
             <div class="sensor-grid">
                 <div class="input-resp">
                     <label>Nome do Funcionário</label>
@@ -244,6 +267,8 @@ Software HYPEX - Fornecedores
             </div>
         </div>
     </form>
+
+    <!-- Tabela de listagem, edição e exclusão de funcionários do galpão -->
     <section class="config-card full-width ativar-sensor">
         <h3><i class="bi-solid bi-person-lines-fill"></i> Funcionários</h3>
         <div class="sensor-lista-container">
@@ -264,8 +289,10 @@ Software HYPEX - Fornecedores
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- Iteração sobre os funcionários alocados no galpão -->
                     {% for funcionario in funcionarios %}
                     <tr>
+                        <!-- Indicador visual de status (Ativo/Desligado) -->
                         <td>
                             {% if funcionario.ativo == 'ativo' %}
                             <span class="status-indicador ativo"></span>
@@ -292,6 +319,7 @@ Software HYPEX - Fornecedores
                             <span class="text-muted">Sem Empilhadeira</span>
                             {% endif %}
                         </td>
+                        <!-- Botão de edição e menu offcanvas do funcionário -->
                         <td>
                             <button type="button" class="acao-btn" data-bs-toggle="offcanvas"
                                 data-bs-target="#offcanvas-func-{{ funcionario.id }}"
@@ -299,6 +327,7 @@ Software HYPEX - Fornecedores
                                 <i class="bi-solid bi-pen-fill"></i>
                             </button>
 
+                            <!-- Painel lateral (offcanvas) para edição do funcionário -->
                             <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvas-func-{{ funcionario.id }}"
                                 aria-labelledby="label-func-{{ funcionario.id }}">
                                 <div class="offcanvas-header">
@@ -364,6 +393,7 @@ Software HYPEX - Fornecedores
                                 </div>
                             </div>
 
+                            <!-- Botão e modal de confirmação de exclusão do funcionário -->
                             {% if pode_gerenciar %}
                             <form method="POST" id="excluir-funcionario-{{ funcionario.id }}" action="{{ url_for('deletar_funcionario', funcionario_id=funcionario.id) }}">
                                 <input type="hidden" name="galpao_id" value="{{ galpao.id }}">
@@ -386,6 +416,7 @@ Software HYPEX - Fornecedores
         </div>
     </section>
 
+    <!-- Tabela de listagem, edição e exclusão de empilhadeiras do galpão -->
     <section class="config-card full-width ativar-sensor mt-4">
         <h3><i class="bi-solid bi-person-lines-fill"></i> Empilhadeiras</h3>
         <div class="sensor-lista-container">
@@ -403,8 +434,10 @@ Software HYPEX - Fornecedores
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- Iteração sobre as empilhadeiras cadastradas no galpão -->
                     {% for empilhadeira in empilhadeiras %}
                     <tr>
+                        <!-- Indicador visual do status operacional da empilhadeira -->
                         <td>
                             {% if empilhadeira.ativo == 'ativo' %}
                             <span class="status-indicador ativo"></span>
@@ -426,6 +459,7 @@ Software HYPEX - Fornecedores
                             <span class="text-muted">Sem operador</span>
                             {% endif %}
                         </td>
+                        <!-- Botão de edição e menu offcanvas da empilhadeira -->
                         <td>
                             <button type="button" class="acao-btn" data-bs-toggle="offcanvas"
                                 data-bs-target="#offcanvas-emp-{{ empilhadeira.id }}"
@@ -433,6 +467,7 @@ Software HYPEX - Fornecedores
                                 <i class="bi-solid bi-pen-fill"></i>
                             </button>
 
+                            <!-- Painel lateral (offcanvas) para edição da empilhadeira -->
                             <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvas-emp-{{ empilhadeira.id }}"
                                 aria-labelledby="label-emp-{{ empilhadeira.id }}">
                                 <div class="offcanvas-header">
@@ -501,6 +536,7 @@ Software HYPEX - Fornecedores
                                 </div>
                             </div>
 
+                            <!-- Botão e modal de confirmação de exclusão da empilhadeira -->
                             {% if pode_gerenciar %}
                             <form method="POST" id="excluir-empilhadeira-{{ empilhadeira.id }}" action="{{ url_for('deletar_empilhadeira', empilhadeira_id=empilhadeira.id) }}">
                                 <input type="hidden" name="galpao_id" value="{{ galpao.id }}">

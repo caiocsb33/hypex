@@ -2,14 +2,17 @@
 
 {% block title %}Clientes{% endblock %}
 
+# Define o arquivo CSS específico da página de clientes.
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style_clientes.css') }}">
 {% endblock %}
 
 {% block content %}
 
+<!-- Conteúdo principal do módulo de clientes -->
 <section id="cliente-conteudo">
 
+    <!-- Cabeçalho da página com título e botão de cadastro -->
     <header class="clientes">
 
         <div class="cliente-texto">
@@ -33,12 +36,14 @@
 
     </header>
 
+    <!-- Modal para formulário de cadastro de novo cliente -->
     <div class="modal fade" id="exampleModal" tabindex="-1">
 
         <div class="modal-dialog">
 
             <div class="modal-content">
 
+                <!-- Formulário para envio dos dados do novo cliente -->
                 <form method="POST" action="{{ url_for('salvar_cliente') }}">
 
                     <div class="modal-header">
@@ -53,8 +58,10 @@
                     </div>
 
 
+                    <!-- Campos de preenchimento do cliente -->
                     <div class="modal-body">
 
+                        <!-- Dados cadastrais básicos (Empresa e Documento) -->
                         <div class="row g-3">
 
                             <div class="col">
@@ -75,6 +82,7 @@
                         </div>
 
 
+                        <!-- Informações de contato (E-mail, Contato e Telefone) -->
                         <div class="row mt-3">
 
                             <div class="col">
@@ -104,6 +112,7 @@
                         </div>
 
 
+                        <!-- Endereço e status inicial -->
                         <div class="row mt-3">
 
                             <div class="col">
@@ -149,6 +158,7 @@
                             </div>
 
 
+                            <!-- Define o cliente como ativo por padrão -->
                             <input type="hidden" name="ativo" value="ativo">
 
                         </div>
@@ -156,6 +166,7 @@
                     </div>
 
 
+                    <!-- Ações do formulário -->
                     <div class="modal-footer">
 
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -181,6 +192,7 @@
 
     </div>
 
+    <!-- Barra de busca e filtros de busca -->
     <form method="GET" class="barra-pesquisa" action="{{ url_for('cliente') }}">
         <div class="caixa-pesquisa">
             <i class="bi bi-search"></i>
@@ -199,10 +211,12 @@
         </div>
     </form>
 
+    <!-- Lista em formato de cards com os clientes cadastrados -->
     <section class="clientes-cards">
 
         {% if clientes %}
 
+        <!-- Iteração sobre a lista de clientes -->
         {% for cliente in clientes %}
 
         <a href="/pedidos_cliente/{{ cliente.id }}" class="card-link">
@@ -210,9 +224,11 @@
             <div class="clientes-card {% if cliente.ativo != 'ativo' %}inactive{% endif %}">
 
 
+                <!-- Cabeçalho do card: Imagem/Ícone, Nome e Status -->
                 <div class="clientes-texto">
 
 
+                    <!-- Exibe foto do cliente ou ícone padrão com cor baseada no status -->
                     {% if cliente.imagem %}
                     <img class="cliente-foto" src="{{ url_for('static', filename='imagem/' + cliente.imagem) }}"
                         alt="" loading="lazy">
@@ -230,6 +246,7 @@
                     {% endif %}
 
 
+                    <!-- Identificação do cliente e pessoa de contato -->
                     <div class="clientes-titulo">
 
                         <h2 class="cliente-nome">
@@ -243,6 +260,7 @@
                     </div>
 
 
+                    <!-- Badge indicativo de status do cliente -->
                     <span class="status-cliente
                                 {% if cliente.ativo == 'ativo' %}
                                     status-ativo
@@ -257,6 +275,7 @@
                 </div>
 
 
+                <!-- Detalhes de contato e localização -->
                 <div class="cards-info-clientes">
 
                     <p class="contact-detail">
@@ -289,6 +308,7 @@
                 </div>
 
 
+                <!-- Indicadores de métricas do cliente (Pedidos e Gastos) -->
                 <div class="card-detalhes-clientes">
 
 
@@ -330,6 +350,7 @@
         {% endfor %}
 
 
+        <!-- Estado vazio: Exibido quando nenhum cliente for encontrado -->
         {% else %}
 
         <div class="text-center mt-5 w-100">
@@ -353,11 +374,14 @@
 
 </section>
 
+<!-- Scripts auxiliares para formatação e limpeza de campos de entrada -->
 <script>
+    // Remove qualquer caractere não numérico digitado no campo.
     function somenteNumeros(input) {
         input.value = input.value.replace(/\D/g, '');
     }
 
+    // Aplica a restrição de apenas números aos campos do formulário.
     document.getElementById("cpf").addEventListener("input", function () {
         somenteNumeros(this);
     });

@@ -11,26 +11,25 @@ Software HYPEX - Pedido de Entrada
 {% block content %}
 
 <main id="config-conteudo">
+    <!-- Cabeçalho da página -->
     <header class="config-texto">
         <div class="config-info">
             <h1><i class="bi bi-basket2-fill"></i> PEDIDO DE FORNECEDOR (ENTRADA)</h1>
             <p>Selecione o fornecedor, o galpão de destino e adicione os produtos</p>
         </div>
 
-
         <button class="salvar-btn" form="form-fechar-pedido" type="submit">Fechar Pedido</button>
     </header>
 
     <section class="config-grid">
 
+        <!-- Card 1: Dados do Fornecedor e Documento Fiscal -->
         <div class="config-card">
             <h3><i class="bi bi-file-earmark-text-fill"></i> Fornecedor e Documento</h3>
 
             <form id="form-fechar-pedido" method="POST" action="{{ url_for('salvar_pedido_entrada') }}">
-                <input type="hidden" name="fornecedor_id" id="fornecedor-do-pedido"
-                    value="{{ fornecedor_id or '' }}">
-                <input type="hidden" name="galpao_id" id="galpao-do-pedido"
-                    value="{{ galpao_id or '' }}">
+                <input type="hidden" name="fornecedor_id" id="fornecedor-do-pedido" value="{{ fornecedor_id or '' }}">
+                <input type="hidden" name="galpao_id" id="galpao-do-pedido" value="{{ galpao_id or '' }}">
 
                 <div class="inputs-empresa">
                     <div class="input-resp">
@@ -50,6 +49,7 @@ Software HYPEX - Pedido de Entrada
             </form>
         </div>
 
+        <!-- Card 2: Destino e Seleção de Produtos -->
         <div class="config-card">
             <h3><i class="bi bi-geo-alt-fill"></i> Destino e Produtos</h3>
 
@@ -60,7 +60,7 @@ Software HYPEX - Pedido de Entrada
                     <select name="fornecedor_id" id="select-fornecedor" required>
                         <option value="">Selecione o fornecedor</option>
                         {% for fornecedor in fornecedores %}
-                        <option value="{{ fornecedor.id }}" {% if fornecedor_id==fornecedor.id %}selected{% endif %}>
+                        <option value="{{ fornecedor.id }}" {% if fornecedor_id == fornecedor.id %}selected{% endif %}>
                             {{ fornecedor.nome }}
                         </option>
                         {% endfor %}
@@ -72,7 +72,7 @@ Software HYPEX - Pedido de Entrada
                     <select name="galpao_id" id="select-galpao" required>
                         <option value="">Selecione o galpão</option>
                         {% for g in galpoes %}
-                        <option value="{{ g.id }}" {% if galpao_id==g.id %}selected{% endif %}>
+                        <option value="{{ g.id }}" {% if galpao_id == g.id %}selected{% endif %}>
                             {{ g.nome }}{% if g.stats %} - {{ g.stats }}{% endif %}
                         </option>
                         {% endfor %}
@@ -87,7 +87,7 @@ Software HYPEX - Pedido de Entrada
                         <option value="{{ produto.id }}"
                             data-fornecedor="{{ produto.fornecedor_id or '' }}"
                             data-preco="{{ '%.2f' | format(produto.preco_custo) }}"
-                            {% if produto_id==produto.id %}selected{% endif %}>
+                            {% if produto_id == produto.id %}selected{% endif %}>
                             {% if produto.sku %}{{ produto.sku }} - {% endif %}{{ produto.nome }}
                             (custo R$ {{ produto.preco_custo | moeda }}){% if not produto.ativo %} — inativo{% endif %}
                         </option>
@@ -98,13 +98,11 @@ Software HYPEX - Pedido de Entrada
                 <div class="inputs-empresa mt-2">
                     <div class="input-resp">
                         <label>Preço de Custo Unitário (R$)</label>
-                        <input type="number" name="preco_unitario" id="campo-preco"
-                            step="0.01" min="0" placeholder="0,00" required>
+                        <input type="number" name="preco_unitario" id="campo-preco" step="0.01" min="0" placeholder="0,00" required>
                     </div>
                     <div class="input-resp">
                         <label>Quantidade de Entrada</label>
-                        <input type="number" name="quantidade" id="campo-quantidade"
-                            min="1" step="1" value="1" required>
+                        <input type="number" name="quantidade" id="campo-quantidade" min="1" step="1" value="1" required>
                     </div>
                 </div>
 
@@ -114,6 +112,7 @@ Software HYPEX - Pedido de Entrada
             </form>
         </div>
 
+        <!-- Card 3: Tabela de Itens Adicionados -->
         <div class="config-card full-width mt-2">
             <h3><i class="bi bi-cart-check-fill"></i> Itens da Nota/Pedido</h3>
 
@@ -138,8 +137,7 @@ Software HYPEX - Pedido de Entrada
                             <td>R$ {{ item.preco_unitario | moeda }}</td>
                             <td>R$ {{ (item.quantidade * item.preco_unitario) | moeda }}</td>
                             <td>
-                                <form method="POST"
-                                    action="{{ url_for('remover_item_entrada', indice=loop.index0) }}">
+                                <form method="POST" action="{{ url_for('remover_item_entrada', indice=loop.index0) }}">
                                     <input type="hidden" name="fornecedor_id" value="{{ fornecedor_id or '' }}">
                                     <input type="hidden" name="galpao_id" value="{{ galpao_id or '' }}">
                                     <button type="submit" class="btn btn-sm btn-outline-danger">
@@ -159,6 +157,7 @@ Software HYPEX - Pedido de Entrada
                 </table>
             </div>
 
+            <!-- Rodapé do Card: Ações de Limpeza e Total -->
             <div class="row mt-4 align-items-center">
                 <div class="col-md-6">
                     {% if itens %}

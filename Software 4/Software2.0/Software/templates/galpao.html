@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
 {% block title %}
-Software HYPEX - Fornecedores
+Software HYPEX - Galpões
 {% endblock %}
 
+<!-- Folha de estilo para a página de galpões -->
 {% block css %}
 
 <link rel="stylesheet" href="{{ url_for('static', filename='style_galpao.css') }}">
@@ -11,8 +12,10 @@ Software HYPEX - Fornecedores
 {% endblock %}
 
 {% block content %}
+<!-- Conteúdo principal do gerenciamento de galpões -->
 <main id="galpao-conteudo">
 
+    <!-- Cabeçalho com título, descrição e modal para cadastro de novo galpão -->
     <header class="galpao">
         <div class="galpao-texto">
             <h1><i class="bi-solid bi-house-fill"></i> GALPÕES</h1>
@@ -20,6 +23,7 @@ Software HYPEX - Fornecedores
         </div>
 
 
+        <!-- Botão e modal de cadastro de novo galpão -->
         <div id="add-galpao">
             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
                 <i class="bi-solid bi-plus-lg"></i> Adicionar Galpão
@@ -34,8 +38,10 @@ Software HYPEX - Fornecedores
                                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                             </div>
 
+                            <!-- Campos para preenchimento dos dados do novo galpão -->
                             <div class="modal-body">
 
+                                <!-- Nome do galpão e status de operação -->
                                 <div class="row g-3">
                                     <div class="col">
                                         <h6>Nome do Galpão</h6>
@@ -52,6 +58,7 @@ Software HYPEX - Fornecedores
                                     </div>
                                 </div>
 
+                                <!-- Dados de contato do responsável -->
                                 <div class="row g-3 mt-2">
                                     <div class="col-md-6">
                                         <h6>E-mail Responsável</h6>
@@ -64,6 +71,7 @@ Software HYPEX - Fornecedores
                                     </div>
                                 </div>
 
+                                <!-- Endereço e ponto de referência -->
                                 <div class="row mt-3">
                                     <div class="col-12">
                                         <h6>Endereço</h6>
@@ -76,6 +84,7 @@ Software HYPEX - Fornecedores
                                     </div>
                                 </div>
 
+                                <!-- Cidade e Estado (UF) -->
                                 <div class="row mt-3">
                                     <div class="col-md-6">
                                         <h6>Cidade</h6>
@@ -92,6 +101,7 @@ Software HYPEX - Fornecedores
                                     </div>
                                 </div>
 
+                                <!-- CEP, Área total e Telefone -->
                                 <div class="row mt-3">
                                     <div class="col">
 
@@ -115,6 +125,7 @@ Software HYPEX - Fornecedores
                                     </div>
                                 </div>
 
+                                <!-- Configurações de capacidade física (Caixas por nível e Total de prateleiras) -->
                                 <div class="row mt-3">
                                     <div class="col">
                                         <h6>Caixas por Nível</h6>
@@ -127,6 +138,7 @@ Software HYPEX - Fornecedores
                                     </div>
                                 </div>
 
+                                <!-- Níveis de altura das prateleiras -->
                                 <div class="row mt-3">
                                     <div class="col">
                                         <h6>Andar de Prateleiras</h6>
@@ -136,6 +148,7 @@ Software HYPEX - Fornecedores
 
                             </div>
 
+                            <!-- Ações do modal (Fechar e Salvar) -->
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
                                 <button type="submit" class="btn btn-primary">Salvar</button>
@@ -146,6 +159,7 @@ Software HYPEX - Fornecedores
             </form>
     </header>
 
+    <!-- Formulário da barra de pesquisa e filtros para a listagem de galpões -->
     <form method="GET" class="barra-pesquisa" action="{{ url_for('galpao') }}">
         <div class="caixa-pesquisa">
             <i class="bi bi-search"></i>
@@ -164,11 +178,14 @@ Software HYPEX - Fornecedores
         </div>
     </form>
 
+    <!-- Grade de exibição dos cards de galpões cadastrados -->
     <section class="cards-galpao">
         {% if galpoes %}
+        <!-- Iteração sobre a lista de galpões cadastrados -->
         {% for galpao in galpoes %}
         <a href="{{ url_for('estoque_galpao', galpao_id=galpao.id) }}" class="link-estoque">
             <div class="galpao-card">
+                <!-- Cabeçalho do card com foto/ícone, nome do galpão, responsável e badge de status -->
                 <div class="galpao-texto">
                     {% if galpao.imagem %}
                     <img class="galpao-foto" src="{{ url_for('static', filename='imagem/' + galpao.imagem) }}" alt=""
@@ -180,6 +197,7 @@ Software HYPEX - Fornecedores
                         <h2 class="nome-galpao">{{ galpao.nome }}</h2>
                         <p class="galpao-resp">Responsável: {{ galpao.nome_resp }}</p>
                     </div>
+                    <!-- Badge do estado operacional do galpão -->
                     <span class="status-galpao 
                         {% if galpao.stats == 'ativo' %} status-ativo
                         {% elif galpao.stats == 'manutencao' %} status-manutencao
@@ -198,6 +216,7 @@ Software HYPEX - Fornecedores
                     </span>
                 </div>
 
+                <!-- Detalhes de total de itens, telefone e localização -->
                 <div class="cards-info-galpao">
                     <p class="detalhe-galpao"><i class="bi bi-upc"></i> {{ galpao.total_produtos | quantidade }} itens
                     </p>
@@ -207,6 +226,7 @@ Software HYPEX - Fornecedores
                         galpao.estado }}</p>
                 </div>
 
+                <!-- Estatísticas de percentual de ocupação e área total -->
                 <div class="cards-detalhe-galpao">
                     <div class="stats-galpao">
                         <span class="stats-ocupa">Ocupação</span>
@@ -223,9 +243,8 @@ Software HYPEX - Fornecedores
 
         {% endfor %}
 
-
-
         {% else %}
+        <!-- Estado vazio exibido caso não haja galpões cadastrados ou encontrados -->
         <div class="text-center mt-5 w-100">
             <i class="bi bi-house-add-fill" style="font-size: 60px; color: #ccc;"></i>
             <h3 class="mt-3">Nenhum Galpao cadastrado</h3>
@@ -234,4 +253,5 @@ Software HYPEX - Fornecedores
         {% endif %}
 
     </section>
-    {% endblock %}
+</main>
+{% endblock %}

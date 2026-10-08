@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
 import os
 import io
 
-app = Flask(__name__)
+app = Flask(__name__) 
 
 
 class SessaoBanco(CallbackDict, SessionMixin):

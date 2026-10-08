@@ -1,17 +1,20 @@
 {% extends "base.html" %}
 
 {% block title %}
-Software HYPEX - Produto
+Software HYPEX - Gestão de Produtos
 {% endblock %}
 
+<!-- Folha de estilo para a página de perfil e edição do produto -->
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style_info_galpao.css') }}">
 {% endblock %}
 
 {% block content %}
 
+<!-- Conteúdo principal do formulário de produto, saldos por galpão e histórico de alterações -->
 <main id="config-conteudo">
 
+    <!-- Cabeçalho com título e grupo de botões de ações do produto -->
     <header class="config-texto">
 
         <div class="config-info">
@@ -28,10 +31,10 @@ Software HYPEX - Produto
         </div>
 
 
-
+        <!-- Grupo de botões para exclusão e salvamento das alterações do produto -->
         <div class="grupo-botoes">
 
-
+            <!-- Modal de confirmação de exclusão do produto (restrito a administradores e gerentes) -->
             {% if pode_gerenciar %}
             {% with id='excluir-produto',
                     form_id='form-excluir',
@@ -44,6 +47,7 @@ Software HYPEX - Produto
             {% endwith %}
             {% endif %}
 
+            <!-- Botão de submissão do formulário do produto -->
             <button
                 type="submit"
                 form="form-produto"
@@ -57,6 +61,7 @@ Software HYPEX - Produto
 
     </header>
 
+    <!-- Formulário principal para atualização cadastral, imagem e parâmetros do produto -->
     <form
         id="form-produto"
         method="POST"
@@ -64,13 +69,17 @@ Software HYPEX - Produto
         enctype="multipart/form-data">
 
         <section class="config-grid">
+            <!-- Card da imagem do produto e código de barras -->
             <div class="config-card">
 
+                <!-- Componente reutilizável para upload e visualização da foto do produto -->
                 {% with campo_id='imagem-produto', imagem=produto.imagem,
                         padrao='imagemproduto.png', alt=produto.nome,
                         titulo='Imagem do Produto' %}
                     {% include '_imagem_upload.html' %}
                 {% endwith %}
+
+                <!-- Campo: Código de Barras (EAN-13) -->
                 <div class="input-resp">
 
                     <label for="codigo_barras">
@@ -88,12 +97,16 @@ Software HYPEX - Produto
                 </div>
 
             </div>
+
+            <!-- Card de identificação básica: Nome, SKU, Categoria e Tipo de Carga -->
             <div class="config-card">
 
                 <h3>
                     <i class="bi bi-info-circle-fill"></i>
                     Identificação Básica
                 </h3>
+
+                <!-- Campo: Nome do Produto -->
                 <div class="input-resp">
 
                     <label for="nome">
@@ -109,6 +122,8 @@ Software HYPEX - Produto
                         required>
 
                 </div>
+
+                <!-- Campo: SKU (Código Interno) -->
                 <div class="input-resp">
 
                     <label for="sku">
@@ -124,6 +139,8 @@ Software HYPEX - Produto
                         required>
 
                 </div>
+
+                <!-- Campo: Categoria -->
                 <div class="input-resp">
 
                     <label for="categoria">
@@ -138,6 +155,8 @@ Software HYPEX - Produto
                         placeholder="Eletrônicos">
 
                 </div>
+
+                <!-- Campo: Tipo de Carga -->
                 <div class="input-resp">
 
                     <label for="tipo">
@@ -177,14 +196,18 @@ Software HYPEX - Produto
                 </div>
 
             </div>
+
+            <!-- Card de detalhes financeiros, físicos e estoque mínimo -->
             <div class="config-card full-width">
 
                 <h3>
                     <i class="bi bi-currency-dollar"></i>
                     Detalhes Financeiros e Físicos
                 </h3>
+
                 <div class="inputs-empresa">
 
+                    <!-- Campo: Preço de Custo -->
                     <div class="input-resp">
 
                         <label for="preco_custo">
@@ -201,8 +224,7 @@ Software HYPEX - Produto
 
                     </div>
 
-
-
+                    <!-- Campo: Preço de Venda -->
                     <div class="input-resp">
 
                         <label for="preco_venda">
@@ -219,8 +241,7 @@ Software HYPEX - Produto
 
                     </div>
 
-
-
+                    <!-- Campo: Peso em KG -->
                     <div class="input-resp">
 
                         <label for="peso">
@@ -237,8 +258,7 @@ Software HYPEX - Produto
 
                     </div>
 
-
-
+                    <!-- Campo: Volume em m³ -->
                     <div class="input-resp">
 
                         <label for="volume">
@@ -257,10 +277,9 @@ Software HYPEX - Produto
 
                 </div>
 
-
                 <div class="inputs-empresa">
 
-
+                    <!-- Campo: Quantidade Mínima -->
                     <div class="input-resp">
 
                         <label for="quantidade_minimo">
@@ -277,8 +296,7 @@ Software HYPEX - Produto
 
                     </div>
 
-
-
+                    <!-- Campo: Quantidade Total (Consolidada de todos os galpões - Somente Leitura) -->
                     <div class="input-resp">
 
                         <label for="quantidade">
@@ -294,7 +312,7 @@ Software HYPEX - Produto
 
                     </div>
 
-
+                    <!-- Campo: Fornecedor (Definido pelo vínculo do produto - Somente Leitura) -->
                     <div class="input-resp">
 
                         <label for="fornecedor">
@@ -310,6 +328,7 @@ Software HYPEX - Produto
 
                     </div>
 
+                    <!-- Campo: Itens por Caixa -->
                     <div class="input-resp">
 
                         <label for="item_por_caixa">
@@ -328,7 +347,7 @@ Software HYPEX - Produto
 
                 </div>
 
-
+                <!-- Campo: Descrição detalhada do produto -->
                 <div class="input-resp mt-3">
 
                     <label for="descricao">
@@ -349,7 +368,7 @@ Software HYPEX - Produto
 
     </form>
 
-
+    <!-- Tabela para visualização e ajuste manual de saldo por galpão -->
     <section class="config-card full-width mt-4">
 
         <h3><i class="bi bi-box-seam-fill"></i> Saldo por Galpão</h3>
@@ -367,6 +386,7 @@ Software HYPEX - Produto
                     </tr>
                 </thead>
                 <tbody>
+                    <!-- Iteração sobre a lista de saldos por galpão -->
                     {% for saldo in saldos %}
                     <tr>
                         <td>{{ saldo.galpao_nome }}</td>
@@ -378,6 +398,7 @@ Software HYPEX - Produto
                         </td>
                         <td>{{ "%.0f" | format(saldo.estoque_minimo or 0) }}</td>
                         <td colspan="3">
+                            <!-- Formulário para ajuste de saldo individual no galpão -->
                             <form method="POST"
                                 action="{{ url_for('ajustar_estoque_produto', id=produto.id) }}"
                                 class="d-flex gap-2">
@@ -394,6 +415,7 @@ Software HYPEX - Produto
                         </td>
                     </tr>
                     {% else %}
+                    <!-- Estado vazio exibido caso o produto não tenha saldo em nenhum galpão -->
                     <tr>
                         <td colspan="6" class="text-center text-muted py-4">
                             Este produto ainda não tem saldo em nenhum galpão.
@@ -404,6 +426,7 @@ Software HYPEX - Produto
             </table>
         </div>
 
+        <!-- Formulário para inclusão de saldo inicial em um novo galpão -->
         <div class="mt-3">
             <h6>Lançar saldo em outro galpão</h6>
             <form method="POST" action="{{ url_for('ajustar_estoque_produto', id=produto.id) }}"
@@ -423,18 +446,21 @@ Software HYPEX - Produto
         </div>
 
     </section>
+
+    <!-- Formulário invisível para exclusão do produto via modal -->
     <form
         id="form-excluir"
         method="POST"
         action="{{ url_for('excluir_produto', id=produto.id) }}">
     </form>
+
+    <!-- Seção de auditoria: Tabela do histórico de logs de alterações do produto -->
     <section class="config-card full-width ativar-sensor mt-4">
 
         <h3>
             <i class="bi bi-clock-history"></i>
             Histórico de Alterações
         </h3>
-
 
         <div class="sensor-lista-container">
 
@@ -455,9 +481,9 @@ Software HYPEX - Produto
 
                 </thead>
 
-
                 <tbody>
 
+                    <!-- Iteração sobre os logs de histórico cadastrados -->
                     {% for log in historico %}
 
                     <tr>
@@ -468,12 +494,11 @@ Software HYPEX - Produto
                             </strong>
                         </td>
 
-
                         <td>
                             {{ log.usuario_nome }}
                         </td>
 
-
+                        <!-- Badge do tipo de ação realizada -->
                         <td>
 
                             {% if log.acao == 'Criar' %}
@@ -504,16 +529,13 @@ Software HYPEX - Produto
 
                         </td>
 
-
                         <td>
                             {{ log.modulo }}
                         </td>
 
-
                         <td class="text-muted">
                             {{ log.descricao }}
                         </td>
-
 
                         <td>
 
@@ -525,9 +547,9 @@ Software HYPEX - Produto
 
                     </tr>
 
-
                     {% else %}
 
+                    <!-- Estado vazio exibido caso não haja alterações registradas -->
                     <tr>
 
                         <td

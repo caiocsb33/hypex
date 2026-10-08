@@ -4,6 +4,7 @@
 Software HYPEX - Fornecedores
 {% endblock %}
 
+<!-- Folha de estilo para a página de catálogo de itens do fornecedor -->
 {% block css %}
 
 <link rel="stylesheet"
@@ -13,8 +14,10 @@ Software HYPEX - Fornecedores
 
 {% block content %}
 
+    <!-- Conteúdo principal do catálogo de itens vinculados ao fornecedor -->
     <main id="inventario-conteudo">
 
+        <!-- Cabeçalho com título, ação de navegação para perfil e modal de cadastro de novo produto -->
         <header class="inventario-texto">
             <div class="inventario-info">
                 <h1><i class="bi bi-box-seam-fill"></i> Itens por Fornecedor</h1>
@@ -27,6 +30,7 @@ Software HYPEX - Fornecedores
             </div>
 
 
+            <!-- Modal e botão para cadastro de novos produtos no fornecedor -->
             <div id="add-produto">
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                     data-bs-target="#modalAdicionarProduto">
@@ -50,6 +54,7 @@ Software HYPEX - Fornecedores
                                     aria-label="Fechar"></button>
                             </div>
 
+                            <!-- Formulário interno do modal com campos do produto -->
                             <div class="modal-body">
                                 <div class="row mt-3">
                                     <div class="col">
@@ -146,6 +151,7 @@ Software HYPEX - Fornecedores
             </div>
         </header>
 
+        <!-- Formulário da barra de busca, filtros e exportação do catálogo de itens -->
         <form method="GET" class="barra-pesquisa" action="{{ url_for('itens_fornecedor', fornecedor_id=fornecedor.id) }}">
             <div class="caixa-pesquisa">
                 <i class="bi bi-search"></i>
@@ -161,6 +167,7 @@ Software HYPEX - Fornecedores
             </div>
         </form>
 
+        <!-- Tabela com a listagem de produtos fornecidos e ações rápidas (editar, desativar, excluir) -->
         <section class="inventario-lista">
             <table id="tabelaProdutos">
                 <thead>
@@ -177,6 +184,7 @@ Software HYPEX - Fornecedores
                 </thead>
                 <tbody>
                     {% if fornecedores_produtos %}
+                    <!-- Iteração sobre os produtos vinculados ao fornecedor -->
                     {% for item in fornecedores_produtos %}
                     <tr class="{{ 'linha-inativa' if not item.ativo }}">
                         <td class="produto-info">
@@ -195,6 +203,7 @@ Software HYPEX - Fornecedores
                         <td>{{ (item.desconto or 0) | moeda }}%</td>
                         <td>{{ item.quantidade_minima | quantidade }} un</td>
                         <td>{{ item.prazo_entrega_dias }} dias</td>
+                        <!-- Indicador de situação (Ativo/Inativo) -->
                         <td>
                             {% if item.ativo %}
                             <span class="selo-situacao ativo"><i class="bi bi-circle-fill"></i> Ativo</span>
@@ -202,6 +211,7 @@ Software HYPEX - Fornecedores
                             <span class="selo-situacao inativo"><i class="bi bi-circle-fill"></i> Inativo</span>
                             {% endif %}
                         </td>
+                        <!-- Célula com grupo de botões de ações para a linha -->
                         <td class="acao-estoque">
                             <div class="acoes-linha">
                             <a href="{{ url_for('editar_produto', id=item.produto_id) }}" class="acao-btn btn-editar"
@@ -246,6 +256,7 @@ Software HYPEX - Fornecedores
                     </tr>
                     {% endfor %}
                     {% else %}
+                    <!-- Estado vazio exibido quando não há produtos vinculados ao fornecedor -->
                     <tr>
                         <td colspan="8" class="text-center text-muted py-4">
                             <i class="bi bi-inbox fs-4 d-block mb-2"></i>

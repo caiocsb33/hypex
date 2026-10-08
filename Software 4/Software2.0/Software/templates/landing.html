@@ -12,6 +12,7 @@
 
 <body>
 
+    <!-- Cabeçalho de Navegação Principal -->
     <header>
 
         <div id="logo">
@@ -63,6 +64,8 @@
         </nav>
 
     </header>
+
+    <!-- Seção Principal (Hero Banner) -->
     <main class="main-principal">
         <div class="container">
             <aside class="main-text">
@@ -82,6 +85,8 @@
             </aside>
         </div>
     </main>
+
+    <!-- Carrossel Infinito de Logotipos de Clientes/Parceiros -->
     <section class="logos-section">
         <div class="logos-container">
 
@@ -114,6 +119,8 @@
                 <div class="logo-item">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQrwFzwsq9ZpQqNN3JKoy1fWN7mZ9J-zd-HZoVjqY1_Cg&s=10" alt="Intel">
                 </div>
+
+                <!-- Duplicação dos itens para loop de animação contínua -->
                 <div class="logo-item">
                     <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTde-qCHdLYA4rOn48eCLejNL2VCIJ9NGmvl3AULxGNEw&s=10" alt="Penha">
                 </div>
@@ -141,6 +148,7 @@
         </div>
     </section>
 
+    <!-- Seção de Recursos de Decisão e Desempenho -->
     <section id="DecisoesEstoque">
         <div class="decisoes-container">
 
@@ -209,6 +217,8 @@
             </div>
         </div>
     </section>
+
+    <!-- Seção de Soluções Estratégicas -->
     <section id="Solucoes">
         <div class="solucoes-wrapper">
             <div class="solucoes-header-clean">
@@ -271,6 +281,8 @@
             </div>
         </div>
     </section>
+
+    <!-- Seção de Tabela de Preços e Planos de Assinatura -->
     <section id="Planos">
         <div class="aurora-bg-wrapper">
             <div class="aurora-shape shape-gold"></div>
@@ -298,6 +310,7 @@
 
             <div class="pricing-grid">
 
+                <!-- Plano Iniciante -->
                 <div class="pricing-card">
                     <div class="card-aurora-glow"></div>
                     <div class="card-content">
@@ -346,6 +359,7 @@
                     </div>
                 </div>
 
+                <!-- Plano Pro (Destaque) -->
                 <div class="pricing-card featured">
                     <div class="card-aurora-glow"></div>
                     <div class="popular-badge">MAIS POPULAR</div>
@@ -403,6 +417,7 @@
                     </div>
                 </div>
 
+                <!-- Plano Corporativo -->
                 <div class="pricing-card">
                     <div class="card-aurora-glow"></div>
                     <div class="card-content">
@@ -455,9 +470,7 @@
         </div>
     </section>
 
-
-    </section>
-
+    <!-- Seção Sobre a Empresa -->
     <section id="SobreNos">
         <div class="sobre-container">
 
@@ -516,6 +529,7 @@
         </div>
     </section>
 
+    <!-- Seção de Contato e Formulário -->
     <section id="Contato">
         <div class="contato-split-container">
 
@@ -587,9 +601,8 @@
 
         </div>
     </section>
-    </main>
-    </section>
 
+    <!-- Rodapé da Página -->
     <footer id="rodape">
         <div class="footer-container">
             <div class="footer-brand">
@@ -656,24 +669,26 @@
             </div>
         </div>
     </footer>
-</body>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-    const menuToggle = document.querySelector('.menu-toggle');
-    const menu = document.querySelector('.menu');
-    const menuLinks = document.querySelectorAll('.menu a');
 
-    menuToggle.addEventListener('click', () => {
-        menuToggle.classList.toggle('active');
-        menu.classList.toggle('active');
-    });
+    <!-- Scripts Bootstrap e comportamento interativo do menu mobile -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const menuToggle = document.querySelector('.menu-toggle');
+        const menu = document.querySelector('.menu');
+        const menuLinks = document.querySelectorAll('.menu a');
 
-    menuLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            menuToggle.classList.remove('active');
-            menu.classList.remove('active');
+        menuToggle.addEventListener('click', () => {
+            menuToggle.classList.toggle('active');
+            menu.classList.toggle('active');
         });
-    });
-</script>
+
+        menuLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                menuToggle.classList.remove('active');
+                menu.classList.remove('active');
+            });
+        });
+    </script>
+</body>
 
 </html>

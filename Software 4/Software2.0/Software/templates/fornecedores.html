@@ -4,6 +4,7 @@
 Software HYPEX - Fornecedores
 {% endblock %}
 
+<!-- Folha de estilo para a tela de fornecedores -->
 {% block css %}
 
 <link rel="stylesheet"
@@ -13,8 +14,10 @@ Software HYPEX - Fornecedores
 
 {% block content %}
 
+    <!-- Conteúdo principal do módulo de fornecedores -->
     <main id="fornecedor-conteudo">
 
+        <!-- Cabeçalho com título e botão para abertura do modal de cadastro -->
         <header class="fornecedor-texto">
 
             <div class="fornecedor-info">
@@ -23,6 +26,7 @@ Software HYPEX - Fornecedores
             </div>
 
 
+            <!-- Botão e modal de cadastro rápido de novo fornecedor -->
             <div id="add-forn">
                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
                     <i class="bi-solid bi-plus-lg"></i> Adicionar Fornecedor
@@ -37,7 +41,9 @@ Software HYPEX - Fornecedores
                                     <button type="button" class="btn-close" data-bs-dismiss="modal"
                                         aria-label="Close"></button>
                                 </div>
+                                <!-- Campos de formulário do modal de fornecedor -->
                                 <div class="modal-body">
+                                    <!-- Nome da empresa e CNPJ -->
                                     <div class="row g-3">
                                         <div class="col">
                                             <h6>Nome da Empresa</h6>
@@ -48,6 +54,7 @@ Software HYPEX - Fornecedores
                                             <input type="text" name="cnpj" class="form-control" aria-label="Last name">
                                         </div>
                                     </div>
+                                    <!-- E-mail de contato -->
                                     <div class="row mt-3">
                                         <div class="col">
                                             <h6>E-mail</h6>
@@ -55,6 +62,7 @@ Software HYPEX - Fornecedores
                                                 aria-label="First name">
                                         </div>
                                     </div>
+                                    <!-- Nome do contato e telefone -->
                                     <div class="row mt-3">
                                         <div class="col">
                                             <h6>Nome do Contato</h6>
@@ -67,6 +75,7 @@ Software HYPEX - Fornecedores
                                                 aria-label="Last name">
                                         </div>
                                     </div>
+                                    <!-- Status inicial (Ativo/Inativo) -->
                                     <div class="row mt-3">
                                         <div class="col">
                                             <h6>Ativo</h6>
@@ -77,6 +86,7 @@ Software HYPEX - Fornecedores
                                         </div>
                                     </div>
                                 </div>
+                                <!-- Ações do modal (Fechar e Salvar) -->
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary"
                                         data-bs-dismiss="modal">fechar</button>
@@ -90,6 +100,8 @@ Software HYPEX - Fornecedores
 
 
         </header>
+
+        <!-- Barra de pesquisa e inclusão de filtros de fornecedores -->
         <form method="GET" class="barra-pesquisa" action="{{ url_for('fornecedores') }}">
             <div class="caixa-pesquisa">
                 <i class="bi bi-search"></i>
@@ -108,13 +120,16 @@ Software HYPEX - Fornecedores
             </div>
         </form>
 
+        <!-- Grade de cards contendo a listagem dos fornecedores -->
         <section class="fornecedores-cards">
             {% if fornecedores %}
+            <!-- Iteração sobre a lista de fornecedores cadastrados -->
             {% for fornecedor in fornecedores %}
             <a href="/itens_fornecedores/{{ fornecedor.id }}" class="card-link">
 
                 <div class="fornecedor-card">
 
+                    <!-- Nome, pessoa de contato e badge de status -->
                     <div class="fornecedor-texto">
                         <span class="fornecedor-icone"><i class="bi-solid bi-building-fill"></i></span>
                         <div>
@@ -128,11 +143,13 @@ Software HYPEX - Fornecedores
                         </span>
                     </div>
 
+                    <!-- Dados detalhados de contato (E-mail e Telefone) -->
                     <div class="card-detalhe">
                         <p class="contato-detalhe"><i class="bi-solid bi-envelope-fill"></i> {{ fornecedor.email }}</p>
                         <p class="contato-detalhe"><i class="bi-solid bi-phone-fill"></i> {{ fornecedor.telefone | telefone if fornecedor.telefone else "—" }}</p>
                     </div>
 
+                    <!-- Métrica total de produtos vinculados a este fornecedor -->
                     <div class="card-produtos">
                         <span class="produtos-fornecedor">
                             {{ fornecedor.total_produtos }} produtos cadastrados
@@ -143,6 +160,7 @@ Software HYPEX - Fornecedores
             </a>
             {% endfor %}
             {% else %}
+            <!-- Estado vazio exibido caso não haja fornecedores cadastrados ou encontrados -->
             <div class="text-center mt-5 w-100">
                 <i class="bi bi-people" style="font-size: 60px; color: #ccc;"></i>
                 <h3 class="mt-3">Nenhum Fornecedor cadastrado</h3>
@@ -151,4 +169,4 @@ Software HYPEX - Fornecedores
             {% endif %}
         </section>
 
-{% endblock %}  
+{% endblock %}

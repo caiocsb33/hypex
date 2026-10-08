@@ -4,6 +4,7 @@
 Software HYPEX - Configurações
 {% endblock %}
 
+<!-- Folha de estilo para a página de configurações -->
 {% block css %}
 
 <link rel="stylesheet"
@@ -13,7 +14,9 @@ Software HYPEX - Configurações
 
 {% block content %}
 
+    <!-- Conteúdo principal do painel de configurações -->
     <main id="config-conteudo">
+        <!-- Cabeçalho da página de configurações -->
         <header class="config-texto">
             <div class="config-info">
                 <h1><i class="bi bi-gear-fill"></i> CONFIGURAÇÕES</h1>
@@ -22,18 +25,24 @@ Software HYPEX - Configurações
         </header>
 
 
+        <!-- Grid com os cards de configurações divididos por seções -->
         <section class="config-grid">
 
+            <!-- Card de gerenciamento dos dados e logo da empresa -->
             <div class="config-card full-width">
                 <h3><i class="bi bi-building-fill"></i> Dados da Empresa</h3>
 
+                <!-- Mensagem informativa sobre restrição de permissão -->
                 {% if not pode_gerenciar %}
                 <p class="config-dica">Somente administradores e gerentes alteram os dados da empresa.</p>
                 {% endif %}
+                
+                <!-- Formulário para upload do logo e dados cadastrais da empresa -->
                 <form method="POST" enctype="multipart/form-data" class="empresa-form"
                     action="{{ url_for('salvar_empresa') }}">
                     <fieldset class="empresa-fieldset" {{ 'disabled' if not pode_gerenciar }}>
 
+                    <!-- Campo de pré-visualização e seleção da imagem de perfil/logo da empresa -->
                     <div class="empresa-foto campo-imagem">
                         <img class="preview-imagem"
                             src="{{ url_for('static', filename='imagem/' + (empresa.imagem | imagem_ou('perfil.png'))) }}"
@@ -46,6 +55,7 @@ Software HYPEX - Configurações
                         <small>PNG, JPG, WEBP ou GIF até 5 MB</small>
                     </div>
 
+                    <!-- Campos textuais da empresa (Razão Social e CNPJ) -->
                     <div class="empresa-campos">
                         <div class="input-resp">
                             <label>Razão Social</label>
@@ -59,6 +69,7 @@ Software HYPEX - Configurações
                                 placeholder="00.000.000/0001-00">
                         </div>
 
+                        <!-- Botão para salvar os dados da empresa -->
                         <div class="config-acoes">
                             <button type="submit" class="salvar-btn">
                                 <i class="bi bi-check-lg"></i> Salvar Empresa
@@ -69,9 +80,11 @@ Software HYPEX - Configurações
                 </form>
             </div>
 
+            <!-- Card de edição de dados do perfil do usuário logado -->
             <div class="config-card">
                 <h3><i class="bi bi-person-fill-gear"></i> Meu Perfil</h3>
 
+                <!-- Formulário de dados pessoais do usuário -->
                 <form method="POST" action="{{ url_for('salvar_perfil') }}">
                     <div class="input-resp">
                         <label>Nome</label>
@@ -90,12 +103,14 @@ Software HYPEX - Configurações
                                 placeholder="(11) 90000-0000">
                         </div>
 
+                        <!-- Exibição somente leitura do perfil de acesso do usuário -->
                         <div class="input-resp">
                             <label>Perfil de Acesso</label>
                             <input type="text" value="{{ usuario_tipo }}" readonly>
                         </div>
                     </div>
 
+                    <!-- Botão para salvar dados do perfil -->
                     <div class="config-acoes">
                         <button type="submit" class="salvar-btn">
                             <i class="bi bi-check-lg"></i> Salvar Perfil
@@ -104,9 +119,11 @@ Software HYPEX - Configurações
                 </form>
             </div>
 
+            <!-- Card para alteração de senha de acesso -->
             <div class="config-card">
                 <h3><i class="bi bi-lock-fill"></i> Alterar Senha</h3>
 
+                <!-- Formulário de alteração de senha -->
                 <form method="POST" action="{{ url_for('alterar_senha') }}">
                     <div class="input-resp">
                         <label>Senha Atual</label>
@@ -127,6 +144,7 @@ Software HYPEX - Configurações
 
                     <small class="config-dica">Mínimo de 6 caracteres.</small>
 
+                    <!-- Botão para salvar nova senha -->
                     <div class="config-acoes">
                         <button type="submit" class="senha-btn">
                             <i class="bi bi-lock-fill"></i> Alterar Senha
@@ -135,6 +153,7 @@ Software HYPEX - Configurações
                 </form>
             </div>
 
+            <!-- Card com atalho para gerenciamento de usuários (visível apenas para administradores) -->
             {% if perfil == 'admin' %}
             <div class="config-card full-width">
                 <h3><i class="bi bi-people-fill"></i> Equipe e Usuários</h3>
@@ -145,6 +164,7 @@ Software HYPEX - Configurações
             </div>
             {% endif %}
 
+            <!-- Card de preferências globais para notificações do sistema -->
             <div class="config-card full-width" id="notificacoes">
                 <h3><i class="bi bi-bell-fill"></i> Notificações</h3>
                 <p class="config-dica">
@@ -152,9 +172,11 @@ Software HYPEX - Configurações
                     {% if not pode_gerenciar %}Somente administradores e gerentes podem alterar.{% endif %}
                 </p>
 
+                <!-- Formulário para configurar tipos de notificações e margem de alerta -->
                 <form method="POST" action="{{ url_for('salvar_notificacoes') }}">
                     <fieldset class="empresa-fieldset" {{ 'disabled' if not pode_gerenciar }}>
                     <div class="preferencias">
+                        <!-- Iteração sobre os tipos de notificação configuráveis -->
                         {% for coluna, (padrao, rotulo, explicacao) in opcoes_notificacao.items() %}
                         <label class="modo-escolha notif-opcao">
                             <span>
@@ -167,6 +189,7 @@ Software HYPEX - Configurações
                         </label>
                         {% endfor %}
 
+                        <!-- Configuração da porcentagem de aviso antecipado do estoque mínimo -->
                         <label class="modo-escolha notif-opcao">
                             <span>
                                 <strong>Aviso antecipado</strong>
@@ -179,6 +202,7 @@ Software HYPEX - Configurações
                         </label>
                     </div>
 
+                    <!-- Botão para salvar preferências de notificações -->
                     <div class="config-acoes">
                         <button type="submit" class="salvar-btn"><i class="bi bi-check-lg"></i> Salvar Notificações</button>
                     </div>
@@ -186,38 +210,5 @@ Software HYPEX - Configurações
                 </form>
             </div>
 
+            <!-- Card de preferências de interface (Tema escuro e Menu lateral) -->
             <div class="config-card full-width">
-                <h3><i class="bi bi-sliders"></i> Preferências</h3>
-
-                <div class="preferencias">
-                    <form method="POST" action="{{ url_for('alternar_tema') }}" class="modo-escolha">
-                        <input type="hidden" name="voltar_para" value="{{ url_for('config') }}">
-                        <input type="hidden" name="tema" value="{{ 'claro' if tema == 'escuro' else 'escuro' }}">
-                        <span>
-                            <strong><i class="bi bi-moon-stars-fill"></i> Modo escuro</strong>
-                            <small>Cores escuras em todas as telas</small>
-                        </span>
-                        <button type="submit" class="switch switch-botao"
-                            title="{{ 'Desativar modo escuro' if tema == 'escuro' else 'Ativar modo escuro' }}">
-                            <span class="slider round {{ 'ligado' if tema == 'escuro' }}"></span>
-                        </button>
-                    </form>
-
-                    <form method="POST" action="{{ url_for('alternar_menu') }}" class="modo-escolha">
-                        <input type="hidden" name="voltar_para" value="{{ url_for('config') }}">
-                        <span>
-                            <strong><i class="bi bi-layout-sidebar"></i> Menu lateral minimizado</strong>
-                            <small>Mostra só os ícones no menu</small>
-                        </span>
-                        <button type="submit" class="switch switch-botao"
-                            title="{{ 'Expandir menu' if sidebar_minimizada else 'Minimizar menu' }}">
-                            <span class="slider round {{ 'ligado' if sidebar_minimizada }}"></span>
-                        </button>
-                    </form>
-                </div>
-            </div>
-
-        </section>
-    </main>
-
-{% endblock %}

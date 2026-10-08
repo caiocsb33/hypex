@@ -4,6 +4,7 @@
 Software HYPEX - Fornecedores
 {% endblock %}
 
+<!-- Folha de estilo para a página de perfil e edição do fornecedor -->
 {% block css %}
 
 <link rel="stylesheet"
@@ -13,7 +14,9 @@ Software HYPEX - Fornecedores
 
 {% block content %}
 
+    <!-- Conteúdo principal do formulário de perfil e produtos do fornecedor -->
     <main id="config-conteudo">
+        <!-- Cabeçalho com título, ações de exclusão e salvamento de alterações -->
         <header class="config-texto">
             <div class="config-info">
                 <h1><i class="bi bi-people-fill"></i> FORNECEDORES</h1>
@@ -21,7 +24,9 @@ Software HYPEX - Fornecedores
             </div>
 
 
+            <!-- Grupo de botões para ações de exclusão do fornecedor e salvamento do formulário -->
             <div class="grupo-botoes">
+                <!-- Modal de confirmação para exclusão de fornecedor (restrito a administradores e gerentes) -->
                 {% if pode_gerenciar %}
                 <form method="POST" id="excluir-fornecedor" action="{{ url_for('deletar_fornecedor', fornecedor_id=fornecedor.id) }}"></form>
                 {% with id='excluir-fornecedor', form_id='excluir-fornecedor',
@@ -34,43 +39,53 @@ Software HYPEX - Fornecedores
                 {% endwith %}
                 {% endif %}
 
+                <!-- Botão de submissão do formulário de atualização do fornecedor -->
                 <button type="submit" form="form-fornecedor" class="salvar-btn">
                     Salvar Alterações
                 </button>
             </div>
         </header>
 
+        <!-- Formulário principal para atualização cadastral e logotipo do fornecedor -->
         <form id="form-fornecedor" method="POST" enctype="multipart/form-data"
             action="{{ url_for('atualizar_fornecedor', fornecedor_id=fornecedor.id) }}">
 
             <section class="config-grid">
+                <!-- Card do logotipo e nome principal da empresa -->
                 <div class="config-card">
+                    <!-- Componente reutilizável para upload e visualização da imagem/logotipo -->
                     {% with campo_id='imagem-fornecedor', imagem=fornecedor.imagem,
                             padrao='imagemfornecedor.png', alt=fornecedor.nome,
                             titulo='Logotipo do Fornecedor' %}
                     {% include '_imagem_upload.html' %}
                     {% endwith %}
 
+                    <!-- Campo: Nome da Empresa (Somente leitura) -->
                     <div class="input-resp mt-2">
                         <label>Nome da Empresa</label>
                         <input type="text" value="{{ fornecedor.nome }}" readonly>
                     </div>
                 </div>
 
+                <!-- Card de dados do contato principal e status do cadastro -->
                 <div class="config-card">
                     <h3><i class="bi bi-person-bounding-box"></i> Contato Principal</h3>
+                    <!-- Campo: Nome do representante ou vendedor -->
                     <div class="input-resp">
                         <label>Nome do Representante</label>
                         <input type="text" name="nome_ctt" value="{{ fornecedor.nome_ctt }}">
                     </div>
+                    <!-- Campo: E-mail de contato -->
                     <div class="input-resp">
                         <label>E-mail de Contato</label>
                         <input type="email" name="email" value="{{ fornecedor.email }}">
                     </div>
+                    <!-- Campo: Telefone ou WhatsApp de contato -->
                     <div class="input-resp">
                         <label>Telefone/WhatsApp</label>
                         <input type="tel" name="telefone" value="{{ fornecedor.telefone | telefone if fornecedor.telefone else '' }}">
                     </div>
+                    <!-- Campo: Seleção do Status da Conta (Ativo/Inativo) -->
                     <div class="input-resp">
                         <label>Status da Conta</label>
                         <select name="ativo">
@@ -79,14 +94,18 @@ Software HYPEX - Fornecedores
                         </select>
                     </div>
                 </div>
+
+                <!-- Card de informações contratuais, cadastrais e de logística -->
                 <div class="config-card full-width">
                     <h3><i class="bi bi-building-fill"></i> Dados Contratuais & Localização</h3>
                     <div class="inputs-empresa">
+                        <!-- Campo: Nome editável da Razão Social / Nome Fantasia -->
                         <div class="input-resp">
                             <label>Nome da Empresa</label>
                             <input type="text" name="nome" value="{{ fornecedor.nome }}"
                                 placeholder="Ex: Distribuidora Hypex LTDA">
                         </div>
+                        <!-- Campo: CNPJ do fornecedor -->
                         <div class="input-resp">
                             <label>CNPJ</label>
                             <input type="text" name="cnpj" value="{{ fornecedor.cnpj | documento if fornecedor.cnpj else '' }}"
@@ -94,10 +113,12 @@ Software HYPEX - Fornecedores
                         </div>
                     </div>
                     <div class="inputs-empresa">
+                        <!-- Campo: Prazo médio de entrega dos pedidos em dias -->
                         <div class="input-resp">
                             <label>Prazo de Entrega Médio (Dias)</label>
                             <input type="number" name="prazo_entrega">
                         </div>
+                        <!-- Campo: Condição padrão de pagamento negociada -->
                         <div class="input-resp">
                             <label>Condição de Pagamento Padrão</label>
                             <input type="text" name="condicao_pagamento" placeholder="Ex: 30 dias, À vista">
@@ -108,6 +129,7 @@ Software HYPEX - Fornecedores
             </section>
         </form>
 
+        <!-- Seção com tabela de produtos vinculados a este fornecedor -->
         <section class="config-card full-width ativar-sensor mt-4">
             <h3><i class="bi bi-box-seam-fill"></i> Produtos Vinculados</h3>
             <div class="sensor-lista-container">
@@ -125,6 +147,7 @@ Software HYPEX - Fornecedores
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Iteração sobre os produtos associados ao fornecedor -->
                         {% for produto in produtos %}
                         <tr>
                             <td>{{ produto.sku }}</td>
@@ -134,6 +157,7 @@ Software HYPEX - Fornecedores
                             <td>{{ produto.desconto }}%</td>
                             <td>{{ produto.quantidade_minima | quantidade }}</td>
                             <td>{{ produto.prazo_entrega_dias }} dias</td>
+                            <!-- Indicador de status (Ativo/Inativo) do produto -->
                             <td>
                                 {% if produto.ativo %}
                                 <span class="status-indicador ativo"></span>
@@ -143,6 +167,7 @@ Software HYPEX - Fornecedores
                             </td>
                         </tr>
                         {% else %}
+                        <!-- Estado vazio exibido caso nenhum produto esteja vinculado -->
                         <tr>
                             <td colspan="8" class="text-center text-muted py-4">
                                 Nenhum produto vinculado a este fornecedor.

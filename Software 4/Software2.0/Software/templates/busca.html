@@ -3,10 +3,13 @@
 {% block title %}Busca - Software HYPEX{% endblock %}
 
 {% block content %}
+<!-- Conteúdo principal da página de resultados de pesquisa -->
 <main class="busca-geral">
 
+    <!-- Título principal da seção de busca -->
     <h1 class="title"><i class="bi bi-search"></i> Resultados da busca</h1>
 
+    <!-- Exibição de mensagens informativas sobre o estado do termo pesquisado -->
     {% if not q %}
     <p class="busca-vazia">Digite algo no campo de pesquisa do topo.</p>
     {% elif not total %}
@@ -15,6 +18,7 @@
     <p class="busca-vazia">{{ total }} resultado(s) para "<strong>{{ q }}</strong>".</p>
     {% endif %}
 
+    <!-- Seção de resultados encontrados na categoria de Produtos -->
     {% if produtos %}
     <section class="busca-grupo">
         <h2><i class="bi bi-box-seam-fill"></i> Produtos</h2>
@@ -27,6 +31,7 @@
     </section>
     {% endif %}
 
+    <!-- Seção de resultados encontrados na categoria de Clientes -->
     {% if clientes %}
     <section class="busca-grupo">
         <h2><i class="bi bi-person-fill"></i> Clientes</h2>
@@ -39,6 +44,7 @@
     </section>
     {% endif %}
 
+    <!-- Seção de resultados encontrados na categoria de Fornecedores -->
     {% if fornecedores %}
     <section class="busca-grupo">
         <h2><i class="bi bi-people-fill"></i> Fornecedores</h2>
@@ -51,6 +57,7 @@
     </section>
     {% endif %}
 
+    <!-- Seção de resultados encontrados na categoria de Galpões -->
     {% if galpoes %}
     <section class="busca-grupo">
         <h2><i class="bi bi-building-fill"></i> Galpões</h2>

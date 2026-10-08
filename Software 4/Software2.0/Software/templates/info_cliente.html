@@ -4,6 +4,7 @@
 Software HYPEX - Fornecedores
 {% endblock %}
 
+<!-- Folha de estilo para a página de perfil e edição do cliente -->
 {% block css %}
 
 <link rel="stylesheet"
@@ -13,7 +14,9 @@ Software HYPEX - Fornecedores
 
 {% block content %}
 
+    <!-- Conteúdo principal do formulário de perfil e pedidos do cliente -->
     <main id="config-conteudo">
+        <!-- Cabeçalho com título, ações de exclusão e salvamento de alterações -->
         <header class="config-texto">
             <div class="config-info">
                 <h1><i class="bi bi-person-vcard-fill"></i> PERFIL DO CLIENTE</h1>
@@ -21,7 +24,9 @@ Software HYPEX - Fornecedores
             </div>
 
 
+            <!-- Grupo de botões para ações de exclusão do cliente e salvamento do formulário -->
             <div class="grupo-botoes">
+                <!-- Modal de confirmação para exclusão de cliente (restrito a administradores e gerentes) -->
                 {% if pode_gerenciar %}
                 <form method="POST" id="excluir-cliente" action="{{ url_for('deletar_cliente', cliente_id=cliente.id) }}"></form>
                 {% with id='excluir-cliente', form_id='excluir-cliente',
@@ -33,27 +38,35 @@ Software HYPEX - Fornecedores
                 {% include '_confirmar.html' %}
                 {% endwith %}
                 {% endif %}
+                <!-- Botão de submissão do formulário de atualização do cliente -->
                 <button type="submit" form="form-cliente" class="salvar-btn">
                     Salvar Alterações
                 </button>
             </div>
         </header>
 
+        <!-- Formulário principal para atualização cadastral e foto do cliente -->
         <form id="form-cliente" method="POST" enctype="multipart/form-data"
             action="{{ url_for('atualizar_cliente', cliente_id=cliente.id) }}">
 
             <section class="config-grid">
 
+                <!-- Card de imagem de perfil, nome e situação do cliente -->
                 <div class="config-card">
+                    <!-- Componente reutilizável para upload e visualização da foto do cliente -->
                     {% with campo_id='imagem-cliente', imagem=cliente.imagem,
                             padrao='perfil.png', alt=cliente.nome,
                             titulo='Foto do Cliente' %}
                     {% include '_imagem_upload.html' %}
                     {% endwith %}
+
+                    <!-- Campo: Nome Completo (Somente leitura) -->
                     <div class="input-resp mt-3">
                         <label>Nome Completo / Razão Social</label>
                         <input disabled type="text" value="{{ cliente.nome }}">
                     </div>
+
+                    <!-- Campo: Seleção da Situação (Ativo/Inativo) -->
                     <div class="input-resp mt-3">
                         <label>Situação</label>
                         <select name="ativo">
@@ -63,17 +76,24 @@ Software HYPEX - Fornecedores
                     </div>
                 </div>
 
+                <!-- Card de canais de comunicação e vinculo corporativo -->
                 <div class="config-card">
                     <h3><i class="bi bi-telephone-fill"></i> Comunicação</h3>
+
+                    <!-- Campo: Empresa vinculada (caso seja pessoa jurídica ou representante) -->
                     <div class="input-resp">
                         <label>Empresa Vinculada</label>
                         <input type="text" name="empresa" value="{{ cliente.empresa or '' }}"
                             placeholder="Pessoa Física">
                     </div>
+
+                    <!-- Campo: E-mail de contato -->
                     <div class="input-resp">
                         <label>E-mail</label>
                         <input type="email" name="email" value="{{ cliente.email }}">
                     </div>
+
+                    <!-- Campo: Telefone / WhatsApp -->
                     <div class="input-resp">
                         <label>Telefone</label>
                         <input type="tel" name="telefone"
@@ -81,9 +101,13 @@ Software HYPEX - Fornecedores
                             placeholder="(00) 00000-0000">
                     </div>
                 </div>
+
+                <!-- Card de informações fiscais (CPF/CNPJ) e endereço do cliente -->
                 <div class="config-card full-width">
                     <h3><i class="bi bi-geo-alt-fill"></i> Dados Fiscais e Endereço</h3>
+
                     <div class="inputs-empresa">
+                        <!-- Campo: CPF ou CNPJ formatado -->
                         <div class="input-resp">
                             <label>CPF / CNPJ</label>
 
@@ -91,22 +115,30 @@ Software HYPEX - Fornecedores
                                 value="{{ cliente.cpf_cnpj | documento }}"
                                 placeholder="000.000.000-00 ou 00.000.000/0000-00">
                         </div>
+
+                        <!-- Campo: CEP -->
                         <div class="input-resp">
                             <label>CEP</label>
                             <input type="text" name="cep" value="{{ cliente.cep | cep }}"
                                 placeholder="00000-000">
                         </div>
+
+                        <!-- Campo: Estado (UF) -->
                         <div class="input-resp">
                             <label>Estado</label>
                             <input type="text" name="estado" value="{{ cliente.estado }}">
                         </div>
                     </div>
+
                     <div class="inputs-empresa">
+                        <!-- Campo: Nome Completo editável para dados fiscais -->
                         <div class="input-resp">
                             <label>Nome Completo</label>
 
                             <input type="text" name="nome" value="{{ cliente.nome }}">
                         </div>
+
+                        <!-- Campo: Cidade -->
                         <div class="input-resp">
                             <label>Cidade</label>
                             <input type="text" name="cidade" value="{{ cliente.cidade }}">
@@ -117,8 +149,10 @@ Software HYPEX - Fornecedores
             </section>
         </form>
 
+        <!-- Seção com tabela do histórico de pedidos vinculados a este cliente -->
         <section class="config-card full-width ativar-sensor mt-4">
             <h3><i class="bi bi-basket2-fill"></i> Pedidos do Cliente</h3>
+
             <div class="sensor-lista-container">
                 <table class="sensor-lista">
                     <thead>
@@ -131,8 +165,10 @@ Software HYPEX - Fornecedores
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Iteração sobre a lista de pedidos vinculados -->
                         {% for pedido in pedidos %}
                         <tr>
+                            <!-- Badge de status do pedido -->
                             <td>
                                 {% if pedido.status_pedido == 'pendente' %}
                                 <span class="badge bg-warning text-dark">Pendente</span>
@@ -150,6 +186,7 @@ Software HYPEX - Fornecedores
                             <td>{{ pedido.data_pedido.strftime('%d/%m/%Y') if pedido.data_pedido else '—' }}</td>
                         </tr>
                         {% else %}
+                        <!-- Estado vazio exibido caso o cliente não tenha realizado nenhum pedido -->
                         <tr>
                             <td colspan="5" class="text-center text-muted py-4">
                                 Nenhum pedido registrado para este cliente.

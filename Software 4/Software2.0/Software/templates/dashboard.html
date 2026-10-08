@@ -6,6 +6,7 @@ Software HYPEX - Dashboard
 
 {% block content %}
 
+<!-- Cabeçalho da página Dashboard com título e sub-título -->
 <header class="dashboard-texto">
 
     <h1 class="title">
@@ -17,10 +18,11 @@ Software HYPEX - Dashboard
         Visão geral do seu negócio em tempo real
     </p>
 
-
 </header>
 
+<!-- Primeira seção de cards com indicadores financeiros e métrica de produtos -->
 <section class="cards-valors">
+    <!-- Card de Ganhos / Receitas do sistema -->
     <div class="cards-valor">
         <div class="cards-valors-info">
             <div class="valor-cards">
@@ -32,6 +34,7 @@ Software HYPEX - Dashboard
         <div class="progress-bar"></div>
     </div>
 
+    <!-- Card de Gastos / Despesas com fornecedores e compras -->
     <div class="cards-valor">
         <div class="cards-valors-info">
             <div class="valor-cards">
@@ -43,6 +46,7 @@ Software HYPEX - Dashboard
         <div class="progress-bar"></div>
     </div>
 
+    <!-- Card com o total de produtos cadastrados -->
     <div class="cards-valor">
         <div class="cards-valors-info">
             <div class="valor-cards">
@@ -53,7 +57,10 @@ Software HYPEX - Dashboard
         <div class="progress-bar"></div>
     </div>
 </section>
+
+<!-- Segunda seção de cards com totais de cadastros (Fornecedores, Clientes e Galpões) -->
 <section class="cards-valors">
+    <!-- Card com a quantidade total de fornecedores -->
     <div class="cards-valor">
         <div class="cards-valors-info">
             <div class="valor-cards">
@@ -64,6 +71,7 @@ Software HYPEX - Dashboard
         <div class="progress-bar"></div>
     </div>
 
+    <!-- Card com a quantidade total de clientes -->
     <div class="cards-valor">
         <div class="cards-valors-info">
             <div class="valor-cards">
@@ -74,6 +82,7 @@ Software HYPEX - Dashboard
         <div class="progress-bar"></div>
     </div>
 
+    <!-- Card com a quantidade total de galpões cadastrados -->
     <div class="cards-valor">
         <div class="cards-valors-info">
             <div class="valor-cards">
@@ -85,13 +94,16 @@ Software HYPEX - Dashboard
     </div>
 </section>
 
+<!-- Seção principal com gráfico de lucros e ranking de produtos mais vendidos -->
 <section class="cards-grafico">
+    <!-- Card de exibição do lucro acumulado e gráfico dos últimos 6 meses -->
     <div class="cards-valor cards-grafico-valor">
         <div class="grafico-texto">
             <span class="icon-text"><i class="bi-solid bi-cash-coin"></i> LUCRO</span>
             <span class="tempo">Últimos 6 meses</span>
         </div>
         <div class="grafico-info">
+            <!-- Exibe o valor do lucro com destaque para valores negativos -->
             <p class="grafico-valor {{ 'negative' if lucro < 0 }}">R$ {{ lucro | moeda }}</p>
             {% if variacao is not none %}
             <span class="grafico-porcentagem-positiva {{ 'negative' if variacao < 0 }}">
@@ -104,6 +116,7 @@ Software HYPEX - Dashboard
                 Estoque avaliado em R$ {{ valor_estoque | moeda }}
             </span>
         </div>
+        <!-- Gráfico em colunas com proporção de barras positivas e negativas -->
         <div class="grafico-lucro" role="img" aria-label="Lucro dos últimos 6 meses">
             {% for m in grafico_lucro %}
             <div class="grafico-coluna"
@@ -120,6 +133,7 @@ Software HYPEX - Dashboard
         </div>
     </div>
 
+    <!-- Card com a lista dos produtos mais vendidos no sistema -->
     <div class="cards-valor cards-grafico-valor">
         <div class="grafico-texto">
             <span class="icon-text"><i class="bi-solid bi-box-seam-fill"></i> MAIS VENDIDOS</span>
@@ -127,6 +141,7 @@ Software HYPEX - Dashboard
         </div>
 
         <ul class="alertas-lista">
+            <!-- Iteração sobre a lista dos produtos de maior volume de vendas -->
             {% for item in mais_vendidos %}
             <li class="alertas-item">
                 <span class="alertas-icon green-icon"><i class="bi-solid bi-box-seam-fill"></i></span>
@@ -138,6 +153,7 @@ Software HYPEX - Dashboard
                 </div>
             </li>
             {% else %}
+            <!-- Exibido caso nenhuma venda tenha sido computada ainda -->
             <li class="alertas-item">
                 <div class="alertas-detalhes">
                     <span class="alertas-tempo">Nenhuma venda registrada ainda.</span>
@@ -148,7 +164,9 @@ Software HYPEX - Dashboard
     </div>
 </section>
 
+<!-- Seção inferior com feed de atividades recentes e alertas de estoque -->
 <section class="cards-alertas">
+    <!-- Card contendo o histórico recente de movimentações do estoque -->
     <div class="cards-valor alertas-cards-valor">
         <div class="cards-valor-header">
             <span class="icone-sino"><i class="bi-solid bi-arrow-counterclockwise"></i></span>
@@ -158,8 +176,10 @@ Software HYPEX - Dashboard
             </div>
         </div>
         <ul class="alertas-lista">
+            <!-- Iteração sobre o histórico de entradas, saídas e transferências -->
             {% for mov in atividades %}
             <li class="alertas-item">
+                <!-- Definição dinâmica do ícone de acordo com o tipo da movimentação -->
                 {% if mov.tipo == 'entrada' %}
                 <span class="alertas-icon green-icon"><i class="bi-solid bi-arrow-up"></i></span>
                 {% elif mov.tipo == 'saida' %}
@@ -179,6 +199,7 @@ Software HYPEX - Dashboard
                 </div>
             </li>
             {% else %}
+            <!-- Mensagem exibida caso não haja histórico de movimentações -->
             <li class="alertas-item">
                 <div class="alertas-detalhes">
                     <span class="alertas-tempo">Nenhuma movimentação registrada.</span>
@@ -189,6 +210,7 @@ Software HYPEX - Dashboard
         <a href="{{ url_for('movimentacoes') }}" class="ver-atividade">Ver todas as atividades</a>
     </div>
 
+    <!-- Card contendo alertas de itens com estoque zerado ou abaixo do mínimo -->
     <div class="cards-valor alertas-cards-valor">
         <div class="cards-valor-header">
             <span class="icone-sino"><i class="bi-solid bi-bell-fill"></i></span>
@@ -198,6 +220,7 @@ Software HYPEX - Dashboard
             </div>
         </div>
         <ul class="alertas-lista">
+            <!-- Iteração sobre a lista de produtos em situação crítica de estoque -->
             {% for alerta in alertas %}
             <li class="alertas-item">
                 <span class="alertas-icon red-icon"><i class="bi-solid bi-exclamation-triangle-fill"></i></span>
@@ -211,6 +234,7 @@ Software HYPEX - Dashboard
                 </div>
             </li>
             {% else %}
+            <!-- Exibido quando todos os estoques estiverem normais -->
             <li class="alertas-item">
                 <div class="alertas-detalhes">
                     <p class="alertas-text">Nenhum item crítico</p>
@@ -220,6 +244,7 @@ Software HYPEX - Dashboard
             {% endfor %}
         </ul>
 
+        <!-- Exibição da contagem excedente de produtos em situação de alerta -->
         {% if total_alertas > alertas | length %}
         <span class="alertas-info">
             e mais {{ total_alertas - (alertas | length) }} produto(s) abaixo do limite

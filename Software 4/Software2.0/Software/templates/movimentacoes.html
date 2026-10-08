@@ -4,13 +4,16 @@
 Software HYPEX - Movimentações
 {% endblock %}
 
+<!-- Folha de estilo para a tabela e interface de movimentações do estoque -->
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style_estoque_do_galpao.css') }}">
 {% endblock %}
 
 {% block content %}
+<!-- Conteúdo principal do histórico de movimentações do estoque -->
 <main id="inventario-conteudo">
 
+    <!-- Cabeçalho com título da página e botão de ação para registrar movimentação -->
     <header class="inventario-texto">
         <div class="inventario-info">
             <h1><i class="bi bi-arrow-left-right"></i> MOVIMENTAÇÕES</h1>
@@ -22,9 +25,11 @@ Software HYPEX - Movimentações
         </a>
     </header>
 
+    <!-- Formulário de filtragem por produto, galpão e tipo de movimentação -->
     <section>
         <form method="GET" action="{{ url_for('movimentacoes') }}" class="barra-filtros">
 
+            <!-- Filtro por Produto -->
             <div class="filtro-campo">
                 <label for="filtro-produto">Produto</label>
                 <select name="produto_id" id="filtro-produto">
@@ -37,6 +42,7 @@ Software HYPEX - Movimentações
                 </select>
             </div>
 
+            <!-- Filtro por Galpão -->
             <div class="filtro-campo">
                 <label for="filtro-galpao">Galpão</label>
                 <select name="galpao_id" id="filtro-galpao">
@@ -49,6 +55,7 @@ Software HYPEX - Movimentações
                 </select>
             </div>
 
+            <!-- Filtro por Tipo de Movimentação (Entrada, Saída, Transferência, Ajuste) -->
             <div class="filtro-campo">
                 <label for="filtro-tipo">Tipo</label>
                 <select name="tipo" id="filtro-tipo">
@@ -61,6 +68,7 @@ Software HYPEX - Movimentações
                 </select>
             </div>
 
+            <!-- Botões de submissão do filtro e limpeza dos critérios -->
             <div class="filtro-acoes">
                 <button class="filtro-btn" type="submit">
                     <i class="bi bi-funnel-fill"></i> Filtrar
@@ -76,6 +84,7 @@ Software HYPEX - Movimentações
         </form>
     </section>
 
+    <!-- Tabela de listagem do histórico de movimentações -->
     <section class="inventario-lista">
         <table>
             <thead>
@@ -91,6 +100,7 @@ Software HYPEX - Movimentações
                 </tr>
             </thead>
             <tbody>
+                <!-- Iteração sobre os registros de movimentação retornados -->
                 {% for m in movimentacoes %}
                 <tr>
                     <td>{{ m.data_movimentacao.strftime('%d/%m/%Y %H:%M') if m.data_movimentacao else '—' }}</td>
@@ -114,6 +124,7 @@ Software HYPEX - Movimentações
                     <td>{{ m.observacao or '—' }}</td>
                 </tr>
                 {% else %}
+                <!-- Mensagem exibida caso nenhuma movimentação seja encontrada -->
                 <tr>
                     <td colspan="8" class="text-center text-muted py-4">
                         Nenhuma movimentação registrada.

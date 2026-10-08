@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 
 {% block title %}
-Software HYPEX - Cadastro pedidos
+Software HYPEX - Detalhes do Pedido
 {% endblock %}
 
+<!-- Folha de estilo para a tela de detalhes do pedido -->
 {% block css %}
 
 <link rel="stylesheet"
@@ -13,7 +14,9 @@ Software HYPEX - Cadastro pedidos
 
 {% block content %}
 
+    <!-- Conteúdo principal da visualização de detalhes do pedido -->
     <main id="orders-content">
+        <!-- Cabeçalho com ID do pedido e navegação de retorno -->
         <header class="orders-header">
             <div class="header-info">
                 <h1><i class="bi bi-receipt"></i> DETALHES DO PEDIDO #{{ pedido.id }}</h1>
@@ -25,8 +28,10 @@ Software HYPEX - Cadastro pedidos
             </div>
         </header>
 
+        <!-- Informações gerais: Dados do cliente, status e totais do pedido -->
         <section class="container-fluid my-4">
             <div class="row g-3">
+                <!-- Card de dados do cliente vinculado -->
                 <div class="col-md-6">
                     <div class="card h-100 shadow-sm border-0 bg-light p-3">
                         <div class="card-body">
@@ -39,6 +44,7 @@ Software HYPEX - Cadastro pedidos
                     </div>
                 </div>
 
+                <!-- Card com data de emissão, status atual e valor total -->
                 <div class="col-md-6">
                     <div class="card h-100 shadow-sm border-0 bg-light p-3">
                         <div class="card-body">
@@ -65,6 +71,7 @@ Software HYPEX - Cadastro pedidos
             </div>
         </section>
 
+        <!-- Tabela detalhada dos itens inclusos neste pedido -->
         <section class="lista-inventario mt-4">
             <h4 class="mb-3 px-3"><i class="bi bi-box-seam"></i> Itens do Pedido</h4>
             <table>
@@ -78,7 +85,7 @@ Software HYPEX - Cadastro pedidos
                     </tr>
                 </thead>
                 <tbody>
-                    {# Loop pelos itens vinculados a este pedido específico #}
+                    <!-- Iteração sobre os produtos associados a este pedido -->
                     {% for item in itens %}
                     <tr>
                         <td class="ordem-id">#{{ item.produto_id }}</td>
@@ -94,6 +101,7 @@ Software HYPEX - Cadastro pedidos
                         </td>
                     </tr>
                     {% else %}
+                    <!-- Estado vazio exibido caso não haja produtos no pedido -->
                     <tr>
                         <td colspan="5" class="text-center text-muted">Nenhum produto cadastrado para este pedido.</td>
                     </tr>

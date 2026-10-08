@@ -4,13 +4,16 @@
 Software HYPEX - Pedido de Saída
 {% endblock %}
 
+<!-- Folha de estilo para visualização e layout de informações de pedidos -->
 {% block css %}
 <link rel="stylesheet" href="{{ url_for('static', filename='style_info_galpao.css') }}">
 {% endblock %}
 
 {% block content %}
 
+<!-- Conteúdo principal do formulário de abertura de pedido de saída -->
 <main id="config-conteudo">
+    <!-- Cabeçalho da página com título e botão de finalização -->
     <header class="config-texto">
         <div class="config-info">
             <h1><i class="bi bi-basket2-fill"></i> ABERTURA DE PEDIDO (SAÍDA)</h1>
@@ -24,18 +27,23 @@ Software HYPEX - Pedido de Saída
         </div>
 
 
+        <!-- Botão de submissão do formulário principal de encerramento do pedido -->
         <button class="salvar-btn" form="form-fechar-pedido" type="submit">Fechar Pedido</button>
     </header>
 
+    <!-- Grid com seções para dados do pedido, seleção de produtos e itens inclusos -->
     <section class="config-grid">
 
+        <!-- Card de identificação do cliente e documentos do pedido -->
         <div class="config-card">
             <h3><i class="bi bi-person-fill"></i> Cliente e Documento</h3>
 
+            <!-- Formulário para envio dos dados gerais do pedido -->
             <form id="form-fechar-pedido" method="POST" action="{{ url_for('salvar_pedido_saida') }}">
                 <input type="hidden" name="galpao_id" id="galpao-do-pedido"
                     value="{{ galpao_id or '' }}">
 
+                <!-- Define o cliente fixo ou exibe a seleção caso não tenha sido pré-selecionado -->
                 {% if cliente %}
                 <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
                 {% else %}
@@ -50,6 +58,7 @@ Software HYPEX - Pedido de Saída
                 </div>
                 {% endif %}
 
+                <!-- Campos de número da nota/documento e data de saída -->
                 <div class="inputs-empresa">
                     <div class="input-resp">
                         <label>Nº do Documento</label>
@@ -61,6 +70,7 @@ Software HYPEX - Pedido de Saída
                     </div>
                 </div>
 
+                <!-- Campo para observações adicionais -->
                 <div class="input-resp">
                     <label>Observação</label>
                     <input type="text" name="observacao" placeholder="Opcional...">
@@ -68,12 +78,15 @@ Software HYPEX - Pedido de Saída
             </form>
         </div>
 
+        <!-- Card para seleção do galpão de origem e inclusão de produtos -->
         <div class="config-card">
             <h3><i class="bi bi-geo-alt-fill"></i> Origem e Produtos</h3>
 
+            <!-- Formulário de inclusão de item individual no pedido atual -->
             <form method="POST" action="{{ url_for('adicionar_item_saida') }}">
                 <input type="hidden" name="cliente_id" value="{{ cliente.id if cliente else '' }}">
 
+                <!-- Seleção do galpão de retirada dos produtos -->
                 <div class="input-resp">
                     <label>Galpão de Retirada</label>
                     <select name="galpao_id" id="select-galpao" required>
@@ -86,6 +99,7 @@ Software HYPEX - Pedido de Saída
                     </select>
                 </div>
 
+                <!-- Seleção do produto filtrado pelo galpão e dados em atributos data-* -->
                 <div class="input-resp mt-2">
                     <label>Produto (disponíveis no galpão)</label>
                     <select name="produto_id" id="select-produto" required>
@@ -103,6 +117,7 @@ Software HYPEX - Pedido de Saída
                     </select>
                 </div>
 
+                <!-- Definição de preço (somente leitura) e quantidade solicitada -->
                 <div class="inputs-empresa mt-2">
                     <div class="input-resp">
                         <label>Preço Unitário (R$)</label>
@@ -122,9 +137,11 @@ Software HYPEX - Pedido de Saída
             </form>
         </div>
 
+        <!-- Tabela com a lista de itens adicionados ao pedido -->
         <div class="config-card full-width mt-2">
             <h3><i class="bi bi-cart-check-fill"></i> Itens do Pedido</h3>
 
+            <!-- Tabela responsiva de listagem dos produtos inclusos -->
             <div class="sensor-lista-container">
                 <table class="sensor-lista">
                     <thead>
@@ -138,6 +155,7 @@ Software HYPEX - Pedido de Saída
                         </tr>
                     </thead>
                     <tbody>
+                        <!-- Iteração sobre os itens temporários do pedido -->
                         {% for item in itens %}
                         <tr>
                             <td>{{ item.sku }}</td>
@@ -146,6 +164,7 @@ Software HYPEX - Pedido de Saída
                             <td>R$ {{ item.preco_unitario | moeda }}</td>
                             <td>R$ {{ (item.quantidade * item.preco_unitario) | moeda }}</td>
                             <td>
+                                <!-- Formulário para remoção do item da lista -->
                                 <form method="POST" action="{{ url_for('remover_item_saida', indice=loop.index0) }}">
                                     <input type="hidden" name="cliente_id" value="{{ cliente.id if cliente else '' }}">
                                     <input type="hidden" name="galpao_id" value="{{ galpao_id or '' }}">
@@ -156,6 +175,7 @@ Software HYPEX - Pedido de Saída
                             </td>
                         </tr>
                         {% else %}
+                        <!-- Estado exibido quando nenhum produto tiver sido adicionado -->
                         <tr>
                             <td colspan="6" class="text-center text-muted py-4">
                                 Nenhum produto adicionado ao pedido ainda.
@@ -166,6 +186,7 @@ Software HYPEX - Pedido de Saída
                 </table>
             </div>
 
+            <!-- Rodapé com opções de limpar a lista e totalização do valor do pedido -->
             <div class="row mt-4 align-items-center">
                 <div class="col-md-6">
                     {% if itens %}
@@ -190,6 +211,7 @@ Software HYPEX - Pedido de Saída
 
 {% endblock %}
 
+<!-- Importação de script para cálculo e atualização automática do preço do produto -->
 {% block javascript %}
 <script src="{{ url_for('static', filename='js/preco-produto.js') }}"></script>
 {% endblock %}
