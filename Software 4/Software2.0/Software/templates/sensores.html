@@ -25,12 +25,12 @@
     <section class="sensores-indicadores" aria-label="Resumo dos sensores">
         <article class="sensor-indicador">
             <div class="indicador-icone azul"><i class="bi bi-cpu"></i></div>
-            <div><span>Total de sensores</span><strong>12</strong><small>Equipamentos cadastrados</small></div>
+            <div><span>Total de sensores</span><strong>2</strong><small>Equipamentos cadastrados</small></div>
             <i class="bi bi-three-dots indicador-menu"></i>
         </article>
         <article class="sensor-indicador">
             <div class="indicador-icone verde"><i class="bi bi-wifi"></i></div>
-            <div><span>Online</span><strong>10</strong><small>Com comunicação ativa</small></div>
+            <div><span>Online</span><strong>2</strong><small>Com comunicação ativa</small></div>
             <i class="bi bi-three-dots indicador-menu"></i>
         </article>
         <article class="sensor-indicador">
@@ -99,35 +99,11 @@
                         <td><span class="status-chip online"><i></i> Online</span></td>
                         <td><button class="btn-detalhes" type="button" data-sensor="LASER-001" aria-label="Ver detalhes LASER-001"><i class="bi bi-chevron-right"></i></button></td>
                     </tr>
-                    <tr data-tipo="RFID" data-status="offline">
-                        <td><div class="sensor-identidade"><span class="sensor-avatar rfid"><i class="bi bi-broadcast-pin"></i></span><span><strong>RFID-002</strong><small>Leitor de identificação</small></span></div></td>
-                        <td><span class="tipo-chip tipo-rfid">RFID</span></td>
-                        <td>Galpão 02 <small class="celula-secundaria">Área de expedição</small></td>
-                        <td>Há 3 horas</td>
-                        <td><span class="status-chip offline"><i></i> Offline</span></td>
-                        <td><button class="btn-detalhes" type="button" data-sensor="RFID-002" aria-label="Ver detalhes RFID-002"><i class="bi bi-chevron-right"></i></button></td>
-                    </tr>
-                    <tr data-tipo="LASER" data-status="alerta">
-                        <td><div class="sensor-identidade"><span class="sensor-avatar laser"><i class="bi bi-crosshair"></i></span><span><strong>LASER-002</strong><small>Barreira de detecção</small></span></div></td>
-                        <td><span class="tipo-chip tipo-laser">LASER</span></td>
-                        <td>Galpão 03 <small class="celula-secundaria">Esteira B</small></td>
-                        <td>Há 5 minutos</td>
-                        <td><span class="status-chip alerta"><i></i> Atenção</span></td>
-                        <td><button class="btn-detalhes" type="button" data-sensor="LASER-002" aria-label="Ver detalhes LASER-002"><i class="bi bi-chevron-right"></i></button></td>
-                    </tr>
-                    <tr data-tipo="RFID" data-status="online">
-                        <td><div class="sensor-identidade"><span class="sensor-avatar rfid"><i class="bi bi-broadcast-pin"></i></span><span><strong>RFID-003</strong><small>Leitor de identificação</small></span></div></td>
-                        <td><span class="tipo-chip tipo-rfid">RFID</span></td>
-                        <td>Galpão 02 <small class="celula-secundaria">Prateleira inteligente</small></td>
-                        <td>Há 1 minuto</td>
-                        <td><span class="status-chip online"><i></i> Online</span></td>
-                        <td><button class="btn-detalhes" type="button" data-sensor="RFID-003" aria-label="Ver detalhes RFID-003"><i class="bi bi-chevron-right"></i></button></td>
-                    </tr>
                 </tbody>
             </table>
             <div id="sensoresVazio" class="sensores-vazio" hidden><i class="bi bi-search"></i><strong>Nenhum sensor encontrado</strong><span>Tente alterar os filtros da pesquisa.</span></div>
         </div>
-        <footer class="tabela-rodape"><span>Exibindo <strong id="quantidadeVisivel">5</strong> de 12 sensores</span><span>Dados ilustrativos para apresentação</span></footer>
+        <footer class="tabela-rodape"><span>Exibindo <strong id="quantidadeVisivel">5</strong> de 2 sensores</span><span>Dados ilustrativos para apresentação</span></footer>
     </section>
 
     <section class="sensores-inferior">
@@ -135,12 +111,11 @@
             <div class="subpainel-cabecalho"><div><h2>Atividade recente</h2><p>Últimos eventos detectados pelos equipamentos.</p></div><a href="#historico">Ver histórico <i class="bi bi-arrow-right"></i></a></div>
             <div class="evento-item"><span class="evento-icone roxo"><i class="bi bi-broadcast-pin"></i></span><div><strong>Produto identificado por RFID</strong><small>RFID-001 · Galpão 01</small></div><time>10:42</time></div>
             <div class="evento-item"><span class="evento-icone azul"><i class="bi bi-scan"></i></span><div><strong>Passagem detectada</strong><small>LASER-001 · Esteira A</small></div><time>10:39</time></div>
-            <div class="evento-item"><span class="evento-icone vermelho"><i class="bi bi-exclamation-triangle"></i></span><div><strong>Sensor perdeu comunicação</strong><small>RFID-002 · Galpão 02</small></div><time>09:18</time></div>
         </article>
         <article class="painel-distribuicao">
             <div class="subpainel-cabecalho"><div><h2>Distribuição por tipo</h2><p>Quantidade de equipamentos cadastrados.</p></div></div>
-            <div class="distribuicao-linha"><div class="distribuicao-legenda"><span><i class="legenda-ponto rfid-ponto"></i> RFID</span><strong>7 sensores</strong></div><div class="barra-fundo"><span class="barra-rfid"></span></div></div>
-            <div class="distribuicao-linha"><div class="distribuicao-legenda"><span><i class="legenda-ponto laser-ponto"></i> LASER</span><strong>5 sensores</strong></div><div class="barra-fundo"><span class="barra-laser"></span></div></div>
+            <div class="distribuicao-linha"><div class="distribuicao-legenda"><span><i class="legenda-ponto rfid-ponto"></i> RFID</span><strong>1 sensores</strong></div><div class="barra-fundo"><span class="barra-rfid"></span></div></div>
+            <div class="distribuicao-linha"><div class="distribuicao-legenda"><span><i class="legenda-ponto laser-ponto"></i> LASER</span><strong>1 sensores</strong></div><div class="barra-fundo"><span class="barra-laser"></span></div></div>
             <div class="nota-demo"><i class="bi bi-info-circle"></i> Os números e eventos desta tela são demonstrativos. A integração real será feita posteriormente.</div>
         </article>
     </section>

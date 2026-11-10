@@ -198,7 +198,7 @@ body.modo-escuro .modal-footer {
     border-top-color: var(--e-borda);
 }
 
-mas `.modo-escuro` deixa TODO o texto branco. Nas demais telas o texto branco caía sobre cards que continuavam brancos e ficava ilegível. Este bloco cobre os componentes usados pelas outras páginas. Vem depois das regras claras (e é mais específico) para vencer no cascata. */  .modo-escuro .config-card,
+/* `.modo-escuro` deixa TODO o texto branco. Nas demais telas o texto branco caía sobre cards que continuavam brancos e ficava ilegível. Este bloco cobre os componentes usados pelas outras páginas. Vem depois das regras claras (e é mais específico) para vencer no cascata. */  .modo-escuro .config-card,
 body.modo-escuro .offcanvas {
     background-color: var(--e-card);
     color: var(--e-texto);
@@ -585,3 +585,186 @@ body.modo-escuro .miniatura-produto { border-color: var(--e-borda); background: 
 body.modo-escuro .selo-situacao.ativo { background: #173d25; color: #5bd98a; }
 body.modo-escuro .selo-situacao.inativo { background: var(--e-campo); color: var(--e-texto-4); }
 body.modo-escuro .produto-celula:hover strong { color: #9cc3f0; }
+
+
+/* =========================================================
+   HYPEX — Monitoramento de Sensores | Modo escuro
+   ========================================================= */
+
+body.modo-escuro .sensores-page {
+    color: var(--e-texto);
+}
+
+body.modo-escuro .sensores-cabecalho h1,
+body.modo-escuro .painel-titulo h2,
+body.modo-escuro .subpainel-cabecalho h2,
+body.modo-escuro .sensor-indicador strong,
+body.modo-escuro .sensor-identidade strong,
+body.modo-escuro .evento-item strong,
+body.modo-escuro .distribuicao-legenda strong,
+body.modo-escuro .modal-sensor-conteudo h2,
+body.modo-escuro .modal-sensor-grade strong,
+body.modo-escuro .modal-historico h3,
+body.modo-escuro .tabela-rodape strong {
+    color: var(--e-texto);
+}
+
+body.modo-escuro .sensores-cabecalho p,
+body.modo-escuro .painel-titulo p,
+body.modo-escuro .subpainel-cabecalho p,
+body.modo-escuro .sensores-atualizacao,
+body.modo-escuro .sensor-indicador span,
+body.modo-escuro .sensor-indicador small,
+body.modo-escuro .indicador-menu,
+body.modo-escuro .sensor-identidade small,
+body.modo-escuro .celula-secundaria,
+body.modo-escuro .sensores-vazio,
+body.modo-escuro .tabela-rodape,
+body.modo-escuro .evento-item small,
+body.modo-escuro .evento-item time,
+body.modo-escuro .distribuicao-legenda,
+body.modo-escuro .nota-demo,
+body.modo-escuro .modal-sensor-conteudo > p,
+body.modo-escuro .modal-sensor-grade small,
+body.modo-escuro .modal-historico p {
+    color: var(--e-texto-3);
+}
+
+body.modo-escuro .sensor-indicador,
+body.modo-escuro .sensores-painel,
+body.modo-escuro .painel-eventos,
+body.modo-escuro .painel-distribuicao,
+body.modo-escuro .modal-sensor-conteudo {
+    background-color: var(--e-card);
+    border-color: var(--e-borda);
+    color: var(--e-texto-2);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .22);
+}
+
+body.modo-escuro .painel-titulo,
+body.modo-escuro .evento-item,
+body.modo-escuro .tabela-rodape,
+body.modo-escuro .modal-historico {
+    border-color: var(--e-borda);
+}
+
+body.modo-escuro .sensores-tabela th {
+    background-color: var(--e-campo);
+    color: var(--e-texto-3);
+    border-color: var(--e-borda);
+}
+
+body.modo-escuro .sensores-tabela td {
+    background-color: var(--e-card);
+    color: var(--e-texto-2);
+    border-color: var(--e-borda);
+}
+
+body.modo-escuro .sensores-tabela tbody tr:hover td {
+    background-color: #292f38;
+}
+
+body.modo-escuro .busca-sensor {
+    background-color: var(--e-campo);
+    border-color: var(--e-borda-2);
+    color: var(--e-texto-3);
+}
+
+body.modo-escuro .busca-sensor input,
+body.modo-escuro .sensores-filtros select {
+    background-color: var(--e-campo);
+    color: var(--e-texto);
+}
+
+body.modo-escuro .busca-sensor input::placeholder {
+    color: var(--e-texto-4);
+}
+
+body.modo-escuro .sensores-filtros select {
+    border-color: var(--e-borda-2);
+}
+
+body.modo-escuro .sensores-filtros select option {
+    background-color: var(--e-campo);
+    color: var(--e-texto);
+}
+
+body.modo-escuro .btn-detalhes,
+body.modo-escuro .modal-sensor-fechar {
+    background-color: transparent;
+    border-color: var(--e-borda-2);
+    color: var(--e-texto-2);
+}
+
+body.modo-escuro .btn-detalhes:hover {
+    background-color: #263b52;
+    border-color: #3979bd;
+    color: #9cc3f0;
+}
+
+body.modo-escuro .modal-sensor-grade div {
+    background-color: var(--e-campo);
+    border-color: var(--e-borda);
+}
+
+body.modo-escuro .barra-fundo {
+    background-color: var(--e-borda-2);
+}
+
+body.modo-escuro .nota-demo {
+    background-color: var(--e-campo);
+}
+
+body.modo-escuro .indicador-icone.azul {
+    background-color: #1d344b;
+    color: #8fc2f2;
+}
+
+body.modo-escuro .indicador-icone.verde {
+    background-color: #193b2b;
+    color: #70d69b;
+}
+
+body.modo-escuro .indicador-icone.vermelho {
+    background-color: #432426;
+    color: #ff9690;
+}
+
+body.modo-escuro .indicador-icone.laranja {
+    background-color: #44331d;
+    color: #f0bd70;
+}
+
+body.modo-escuro .sensor-avatar.rfid,
+body.modo-escuro .evento-icone.roxo,
+body.modo-escuro .tipo-rfid {
+    background-color: #302a49;
+    color: #c0b2ff;
+}
+
+body.modo-escuro .sensor-avatar.laser,
+body.modo-escuro .evento-icone.azul,
+body.modo-escuro .tipo-laser {
+    background-color: #1d344b;
+    color: #9ccfff;
+}
+
+body.modo-escuro .evento-icone.vermelho {
+    background-color: #432426;
+    color: #ff9690;
+}
+
+body.modo-escuro .status-chip.online {
+    background-color: #193b2b;
+    color: #70d69b;
+}
+
+body.modo-escuro .status-chip.offline {
+    background-color: #432426;
+    color: #ff9690;
+}
+
+body.modo-escuro .status-chip.alerta {
+    background-color: #44331d;
+    color: #f0bd70;
+}
