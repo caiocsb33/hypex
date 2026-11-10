@@ -2160,6 +2160,14 @@ def cadastro_emp():
     return render_template("cadastro.html")
 
 
+# ---------------- SENSORES ---------------- #
+
+@app.route("/sensores")
+@login_obrigatorio
+def sensores():
+    return render_template("sensores.html")
+
+
 # ---------------- ESTOQUE ---------------- #
 
 # Exibe o estoque geral.

@@ -9,37 +9,44 @@
 
     <title>{% block title %}Software HYPEX{% endblock %}</title>
 
-    <!-- Importação de bibliotecas externas (Bootstrap Icons e Bootstrap CSS) e folhas de estilo locais -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- CSS global -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='notificacoes.css') }}">
 
-    <!-- Bloco dinâmico para inclusão de CSS específico por página -->
+    <!-- CSS específico de cada página -->
     {% block css %}
     {% endblock %}
 
-    <!-- Folha de estilo para aplicação do tema escuro -->
+    <!-- Modo escuro: depois do CSS da página para sobrescrever as cores -->
     <link rel="stylesheet" href="{{ url_for('static', filename='modo-escuro.css') }}">
 
 </head>
 
-<!-- Definição das classes dinâmicas do corpo da página (tema e estado do menu) -->
 {% set classes_body = [] %}
 {% if tema == 'escuro' %}{% set _ = classes_body.append('modo-escuro') %}{% endif %}
 {% if sidebar_minimizada %}{% set _ = classes_body.append('sidebar-minimizada') %}{% endif %}
 <body class="{{ classes_body | join(' ') }}">
 
-    <!-- Botão do menu hambúrguer para navegação em dispositivos móveis -->
+    <!-- ========================= -->
+    <!-- SIDEBAR -->
+    <!-- ========================= -->
+
+    <!-- BOTÃO DO MENU MOBILE
+         Abrir e fechar acontece na mesma página, então não vale uma ida ao
+         servidor: o checkbox escondido guarda o estado e o CSS reage a ele. -->
     <input type="checkbox" id="btnMenuMobile" class="menu-mobile-check" hidden>
     <label for="btnMenuMobile" class="btn-menu-mobile" title="Abrir menu" aria-label="Abrir menu">
         <i class="bi bi-list" aria-hidden="true"></i>
     </label>
 
-    <!-- Menu de navegação lateral (Sidebar) -->
     <aside id="menu" class="{{ 'minimizada' if sidebar_minimizada }}" aria-label="Menu principal">
 
-        <!-- Formulário de alternância para minimizar/expandir o menu lateral -->
+        <!-- Minimizar é uma preferência que precisa durar entre as páginas,
+             então vai para a sessão por POST. -->
         <form method="POST" action="{{ url_for('alternar_menu') }}" id="form-menu">
             <input type="hidden" name="voltar_para" value="{{ request.full_path if request.query_string else request.path }}">
             <button id="btn-minimizar" class="btn-minimizar" type="submit"
@@ -51,7 +58,6 @@
         </form>
 
 
-        <!-- Cabeçalho da sidebar com logomarca e nome da empresa -->
         <div class="perfil">
 
             <img src="{{ url_for('static', filename='imagem/' + (empresa_imagem | imagem_ou('perfil.png'))) }}"
@@ -61,12 +67,10 @@
         </div>
 
 
-        <!-- Links de navegação entre os módulos do sistema -->
         <nav aria-label="Menu principal">
 
             <ul>
 
-                <!-- Módulo Dashboard -->
                 <li class="nav-menu {% if modulo_atual == 'dashboard' %}selected{% endif %}">
 
                     <a href="/dashboard" aria-label="Dashboard">
@@ -80,7 +84,6 @@
                 </li>
 
 
-                <!-- Módulo Estoque -->
                 <li class="nav-menu {% if modulo_atual == 'estoque' %}selected{% endif %}">
 
                     <a href="/galpao" aria-label="Estoque">
@@ -94,7 +97,6 @@
                 </li>
 
 
-                <!-- Módulo Fornecedores -->
                 <li class="nav-menu {% if modulo_atual == 'fornecedores' %}selected{% endif %}">
 
                     <a href="/fornecedores" aria-label="Fornecedores">
@@ -108,7 +110,14 @@
                 </li>
 
 
-                <!-- Módulo Pedidos -->
+                <li class="nav-menu {% if modulo_atual == 'sensores' %}selected{% endif %}">
+                    <a href="/sensores" aria-label="Sensores">
+                        <i class="bi bi-cpu-fill" aria-hidden="true"></i>
+                        SENSORES
+                    </a>
+                </li>
+
+
                 <li class="nav-menu {% if modulo_atual == 'pedidos' %}selected{% endif %}">
 
                     <a href="/pedidos" aria-label="Pedidos">
@@ -122,7 +131,6 @@
                 </li>
 
 
-                <!-- Módulo Clientes -->
                 <li class="nav-menu {% if modulo_atual == 'clientes' %}selected{% endif %}">
 
                     <a href="/clientes" aria-label="Clientes">
@@ -139,7 +147,9 @@
 
         </nav>
 
-        <!-- Rodapé da sidebar com acesso às configurações -->
+
+        <!-- Configuração fica sozinha no rodapé do menu; tema, voz e sair
+             foram para o header. -->
         <div class="menu-rodape">
             <a href="/config" class="menu-config {% if modulo_atual == 'config' %}selected{% endif %}"
                 aria-label="Configuração" title="Configuração">
@@ -150,13 +160,20 @@
 
     </aside>
 
-    <!-- Área de conteúdo principal da aplicação -->
+
+    <!-- ========================= -->
+    <!-- CONTEÚDO DA PÁGINA -->
+    <!-- ========================= -->
+
     <div class="conteudo">
 
-        <!-- Barra superior do sistema (Header) -->
+        <!-- ========================= -->
+        <!-- HEADER -->
+        <!-- Os menus suspensos usam <details>: abrem sem JavaScript. -->
+        <!-- ========================= -->
         <header class="topo">
 
-            <!-- Formulário da barra de pesquisa global -->
+            <!-- Busca geral: produtos, clientes, fornecedores e galpões -->
             <form method="GET" action="{{ url_for('buscar') }}" class="topo-busca" role="search">
                 <input type="search" name="q" value="{{ request.args.get('q', '') if request.endpoint == 'buscar' else '' }}"
                     placeholder="Pesquisar..." aria-label="Pesquisar no sistema">
@@ -165,7 +182,6 @@
                 </button>
             </form>
 
-            <!-- Alternador de tema claro e escuro -->
             <form method="POST" action="{{ url_for('alternar_tema') }}" class="tema-toggle"
                 aria-label="Tema">
                 <input type="hidden" name="voltar_para" value="{{ request.full_path if request.query_string else request.path }}">
@@ -179,13 +195,12 @@
                 </button>
             </form>
 
-            <!-- Botão de acessibilidade para leitura por voz -->
+            <!-- LEITURA POR VOZ -->
             <button id="btnVoz" class="topo-icone" type="button" aria-label="Ativar leitura por voz"
                 aria-pressed="false" title="Ativar leitura por voz">
                 <i id="iconeVoz" class="bi bi-volume-mute-fill" aria-hidden="true"></i>
             </button>
 
-            <!-- Menu suspenso de notificações com contador de alertas -->
             <details class="topo-menu notificacoes-menu">
                 <summary class="topo-icone" title="Notificações" aria-label="Notificações">
                     <i class="bi bi-bell-fill" aria-hidden="true"></i>
@@ -200,7 +215,6 @@
                             <i class="bi bi-sliders" aria-hidden="true"></i>
                         </a>
                     </div>
-                    <!-- Lista dinâmica de notificações ativas de estoque e sistema -->
                     {% for n in notificacoes_estoque %}
                     <a href="{{ n.link }}" class="notif-item notif-{{ n.cor }}">
                         <i class="bi {{ n.icone }}" aria-hidden="true"></i>
@@ -219,7 +233,6 @@
                 </div>
             </details>
 
-            <!-- Menu de perfil e opções da conta do usuário -->
             <details class="topo-menu usuario-menu">
                 <summary class="usuario-resumo">
                     <img src="{{ url_for('static', filename='imagem/' + (empresa_imagem | imagem_ou('perfil.png'))) }}" alt="">
@@ -234,8 +247,6 @@
                     {% if perfil == 'admin' %}
                     <a href="{{ url_for('usuarios') }}"><i class="bi bi-people-fill" aria-hidden="true"></i> Usuários</a>
                     {% endif %}
-                    
-                    <!-- Ação para encerramento de sessão com confirmação em modal -->
                     <form method="POST" id="form-logout" action="{{ url_for('logout') }}"></form>
                     {% with id='logout',
                             form_id='form-logout',
@@ -252,27 +263,29 @@
 
         </header>
 
-        <!-- Bloco dinâmico onde o conteúdo de cada página é inserido -->
         {% block content %}
         {% endblock %}
 
     </div>
 
-    <!-- Componente global para exibição de mensagens e alertas flash -->
+
+    <!-- Notificações do sistema, em um único lugar para todas as telas -->
     {% include '_notificacoes.html' %}
 
 
-    <!-- Importação de scripts do Bootstrap e scripts JavaScript utilitários -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js">
     </script>
 
+
+    <!-- Pré-visualização das imagens escolhidas nos formulários -->
     <script src="{{ url_for('static', filename='js/imagem-preview.js') }}"></script>
 
+    <!-- Recursos de acessibilidade: leitura dos controles e navegação por teclado -->
     <script src="{{ url_for('static', filename='js/acessibilidade.js') }}"></script>
 
+    <!-- Tema e menu trocam na hora, com transição, sem recarregar a página -->
     <script src="{{ url_for('static', filename='js/tema.js') }}"></script>
 
-    <!-- Bloco dinâmico para scripts JavaScript específicos de cada página -->
     {% block javascript %}
     {% endblock %}
 

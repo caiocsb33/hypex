@@ -1,0 +1,85 @@
+/* =========================================================
+   HYPEX — Monitoramento de Sensores
+   ========================================================= */
+.sensores-page{max-width:1500px;margin:0 auto;padding:30px 34px 42px;color:var(--texto,#202938)}
+.sensores-cabecalho{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:27px}
+.sensores-eyebrow{display:inline-flex;align-items:center;gap:8px;color:#3979bd;font-size:11px;font-weight:800;letter-spacing:1.25px}
+.sensores-cabecalho h1{font-size:clamp(25px,3vw,32px);font-weight:750;letter-spacing:-.8px;margin:8px 0 5px}
+.sensores-cabecalho p,.painel-titulo p,.subpainel-cabecalho p{margin:0;color:#8490a0;font-size:13px}
+.sensores-acoes{display:flex;align-items:center;gap:16px}
+.sensores-atualizacao{font-size:11px;color:#7c8796;white-space:nowrap}
+.ponto-status{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;background:#e0a23b}
+.btn-sensor-primario{border:0;border-radius:9px;background:#245f9e;color:white;padding:11px 16px;font-size:12px;font-weight:700;box-shadow:0 5px 14px #245f9e25;transition:.2s}
+.btn-sensor-primario:hover{background:#174c83;transform:translateY(-1px)}
+.btn-sensor-primario i{margin-right:6px}
+.sensores-indicadores{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px;margin-bottom:22px}
+.sensor-indicador{position:relative;display:flex;align-items:center;gap:14px;min-height:112px;padding:19px;background:var(--card,#fff);border:1px solid var(--borda,#e9edf2);border-radius:13px;box-shadow:0 3px 13px #172b4506}
+.indicador-icone{display:grid;place-items:center;flex:0 0 43px;height:43px;border-radius:12px;font-size:19px}
+.indicador-icone.azul{background:#eaf2fc;color:#3979bd}.indicador-icone.verde{background:#e8f7ef;color:#23945a}.indicador-icone.vermelho{background:#fff0ef;color:#d6534d}.indicador-icone.laranja{background:#fff4e6;color:#d68a28}
+.sensor-indicador div:nth-child(2){display:flex;flex-direction:column;min-width:0}
+.sensor-indicador span{font-size:11px;color:#7e8998;font-weight:600}
+.sensor-indicador strong{font-size:25px;line-height:1.35;font-weight:750;color:var(--texto,#202938)}
+.sensor-indicador small{font-size:10px;color:#9aa3af}
+.indicador-menu{position:absolute;right:13px;top:12px;color:#aab2bd}
+.sensores-painel,.painel-eventos,.painel-distribuicao{background:var(--card,#fff);border:1px solid var(--borda,#e9edf2);border-radius:13px;box-shadow:0 3px 13px #172b4506}
+.sensores-painel{overflow:hidden}
+.painel-titulo{display:flex;justify-content:space-between;align-items:center;gap:18px;padding:21px 23px;border-bottom:1px solid var(--borda,#edf0f4)}
+.painel-titulo h2,.subpainel-cabecalho h2{font-size:16px;font-weight:750;margin:0 0 5px;color:var(--texto,#202938)}
+.sensores-filtros{display:flex;gap:9px;align-items:center}
+.busca-sensor{display:flex;align-items:center;gap:8px;height:36px;padding:0 10px;border:1px solid var(--borda,#e2e7ed);border-radius:7px;color:#8994a2}
+.busca-sensor input{width:145px;border:0;outline:0;background:transparent;color:var(--texto,#202938);font-size:11px}
+.sensores-filtros select{height:36px;padding:0 28px 0 10px;border:1px solid var(--borda,#e2e7ed);border-radius:7px;background:var(--card,#fff);color:var(--texto,#4b5665);font-size:11px}
+.sensores-tabela-wrap{overflow-x:auto}
+.sensores-tabela{width:100%;border-collapse:collapse;min-width:760px}
+.sensores-tabela th{padding:13px 18px;text-align:left;background:var(--fundo-tabela,#f8fafc);font-size:10px;letter-spacing:.45px;text-transform:uppercase;color:#929cab;font-weight:750}
+.sensores-tabela td{padding:14px 18px;border-top:1px solid var(--borda,#eff1f4);font-size:11px;color:var(--texto,#4d5968);white-space:nowrap}
+.sensores-tabela tbody tr:hover{background:var(--hover-sensor,#fafcff)}
+.sensor-identidade{display:flex;align-items:center;gap:10px}
+.sensor-identidade>span:last-child{display:flex;flex-direction:column;gap:3px}
+.sensor-identidade strong{font-size:11px;color:var(--texto,#273344)}
+.sensor-identidade small,.celula-secundaria{display:block;font-size:10px;color:#98a2af}
+.sensor-avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:9px;font-size:15px}
+.sensor-avatar.rfid{background:#f0edff;color:#7964c5}.sensor-avatar.laser{background:#e8f3ff;color:#3982c4}
+.tipo-chip,.status-chip{display:inline-flex;align-items:center;gap:6px;border-radius:20px;padding:5px 9px;font-size:9px;font-weight:750}
+.tipo-rfid{background:#f0edff;color:#7865bf}.tipo-laser{background:#eaf3ff;color:#397fc0}
+.status-chip i{width:6px;height:6px;border-radius:50%;background:currentColor}
+.status-chip.online{background:#eaf7ef;color:#26945a}.status-chip.offline{background:#fff0ef;color:#d3544e}.status-chip.alerta{background:#fff5e7;color:#c88728}
+.btn-detalhes{display:grid;place-items:center;width:27px;height:27px;border:1px solid var(--borda,#e5e9ee);border-radius:7px;background:transparent;color:#8290a0}
+.btn-detalhes:hover{background:#edf4fc;color:#2867a7}
+.sensores-vazio{padding:35px;text-align:center;color:#8b96a5}
+.sensores-vazio i,.sensores-vazio strong,.sensores-vazio span{display:block;margin:5px}
+.tabela-rodape{display:flex;justify-content:space-between;padding:13px 20px;border-top:1px solid var(--borda,#edf0f4);font-size:10px;color:#929cab}
+.tabela-rodape strong{color:var(--texto,#4b5665)}
+.sensores-inferior{display:grid;grid-template-columns:1.25fr 1fr;gap:16px;margin-top:18px}
+.painel-eventos,.painel-distribuicao{padding:20px 22px}
+.subpainel-cabecalho{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.subpainel-cabecalho a{font-size:10px;color:#3979bd;text-decoration:none;white-space:nowrap}
+.evento-item{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--borda,#eff1f4)}
+.evento-icone{display:grid;place-items:center;width:32px;height:32px;border-radius:9px;font-size:14px}
+.evento-icone.roxo{background:#f0edff;color:#7964c5}.evento-icone.azul{background:#eaf3ff;color:#397fc0}.evento-icone.vermelho{background:#fff0ef;color:#d3544e}
+.evento-item div{display:flex;flex:1;flex-direction:column;gap:3px}
+.evento-item strong{font-size:10px;color:var(--texto,#344052)}
+.evento-item small,.evento-item time{font-size:9px;color:#929cab}
+.distribuicao-linha{margin:19px 0}
+.distribuicao-legenda{display:flex;justify-content:space-between;margin-bottom:8px;font-size:10px;color:#687586}
+.distribuicao-legenda span{display:flex;align-items:center;gap:7px}
+.distribuicao-legenda strong{color:var(--texto,#344052)}
+.legenda-ponto{width:8px;height:8px;border-radius:50%}.rfid-ponto{background:#806bc9}.laser-ponto{background:#3982c4}
+.barra-fundo{height:7px;border-radius:20px;background:#edf0f4;overflow:hidden}
+.barra-fundo span{display:block;height:100%;border-radius:20px}.barra-rfid{width:58.33%;background:#806bc9}.barra-laser{width:41.67%;background:#3982c4}
+.nota-demo{display:block;margin-top:18px;padding:10px 11px;border-radius:8px;background:var(--fundo-tabela,#f7f9fc);font-size:9px;line-height:1.5;color:#8994a2}
+.nota-demo i{margin-right:5px}
+.modal-sensor{position:fixed;inset:0;z-index:2000;display:none;align-items:center;justify-content:center;padding:20px;background:#1018278c;backdrop-filter:blur(3px)}
+.modal-sensor.aberto{display:flex}
+.modal-sensor-conteudo{position:relative;width:min(100%,490px);padding:27px;background:var(--card,#fff);border-radius:15px;box-shadow:0 20px 70px #0003;color:var(--texto,#202938)}
+.modal-sensor-conteudo h2{margin:8px 0 5px;font-size:23px;font-weight:750}
+.modal-sensor-conteudo>p{font-size:12px;color:#8792a0}
+.modal-sensor-fechar{position:absolute;right:18px;top:17px;border:0;background:transparent;color:#8290a0;font-size:16px}
+.modal-sensor-grade{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+.modal-sensor-grade div{display:flex;flex-direction:column;gap:5px;padding:13px;border:1px solid var(--borda,#e8edf2);border-radius:9px}
+.modal-sensor-grade small{font-size:10px;color:#929cab}.modal-sensor-grade strong{font-size:12px;color:var(--texto,#344052)}
+.modal-historico{padding-top:15px;border-top:1px solid var(--borda,#edf0f4)}
+.modal-historico h3{font-size:13px;font-weight:750}.modal-historico p{font-size:11px;color:#8994a2}
+@media(max-width:1100px){.sensores-indicadores{grid-template-columns:repeat(2,minmax(0,1fr))}.painel-titulo{align-items:flex-start;flex-direction:column}.sensores-filtros{width:100%;flex-wrap:wrap}.busca-sensor{flex:1}.busca-sensor input{width:100%}}
+@media(max-width:700px){.sensores-page{padding:22px 15px 30px}.sensores-cabecalho{align-items:flex-start;flex-direction:column}.sensores-acoes{width:100%;justify-content:space-between}.sensores-indicadores{gap:9px}.sensor-indicador{min-height:95px;padding:12px;gap:9px}.indicador-icone{flex-basis:34px;height:34px;font-size:15px}.sensor-indicador strong{font-size:21px}.sensor-indicador small{font-size:9px}.sensores-filtros select{flex:1;min-width:0}.painel-titulo{padding:17px}.sensores-inferior{grid-template-columns:1fr}.tabela-rodape{gap:8px;flex-direction:column}.modal-sensor-conteudo{padding:22px}}
+@media(max-width:390px){.sensores-indicadores{grid-template-columns:1fr}.sensores-atualizacao{font-size:10px}}
