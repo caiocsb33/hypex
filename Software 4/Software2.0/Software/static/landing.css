@@ -254,7 +254,7 @@ header {
    MAIN / HERO
 ========================================= */
 
-.main-principal {
+#main-principal {
     width: 100%;
     min-height: 100vh;
 
@@ -273,7 +273,7 @@ header {
    CONTAINER
 ========================================= */
 
-.main-principal .container {
+#main-principal .container {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -475,11 +475,11 @@ header {
 
 @media (max-width: 1024px) {
 
-    .main-principal {
+    #main-principal {
         padding: 130px 6% 70px;
     }
 
-    .main-principal .container {
+    #main-principal .container {
         gap: 30px;
     }
 
@@ -500,7 +500,7 @@ header {
 
 @media (max-width: 768px) {
 
-    .main-principal {
+    #main-principal {
         min-height: auto;
 
         padding: 130px 25px 70px;
@@ -510,7 +510,7 @@ header {
         background-position: center;
     }
 
-    .main-principal .container {
+    #main-principal .container {
         width: 100%;
 
         flex-direction: column;
@@ -591,7 +591,7 @@ header {
 
 @media (max-width: 480px) {
 
-    .main-principal {
+    #main-principal {
         padding: 120px 20px 60px;
     }
 
