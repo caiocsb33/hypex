@@ -3111,226 +3111,113 @@ def novo_fornecedor():
 
 
 # Cadastra um novo fornecedor.
-@login_obrigatorio
-# Cadastra um novo fornecedor.
 @app.route("/fornecedor/salvar", methods=["POST"])
 @login_obrigatorio
 def salvar_fornecedor():
-
-    nome = (request.form.get("nome") or "").strip()
-    nome_ctt = (request.form.get("nome_ctt") or "").strip()
+    nome  = (request.form.get("nome") or "").strip()
     email = (request.form.get("email") or "").strip()
-    ativo = (request.form.get("ativo") or "ativo").strip().lower()
 
-    # Valida o nome do fornecedor.
-    if len(nome) < 3 or not nome_valido(nome):
-        flash("Informe um nome válido para o fornecedor.", "erro")
-        return redirect(url_for("fornecedores"))
-
-    # Valida o nome do contato.
-    if nome_ctt and (len(nome_ctt) < 3 or not nome_valido(nome_ctt)):
-        flash("Informe um nome válido para o contato.", "erro")
-        return redirect(url_for("fornecedores"))
-
-    # Valida o CNPJ.
-    cnpj, erro = validar_documento(
-        request.form.get("cnpj"),
-        obrigatorio=False
-    )
-
+    cnpj, erro = validar_documento(request.form.get("cnpj"), obrigatorio=False)
     if erro:
         flash(erro, "erro")
         return redirect(url_for("fornecedores"))
 
-    if cnpj and len(cnpj) != 14:
-        flash("O fornecedor deve possuir um CNPJ com 14 números.", "erro")
-        return redirect(url_for("fornecedores"))
-
-    # Impede CNPJ duplicado.
-    if cnpj and documento_ja_usado("fornecedor", cnpj):
-        flash("Já existe um fornecedor com este CNPJ.", "erro")
-        return redirect(url_for("fornecedores"))
-
-    # Valida o telefone.
-    telefone, erro = validar_telefone_campo(
-        request.form.get("telefone")
-    )
-
+    telefone, erro = validar_telefone_campo(request.form.get("telefone"))
     if erro:
         flash(erro, "erro")
         return redirect(url_for("fornecedores"))
 
-    # Impede telefones formados por números repetidos.
-    if telefone and len(set(telefone)) == 1:
-        flash("Informe um telefone válido.", "erro")
+    if not nome:
+        flash("Informe o nome do fornecedor.", "erro")
         return redirect(url_for("fornecedores"))
 
-    # Valida o e-mail.
     if email and not email_valido(email):
         flash("Informe um e-mail válido.", "erro")
         return redirect(url_for("fornecedores"))
 
-    # Valida o status.
-    if ativo not in ("ativo", "inativo"):
-        flash("Status do fornecedor inválido.", "erro")
+    if cnpj and documento_ja_usado("fornecedor", cnpj):
+        flash("Já existe um fornecedor com este CNPJ.", "erro")
         return redirect(url_for("fornecedores"))
 
     try:
         fornecedor = Fornecedor(
             nome=nome,
-            ativo=ativo,
+            ativo=request.form.get("ativo"),
             cnpj=cnpj,
-            nome_ctt=nome_ctt,
+            nome_ctt=(request.form.get("nome_ctt") or "").strip(),
             telefone=telefone,
             email=email
         )
-
         fornecedor.insert()
-
-        flash("Fornecedor cadastrado com sucesso!", "sucesso")
-
+        flash("Fornecedor cadastrado!", "sucesso")
     except Exception as e:
         flash(f"Erro: {mensagem_erro(e)}", "erro")
-
     return redirect(url_for("fornecedores"))
 
-# Atualiza os dados do fornecedor.
-@login_obrigatorio
+
 # Atualiza os dados do fornecedor.
 @app.route("/fornecedor/atualizar/<int:fornecedor_id>", methods=["POST"])
+@login_obrigatorio
 def atualizar_fornecedor(fornecedor_id):
-
-    conexao = None
-    cursor = None
-
-    nome = (request.form.get("nome") or "").strip()
-    nome_ctt = (request.form.get("nome_ctt") or "").strip()
+    nome  = (request.form.get("nome") or "").strip()
     email = (request.form.get("email") or "").strip()
-    ativo = (request.form.get("ativo") or "ativo").strip().lower()
 
-    destino = url_for(
-        "info_fornecedor",
-        fornecedor_id=fornecedor_id
-    )
-
-    # Valida o nome do fornecedor.
-    if len(nome) < 3 or not nome_valido(nome):
-        flash("Informe um nome válido para o fornecedor.", "erro")
-        return redirect(destino)
-
-    # Valida o nome do contato.
-    if nome_ctt and (len(nome_ctt) < 3 or not nome_valido(nome_ctt)):
-        flash("Informe um nome válido para o contato.", "erro")
-        return redirect(destino)
-
-    # Valida o CNPJ.
-    cnpj, erro = validar_documento(
-        request.form.get("cnpj"),
-        obrigatorio=False
-    )
-
+    cnpj, erro = validar_documento(request.form.get("cnpj"), obrigatorio=False)
     if erro:
         flash(erro, "erro")
-        return redirect(destino)
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
-    if cnpj and len(cnpj) != 14:
-        flash("O fornecedor deve possuir um CNPJ com 14 números.", "erro")
-        return redirect(destino)
-
-    # Verifica se outro fornecedor já utiliza o CNPJ.
-    if cnpj and documento_ja_usado(
-        "fornecedor",
-        cnpj,
-        fornecedor_id
-    ):
-        flash("Já existe outro fornecedor com este CNPJ.", "erro")
-        return redirect(destino)
-
-    # Valida o telefone.
-    telefone, erro = validar_telefone_campo(
-        request.form.get("telefone")
-    )
-
+    telefone, erro = validar_telefone_campo(request.form.get("telefone"))
     if erro:
         flash(erro, "erro")
-        return redirect(destino)
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
-    if telefone and len(set(telefone)) == 1:
-        flash("Informe um telefone válido.", "erro")
-        return redirect(destino)
+    if not nome:
+        flash("Informe o nome do fornecedor.", "erro")
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
-    # Valida o e-mail.
     if email and not email_valido(email):
         flash("Informe um e-mail válido.", "erro")
-        return redirect(destino)
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
-    # Valida o status.
-    if ativo not in ("ativo", "inativo"):
-        flash("Status do fornecedor inválido.", "erro")
-        return redirect(destino)
+    if cnpj and documento_ja_usado("fornecedor", cnpj, fornecedor_id):
+        flash("Já existe outro fornecedor com este CNPJ.", "erro")
+        return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
     try:
         conexao = Database.connect()
         cursor = conexao.cursor()
 
-        # Atualiza os dados do fornecedor da empresa atual.
         cursor.execute("""
             UPDATE fornecedor
-            SET nome = %s,
-                cnpj = %s,
-                nome_ctt = %s,
-                email = %s,
-                telefone = %s,
-                ativo = %s
-            WHERE id = %s
-              AND empresa_id = %s
+            SET nome=%s, cnpj=%s, nome_ctt=%s, email=%s, telefone=%s, ativo=%s
+            WHERE id=%s
         """, (
             nome,
             cnpj,
-            nome_ctt,
+            (request.form.get("nome_ctt") or "").strip(),
             email,
             telefone,
-            ativo,
-            fornecedor_id,
-            session["empresa_id"]
+            request.form.get("ativo"),
+            fornecedor_id
         ))
-
-        if cursor.rowcount == 0:
-            conexao.rollback()
-            flash("Fornecedor não encontrado ou sem alterações.", "erro")
-            return redirect(destino)
 
         conexao.commit()
 
-        # Atualiza a imagem somente se uma nova imagem foi enviada.
-        imagem = request.files.get("imagem")
-
-        if imagem and imagem.filename:
-            atualizar_imagem(
-                "fornecedor",
-                fornecedor_id,
-                imagem,
-                "fornecedor"
-            )
+        atualizar_imagem("fornecedor", fornecedor_id,
+                         request.files.get("imagem"), "fornecedor")
 
         flash("Fornecedor atualizado com sucesso!", "sucesso")
 
     except Exception as e:
-
-        if conexao:
-            conexao.rollback()
-
         flash(f"Erro: {mensagem_erro(e)}", "erro")
 
     finally:
+        cursor.close()
+        conexao.close()
 
-        if cursor:
-            cursor.close()
+    return redirect(url_for("info_fornecedor", fornecedor_id=fornecedor_id))
 
-        if conexao:
-            conexao.close()
-
-    return redirect(destino)
 
 # Exclui um fornecedor.
 @app.route("/fornecedor/deletar/<int:fornecedor_id>", methods=["POST"])
